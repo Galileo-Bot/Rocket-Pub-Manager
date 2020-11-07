@@ -31,7 +31,7 @@
 	},
 	"scripts": {
 		"start": "node .",
-		"prettier": "prettier src package.json README.md"
+		"prettier": "prettier src package.json README.md --write"
 	},
 	"version": "1.0.0"
 }
