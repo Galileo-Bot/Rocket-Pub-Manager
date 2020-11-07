@@ -5,7 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4a64497a-c81c-430d-836a-f83868fd468e" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/commands/administrator/addServeurInterdit.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/events/message.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/events/message.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,6 +59,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Pierre\WebstormProjects\bots\Rocket-Pub-Manager\src\commands\administrator" />
       <recent name="C:\Users\Pierre\WebstormProjects\bots\Rocket-Pub-Manager\src" />
     </key>
   </component>
@@ -84,7 +89,7 @@
       <option name="presentableId" value="Default" />
       <updated>1604762484564</updated>
       <workItem from="1604762487339" duration="108000" />
-      <workItem from="1604762612080" duration="2882000" />
+      <workItem from="1604762612080" duration="4009000" />
     </task>
     <servers />
   </component>
