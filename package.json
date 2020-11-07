@@ -1,0 +1,26 @@
+{
+  "author": "Ayfri",
+  "bugs": {
+    "url": "https://github.com/Galileo-Bot/Rocket-Pub-Manager/issues"
+  },
+  "dependencies": {
+    "advanced-command-handler": "^1.2.1",
+    "discord.js": "^12.4.1",
+    "dotenv": "^8.2.0"
+  },
+  "description": "Le bot pour surveiller les membres du serveur Rocket Pub.",
+  "homepage": "https://github.com/Galileo-Bot/Rocket-Pub-Manager#readme",
+  "keywords": [],
+  "license": "ISC",
+  "main": "index.js",
+  "name": "rocket-pub-manager",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Galileo-Bot/Rocket-Pub-Manager.git"
+  },
+  "scripts": {
+    "start": "node ."
+  },
+  "version": "1.0.0"
+}
