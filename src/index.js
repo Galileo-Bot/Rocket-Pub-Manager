@@ -13,6 +13,7 @@ const forbiddenGuilds = new Enmap({
 });
 
 forbiddenGuilds.defer.then(() => {
+	CommandHandler.forbiddenGuilds = forbiddenGuilds;
 	Logger.info('DB prepared.', 'DBManager');
 	
 	CommandHandler.create({
