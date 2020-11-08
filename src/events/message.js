@@ -26,7 +26,7 @@ module.exports = async (handler, message) => {
 			command.run(handler, message, args);
 		}
 	} else if (channels.map(c => c.id).includes(message.channel.id)) {
-		// if (hasPermission(message.member, 'ADMINISTRATOR')) return;
+		if (hasPermission(message.member, 'ADMINISTRATOR')) return;
 		
 		let invite;
 		await handler.client
