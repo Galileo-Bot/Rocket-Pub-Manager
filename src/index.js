@@ -22,6 +22,7 @@ forbiddenGuilds.defer
                .then(() => {
 	               sanctions.defer.then(() => {
 		               CommandHandler.forbiddenGuilds = forbiddenGuilds;
+		               CommandHandler.sanctions = sanctions;
 		               Logger.info('DB prepared.', 'DBManager');
 		
 		               CommandHandler.create({
