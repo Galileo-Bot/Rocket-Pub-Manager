@@ -35,7 +35,9 @@ module.exports = async (handler, message) => {
 		             .catch(() => {
 		             });
 		
-		
+		if (message.content.split('\n').length - 1 < 5) {
+			createSanction(message, 'warn', 'Publicité trop courte.');
+		}
 		
 		if (!invite) return;
 		
