@@ -13,6 +13,42 @@ module.exports = async (handler, message) => {
 		});
 	}
 	
+	function createSanction(message, type, reason) {
+		const embed = BetterEmbed.fromTemplate('basic', {
+			client: message.client
+		});
+		embed.title = reason;
+		embed.fields = [
+			{
+				name:  'Utilisateur incriminé :',
+				value: `${message.author.tag} (${message.author.id})`
+			}, {
+				name:  'Salon :',
+				value: message.channel
+			}
+		];
+		embed.description = `?${type} ${message.author} ${reason}`;
+		embed.thumbnail = message.author.displayAvatarURL({
+			dynamic: true,
+			format:  'gif'
+		});
+		
+		if (!handler.sanctions.has(message.author.id)) {
+			handler.sanctions.set(message.author.id, {
+				sanctions: []
+			});
+		}
+		
+		handler.sanctions.push("sanctions", {
+			type,
+			reason,
+			createdAt: message.createdAt,
+			case: handler.sanctions.get(message.author.id, "sanctions").length + 1
+		}, message.author.id)
+		
+		message.client.guilds.cache.get(process.env.ROCKET_PUB_ID).channels.cache.get(process.env.LOGGER_CHANNEL_ID).send(embed.description, {embed: embed.build()});
+	}
+	
 	function isStaff(member) {
 		return member.roles.cache.has('494521544618278934');
 	}
@@ -54,26 +90,3 @@ module.exports = async (handler, message) => {
 		}
 	}
 };
-
-function createSanction(message, type, sanction) {
-	const embed = BetterEmbed.fromTemplate('basic', {
-		client: message.client
-	});
-	embed.title = sanction;
-	embed.fields = [
-		{
-			name:  'Utilisateur incriminé :',
-			value: `${message.author.tag} (${message.author.id})`
-		}, {
-			name:  'Salon :',
-			value: message.channel
-		}
-	];
-	embed.description = `?${type} ${message.author} ${sanction}`;
-	embed.thumbnail = message.author.displayAvatarURL({
-		dynamic: true,
-		format:  'gif'
-	});
-	
-	message.client.guilds.cache.get(process.env.ROCKET_PUB_ID).channels.cache.get(process.env.LOGGER_CHANNEL_ID).send(embed.description, {embed: embed.build()});
-}
