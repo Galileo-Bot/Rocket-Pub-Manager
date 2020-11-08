@@ -8,7 +8,6 @@ module.exports = new Command(
 		guildOnly: true,
 		name: 'deleteServeurInterdit',
 		usage: 'deleteServeurInterdit <ID/Invitation/Nom>',
-		userPermissions: ['ADMINISTRATOR'],
 	},
 	async (handler, message, args) => {
 		const guild = await getGuild(handler, args);

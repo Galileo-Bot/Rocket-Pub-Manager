@@ -7,7 +7,6 @@ module.exports = new Command(
 		aliases: ['vsi', 'voirSI'],
 		description: "Permet de savoir si un serveur est interdit ou d'avoir la liste complète des serveurs interdits.",
 		usage: 'voirServeurInterdit <ID/Invitation/Nom>\nvoirServeurInterdit liste/list/ls',
-		userPermissions: ['ADMINISTRATOR'],
 	},
 	async (handler, message, args) => {
 		const embed = BetterEmbed.fromTemplate('basic', {

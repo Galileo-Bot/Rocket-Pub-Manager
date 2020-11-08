@@ -39,12 +39,12 @@ module.exports = async (handler, message) => {
 			});
 		}
 		
-		handler.sanctions.push("sanctions", {
+		handler.sanctions.push('sanctions', {
 			type,
 			reason,
 			createdAt: message.createdAt,
-			case: handler.sanctions.get(message.author.id, "sanctions").length + 1
-		}, message.author.id)
+			case:      handler.sanctions.get(message.author.id, 'sanctions').length + 1
+		}, message.author.id);
 		
 		message.client.guilds.cache.get(process.env.ROCKET_PUB_ID).channels.cache.get(process.env.LOGGER_CHANNEL_ID).send(embed.description, {embed: embed.build()});
 	}
@@ -62,6 +62,9 @@ module.exports = async (handler, message) => {
 	const command = await getThing('command', args.shift());
 	
 	if (command) {
+		if (command.category === 'administration') if (!hasPermission(message.member, 'ADMINISTRATOR')) return;
+		if (command.category === 'moderation') if (!isStaff(message.member)) return;
+		
 		if (message.guild?.id === rocketPub.id && isStaff(message.member)) {
 			command.run(handler, message, args);
 		}
