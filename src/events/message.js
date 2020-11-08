@@ -6,11 +6,15 @@ const {
 module.exports = async (handler, message) => {
 	if (message.author.bot || message.system) return;
 	
-	function hasPermission(member, permission) {
+	function hasPermission(member, ...permission) {
 		return member.hasPermission(permission, {
 			checkAdmin: true,
 			checkOwner: true
 		});
+	}
+	
+	function isStaff(member) {
+		return member.roles.cache.has('494521544618278934');
 	}
 	
 	const rocketPub = handler.client.guilds.cache.get(process.env.ROCKET_PUB_ID);
@@ -22,11 +26,11 @@ module.exports = async (handler, message) => {
 	const command = await getThing('command', args.shift());
 	
 	if (command) {
-		if (message.guild?.id === rocketPub.id && hasPermission(message.member, 'ADMINISTRATOR')) {
+		if (message.guild?.id === rocketPub.id && isStaff(message.member)) {
 			command.run(handler, message, args);
 		}
 	} else if (channels.map(c => c.id).includes(message.channel.id)) {
-		if (hasPermission(message.member, 'ADMINISTRATOR')) return;
+		if (isStaff(message.member)) return;
 		
 		let invite;
 		await handler.client
