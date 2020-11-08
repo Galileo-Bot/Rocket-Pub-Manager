@@ -14,7 +14,6 @@ module.exports = async (handler, message) => {
 	}
 	
 	const rocketPub = handler.client.guilds.cache.get(process.env.ROCKET_PUB_ID);
-	const loggerChannel = rocketPub.channels.cache.get(process.env.LOGGER_CHANNEL_ID);
 	const channels = rocketPub.channels.cache.filter(c => c.isText() && c.topic && c.topic.includes(process.env.FILTER_EMOJI));
 	
 	if (channels.map(c => c.id).includes(message.channel.id)) {
@@ -23,6 +22,13 @@ module.exports = async (handler, message) => {
 		let invite;
 		await handler.client.fetchInvite(message.content).then(i => invite = i).catch(() => {
 		});
+		
+		
+		if (!invite) return;
+		
+		if (handler.forbiddenGuilds.has(invite.guild.id)) {
+			createSanction(message, 'warn', 'Serveur interdit.');
+		}
 		
 		if (invite && message.content.match(/https:\/\/discord.gg\/[A-Za-z0-9]{7}/)) {
 			createSanction(message, 'warn', 'Publicité sans description.');
