@@ -30,7 +30,7 @@ module.exports = async (handler, message) => {
 			createSanction(message, 'warn', 'Serveur interdit.');
 		}
 		
-		if (invite && message.content.match(/https:\/\/discord.gg\/[A-Za-z0-9]{7}/)) {
+		if (invite && message.content.match(/^https:\/\/discord.gg\/[A-Za-z0-9]{7}$/)) {
 			createSanction(message, 'warn', 'Publicité sans description.');
 		}
 	}
