@@ -59,7 +59,8 @@ module.exports = async (handler, message) => {
 	}
 	
 	const rocketPub = handler.client.guilds.cache.get(process.env.ROCKET_PUB_ID);
-	const channels = rocketPub.channels.cache.filter(c => c.isText() && c.topic && c.topic.includes(process.env.FILTER_EMOJI));
+	const categoryChannels = rocketPub.channels.cache.filter(c => c.isText() && c.topic && c.topic.includes(process.env.FILTER_EMOJI));
+	const otherChannels = rocketPub.channels.cache.filter(c => c.isText() && c.topic && c.topic.includes(process.env.FILTER_EMOJI_SHORT));
 	const args = message.content.slice(handler.prefixes[0].length).trim().split(/\s+/g);
 	/**
 	 * @type {Command}
@@ -73,17 +74,16 @@ module.exports = async (handler, message) => {
 		if (message.guild?.id === rocketPub.id && isStaff(message.member)) {
 			command.run(handler, message, args);
 		}
-	} else if (channels.map(c => c.id).includes(message.channel.id)) {
+	} else if (isStaff(message.member) && categoryChannels.concat(otherChannels).map(c => c.id).includes(message.channel.id)) {
 		const invite = await handler.client.fetchInvite(message.content).catch(() => {});
 		const mention = /@(everyone|here)/.test(message.content);
-		if (isStaff(message.member)) return;
+		
+		if (!/\s/.test(message.content)) createSanction(message, 'warn', 'Publicité sans description.');
+		
+		if(!categoryChannels.map(c => c.id).includes(message.channel.id)) return;
 		
 		if (message.content.split('\n').length - 1 < 5) createSanction(message, 'warn', 'Publicité trop courte.');
 		if (mention) createSanction(message, 'warn', `Tentative de mention ${mention[2]}.`);
-		
-		if (!invite) return;
-		
-		if (handler.forbiddenGuilds.has(invite.guild.id)) createSanction(message, 'warn', 'Serveur interdit.');
-		if (!/\s/.test(message.content)) createSanction(message, 'warn', 'Publicité sans description.');
+		if (invite && handler.forbiddenGuilds.has(invite.guild.id)) createSanction(message, 'warn', 'Serveur interdit.');
 	}
 };
