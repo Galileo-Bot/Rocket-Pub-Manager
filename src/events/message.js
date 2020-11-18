@@ -76,7 +76,7 @@ module.exports = async (handler, message) => {
 		}
 	} else if (isStaff(message.member) && categoryChannels.concat(otherChannels).map(c => c.id).includes(message.channel.id)) {
 		const invite = await handler.client.fetchInvite(message.content).catch(() => {});
-		const mention = /@(everyone|here)/.test(message.content);
+		const mention = /@(everyone|here)/.exec(message.content);
 		
 		if (!/\s/.test(message.content)) createSanction(message, 'warn', 'Publicité sans description.');
 		
