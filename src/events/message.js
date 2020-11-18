@@ -3,6 +3,11 @@ const {
 	BetterEmbed
 } = require('advanced-command-handler');
 
+/**
+ * @param {CommandHandlerInstance} handler - Le handler.
+ * @param {Message} message - Le message.
+ * @returns {Promise<void>} - Rien.
+ */
 module.exports = async (handler, message) => {
 	if (message.author.bot || message.system) return;
 	
@@ -17,6 +22,7 @@ module.exports = async (handler, message) => {
 		const embed = BetterEmbed.fromTemplate('basic', {
 			client: message.client
 		});
+		
 		embed.title = reason;
 		embed.fields = [
 			{
@@ -39,13 +45,12 @@ module.exports = async (handler, message) => {
 			});
 		}
 		
-		handler.sanctions.push('sanctions', {
+		handler.sanctions.push(message.author.id, {
 			type,
 			reason,
 			createdAt: message.createdAt,
-			case:      handler.sanctions.get(message.author.id, 'sanctions').length + 1
-		}, message.author.id);
-		
+			case:      handler.sanctions.get(message.author.id).sanctions.length + 1
+		}, 'sanctions');
 		message.client.guilds.cache.get(process.env.ROCKET_PUB_ID).channels.cache.get(process.env.LOGGER_CHANNEL_ID).send(embed.description, {embed: embed.build()});
 	}
 	
@@ -80,6 +85,11 @@ module.exports = async (handler, message) => {
 		
 		if (message.content.split('\n').length - 1 < 5) {
 			createSanction(message, 'warn', 'Publicité trop courte.');
+		}
+		
+		const mention = /@(everyone|here)/.test(message.cleanContent);
+		if (mention) {
+			createSanction(message, 'warn', `Tentative de mention ${mention[2]}.`);
 		}
 		
 		if (!invite) return;
