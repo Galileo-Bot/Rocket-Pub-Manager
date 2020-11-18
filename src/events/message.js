@@ -74,32 +74,16 @@ module.exports = async (handler, message) => {
 			command.run(handler, message, args);
 		}
 	} else if (channels.map(c => c.id).includes(message.channel.id)) {
+		const invite = await handler.client.fetchInvite(message.content).catch(() => {});
+		const mention = /@(everyone|here)/.test(message.content);
 		if (isStaff(message.member)) return;
 		
-		let invite;
-		await handler.client
-		             .fetchInvite(message.content)
-		             .then(i => (invite = i))
-		             .catch(() => {
-		             });
-		
-		if (message.content.split('\n').length - 1 < 5) {
-			createSanction(message, 'warn', 'Publicité trop courte.');
-		}
-		
-		const mention = /@(everyone|here)/.test(message.cleanContent);
-		if (mention) {
-			createSanction(message, 'warn', `Tentative de mention ${mention[2]}.`);
-		}
+		if (message.content.split('\n').length - 1 < 5) createSanction(message, 'warn', 'Publicité trop courte.');
+		if (mention) createSanction(message, 'warn', `Tentative de mention ${mention[2]}.`);
 		
 		if (!invite) return;
 		
-		if (handler.forbiddenGuilds.has(invite.guild.id)) {
-			createSanction(message, 'warn', 'Serveur interdit.');
-		}
-		
-		if (!/\s/.test(message.content)) {
-			createSanction(message, 'warn', 'Publicité sans description.');
-		}
+		if (handler.forbiddenGuilds.has(invite.guild.id)) createSanction(message, 'warn', 'Serveur interdit.');
+		if (!/\s/.test(message.content)) createSanction(message, 'warn', 'Publicité sans description.');
 	}
 };
