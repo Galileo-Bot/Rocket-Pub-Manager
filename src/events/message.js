@@ -1,3 +1,4 @@
+const {isStaff} = require('../utils/Utils.js');
 const {
 	getThing,
 	BetterEmbed
@@ -52,10 +53,19 @@ module.exports = async (handler, message) => {
 			case:      handler.sanctions.get(message.author.id).sanctions.length + 1
 		}, 'sanctions');
 		message.client.guilds.cache.get(process.env.ROCKET_PUB_ID).channels.cache.get(process.env.LOGGER_CHANNEL_ID).send(embed.description, {embed: embed.build()});
-	}
-	
-	function isStaff(member) {
-		return member.roles.cache.has('494521544618278934');
+		
+		handler.client.guilds.cache.get(process.env.ROCKET_PUB_ID).channels.cache
+		       .filter(c => c.isText() && c.parent?.id === process.env.ADS_CATEGORY_ID)
+		       .forEach(async (c) => {
+			       (await c.messages.fetch())
+				       .filter((m) => m.author.id === message.author.id)
+				       .forEach(m => {
+					       m.delete({
+						       timestamp: 5000,
+						       reason:    'Auto delete.'
+					       });
+				       });
+		       });
 	}
 	
 	const rocketPub = handler.client.guilds.cache.get(process.env.ROCKET_PUB_ID);
@@ -74,15 +84,16 @@ module.exports = async (handler, message) => {
 		if (message.guild?.id === rocketPub.id && isStaff(message.member)) {
 			command.run(handler, message, args);
 		}
-	} else if (isStaff(message.member) && categoryChannels.concat(otherChannels).map(c => c.id).includes(message.channel.id)) {
-		const invite = await handler.client.fetchInvite(message.content).catch(() => {});
+	} else if (!isStaff(message.member) && categoryChannels.concat(otherChannels).map(c => c.id).includes(message.channel.id)) {
+		const invite = await handler.client.fetchInvite(message.content).catch(() => {
+		});
 		const mention = /@(everyone|here)/.exec(message.content);
 		
 		if (!/\s/.test(message.content)) createSanction(message, 'warn', 'Publicité sans description.');
 		
-		if(!categoryChannels.map(c => c.id).includes(message.channel.id)) return;
+		if (!categoryChannels.map(c => c.id).includes(message.channel.id)) return;
 		
-		if (message.content.split('\n').length - 1 < 5) createSanction(message, 'warn', 'Publicité trop courte.');
+		if (message.content.split('\n').length - 1 < 5 && /\s/.test(message.content)) createSanction(message, 'warn', 'Publicité trop courte.');
 		if (mention) createSanction(message, 'warn', `Tentative de mention ${mention[2]}.`);
 		if (invite && handler.forbiddenGuilds.has(invite.guild.id)) createSanction(message, 'warn', 'Serveur interdit.');
 	}

@@ -7,6 +7,11 @@ async function getGuild(handler, args) {
 	return guild;
 }
 
+function isStaff(member) {
+	return member.roles.cache.has('494521544618278934');
+}
+
 module.exports = {
 	getGuild,
+	isStaff
 };
