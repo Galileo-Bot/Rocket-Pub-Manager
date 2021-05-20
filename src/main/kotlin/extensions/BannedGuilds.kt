@@ -6,10 +6,10 @@ import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.annotation.KordPreview
-import storage.addBannedGuild
-import storage.modifyGuildValue
-import storage.removeBannedGuild
-import storage.searchBannedGuild
+import utils.addBannedGuild
+import utils.modifyGuildValue
+import utils.removeBannedGuild
+import utils.searchBannedGuild
 import utils.templateBannedGuild
 import utils.templateModifiedGuild
 

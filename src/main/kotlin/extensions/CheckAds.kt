@@ -16,12 +16,13 @@ import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
-import getFromValue
+import utils.getFromValue
 import kotlinx.coroutines.flow.first
 import storage.Sanction
 import storage.SanctionType
+import utils.forChannel
 import utils.fromEmbedUnlessFields
-import utils.templateSanction
+import utils.sanctionEmbed
 import kotlin.time.ExperimentalTime
 import kotlin.time.days
 import kotlin.time.minutes
@@ -134,7 +135,7 @@ class CheckAds : Extension() {
 						val oldEmbed = old.message.embeds[0].copy()
 						val field = oldEmbed.fields.find { it.name == "Salons" }
 						val channels = field!!.value.split(Regex("\n")).mapNotNull {
-							val id = Snowflake(it.replace(Regex("[<>#]"), ""))
+							val id = Snowflake.forChannel(it)
 							bot.getKoin().get<Kord>().getChannel(id)
 						}.toMutableSet()
 						channels.add(event.message.channel.asChannel())
@@ -154,11 +155,11 @@ class CheckAds : Extension() {
 						}
 						
 						sanctionMessages.getFromValue(old).message = old.message.edit {
-							embed { templateSanction(event, sanction, channels.toList())() }
+							embed { sanctionEmbed(event, sanction, channels.toList())() }
 						}
 					} else {
 						val message = getLogChannel(event).createMessage {
-							embed { templateSanction(event, sanction)() }
+							embed { sanctionEmbed(event, sanction)() }
 						}
 						
 						sanctionMessages.add(SanctionMessage(event.member!!, message, sanction))

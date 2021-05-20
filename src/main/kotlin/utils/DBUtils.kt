@@ -1,4 +1,4 @@
-package storage
+package utils
 
 import connection
 import dev.kord.common.entity.Snowflake
@@ -42,7 +42,6 @@ data class BannedGuild(val name: String?, val id: String?, val reason: String, v
 			ModifyGuildValues.ID -> id.toString()
 			ModifyGuildValues.REASON -> reason
 		}
-		
 	}
 }
 

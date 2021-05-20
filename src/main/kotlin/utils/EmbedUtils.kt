@@ -9,12 +9,11 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import extensions.ModifyGuildValues
-import storage.BannedGuild
 import storage.Sanction
 import java.text.SimpleDateFormat
 import java.time.Instant
 
-suspend fun templateBasic(client: Kord): suspend EmbedBuilder.() -> Unit = {
+suspend fun basicEmbed(client: Kord): suspend EmbedBuilder.() -> Unit = {
 	val user = client.getSelf(EntitySupplyStrategy.cacheWithRestFallback)
 	
 	footer {
@@ -24,23 +23,23 @@ suspend fun templateBasic(client: Kord): suspend EmbedBuilder.() -> Unit = {
 	timestamp = Instant.now()
 }
 
-suspend fun templateComplete(client: Kord, title: String, description: String): suspend EmbedBuilder.() -> Unit = {
-	templateBasic(client)()
+suspend fun completeEmbed(client: Kord, title: String, description: String): suspend EmbedBuilder.() -> Unit = {
+	basicEmbed(client)()
 	
 	this.title = title
 	this.description = description
 }
 
-suspend fun templateSanction(event: MessageCreateEvent, sanction: Sanction): suspend EmbedBuilder.() -> Unit = {
-	templateSanction(event, sanction, listOf(event.message.channel.asChannel()))()
+suspend fun sanctionEmbed(event: MessageCreateEvent, sanction: Sanction): suspend EmbedBuilder.() -> Unit = {
+	sanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))()
 }
 
-suspend fun templateSanction(
+suspend fun sanctionEmbed(
 	event: MessageCreateEvent,
 	sanction: Sanction,
 	channels: List<Channel>
 ): suspend EmbedBuilder.() -> Unit = {
-	templateComplete(
+	completeEmbed(
 		event.kord,
 		sanction.reason,
 		sanction.toString(configuration["PREFIX"])
@@ -64,7 +63,7 @@ suspend fun templateSanction(
 }
 
 suspend fun templateBannedGuild(client: Kord, guild: BannedGuild): suspend EmbedBuilder.() -> Unit = {
-	templateBasic(client)()
+	basicEmbed(client)()
 	
 	title = "Serveur interdit."
 	description = "Voici des informations sur ce serveur interdit."

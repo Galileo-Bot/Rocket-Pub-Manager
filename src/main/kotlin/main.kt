@@ -59,4 +59,3 @@ suspend fun main() {
 	bot.start()
 }
 
-fun <E> MutableList<E>.getFromValue(old: E): E = this[indexOf(old)]
