@@ -13,7 +13,6 @@ fun addBannedGuild(id: Snowflake, reason: String) = addBannedGuild(id.asString, 
 fun addBannedGuild(name: String, reason: String) {
 	val state = connection.createStatement()
 	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now()))
-	println(dateTime)
 	
 	state.executeUpdate(
 		"""

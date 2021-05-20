@@ -15,9 +15,12 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.event.message.MessageDeleteEvent
+import getFromValue
 import kotlinx.coroutines.flow.first
 import storage.Sanction
 import storage.SanctionType
+import utils.fromEmbedUnlessFields
 import utils.templateSanction
 import kotlin.time.ExperimentalTime
 import kotlin.time.days
@@ -46,7 +49,7 @@ val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
 val STAFF_ROLE = Snowflake("494521544618278934")
 val SANCTION_LOGGER_CHANNEL = Snowflake("779115065001115649")
 
-data class SanctionMessage(val member: Member, val message: Message, val sanction: Sanction)
+data class SanctionMessage(val member: Member, var message: Message, val sanction: Sanction)
 
 class CheckAds : Extension() {
 	override val name = "CheckAds"
@@ -58,6 +61,55 @@ class CheckAds : Extension() {
 	
 	@OptIn(ExperimentalTime::class)
 	override suspend fun setup() {
+		event<MessageDeleteEvent> {
+			check(inGuild(ROCKET_PUB_GUILD), channelType(ChannelType.GuildText), ::isNotBot, ::isInAdChannel)
+			
+			action {
+				val content = event.message?.content ?: return@action
+				val mention = Regex("@(everyone|here)").find(content)
+				
+				val reason = when {
+					!Regex("\\s").containsMatchIn(content) -> "Publicité sans description."
+					mention != null -> "Tentative de mention ${mention.value}."
+					content == "test" -> "Test."
+					else -> null
+				}
+				
+				if (reason != null) {
+					val old = sanctionMessages.find {
+						it.sanction.member == event.message!!.author!!.id
+							&& it.sanction.reason == reason
+					}
+					
+					if (old != null) {
+						val oldEmbed = old.message.embeds[0].copy()
+						val field = oldEmbed.fields.find { it.name == "Salons" }
+						val channels = field!!.value.split(Regex("\n")).toMutableList()
+						
+						val find = channels.find { it == event.channel.mention } ?: return@action
+						channels.remove(find)
+						channels.add(find.plus(" (supprimé)"))
+						
+						sanctionMessages.getFromValue(old).message = old.message.edit {
+							embed {
+								fromEmbedUnlessFields(oldEmbed)
+								
+								field {
+									name = "Utilisateur incriminé :"
+									value = "${event.message?.author?.tag} (`${event.message?.author?.id?.asString}`)"
+								}
+								
+								field {
+									name = "Salons"
+									value = channels.joinToString("\n")
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		event<MessageCreateEvent> {
 			check(
 				channelType(ChannelType.GuildText),
@@ -101,7 +153,7 @@ class CheckAds : Extension() {
 							}
 						}
 						
-						old.message.edit {
+						sanctionMessages.getFromValue(old).message = old.message.edit {
 							embed { templateSanction(event, sanction, channels.toList())() }
 						}
 					} else {
@@ -130,7 +182,4 @@ class CheckAds : Extension() {
 			}
 		}
 	}
-	
 }
-
-

@@ -3,6 +3,7 @@ package utils
 import com.kotlindiscord.kord.extensions.utils.getUrl
 import configuration
 import dev.kord.core.Kord
+import dev.kord.core.entity.Embed
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
@@ -91,4 +92,27 @@ suspend fun templateModifiedGuild(
 	templateBannedGuild(client, guild)()
 	
 	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
+}
+
+fun EmbedBuilder.fromEmbedUnlessFields(oldEmbed: Embed) {
+	description = oldEmbed.description
+	title = oldEmbed.description
+	url = oldEmbed.url
+	timestamp = oldEmbed.timestamp
+	color = oldEmbed.color
+	
+	if (oldEmbed.author != null) {
+		author {
+			name = oldEmbed.author!!.name
+			icon = oldEmbed.author!!.iconUrl
+			url = oldEmbed.author!!.url
+		}
+	}
+	
+	if (oldEmbed.footer != null) {
+		footer {
+			text = oldEmbed.footer!!.text
+			icon = oldEmbed.footer!!.iconUrl
+		}
+	}
 }

@@ -1,4 +1,3 @@
-
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
@@ -59,3 +58,5 @@ suspend fun main() {
 	bot.addExtension(::CheckAds)*/
 	bot.start()
 }
+
+fun <E> MutableList<E>.getFromValue(old: E): E = this[indexOf(old)]
