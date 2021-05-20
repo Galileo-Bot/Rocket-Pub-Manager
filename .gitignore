@@ -1,0 +1,13 @@
+# IntelliJ project files
+.idea
+*.iml
+gen
+
+
+# Gradle project files
+.gradle
+build
+out
+
+# configuration project files
+.env
