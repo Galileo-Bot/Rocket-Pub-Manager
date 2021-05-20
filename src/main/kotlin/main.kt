@@ -52,10 +52,8 @@ suspend fun main() {
 		user = configuration["USER"]
 	}
 	connection = dataSource.connection
+	logger.info("Connection to DataBase established !")
 	
-	/*
-	bot.addExtension(::BannedGuilds)
-	bot.addExtension(::CheckAds)*/
 	bot.start()
 }
 

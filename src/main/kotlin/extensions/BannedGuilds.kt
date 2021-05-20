@@ -22,7 +22,6 @@ enum class ModifyGuildValues(val translation: String) {
 	NAME("Nom"),
 	ID("ID"),
 	REASON("Raison")
-	
 }
 
 @OptIn(KordPreview::class)
