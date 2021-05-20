@@ -2,10 +2,12 @@ package extensions
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.channelType
+import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.delete
+import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
 import storage.SanctionType
+import utils.asSafeUsersMentions
 import utils.forChannel
 import utils.fromEmbedUnlessFields
 import utils.getFromValue
@@ -140,6 +143,26 @@ class CheckAds : Extension() {
 		event.message.delete(5.minutes.toLongMilliseconds())
 	}
 	
+	suspend fun getReasonForMessage(message: Message): String? {
+		val mention = Regex("@(everyone|here)").find(message.content)
+		val inviteLink = findInviteLink(message.content)
+		val invite = if (inviteLink != null) getInvite(inviteLink) else null
+		
+		val isBannedGuild = invite != null &&
+			(
+				invite.partialGuild?.id?.let { searchBannedGuild(it) } != null ||
+					invite.partialGuild?.name?.let { searchBannedGuild(it) } != null
+				)
+		
+		return when {
+			!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
+			mention != null -> "Tentative de mention `${mention.value.removeMatches("@")}`."
+			message.content == "test" -> "Test."
+			isBannedGuild -> "Publicité pour un serveur interdit."
+			else -> null
+		}
+	}
+	
 	override suspend fun setup() {
 		event<MessageDeleteEvent> {
 			check(inGuild(ROCKET_PUB_GUILD), channelType(ChannelType.GuildText), ::isNotBot, ::isInAdChannel)
@@ -199,28 +222,28 @@ class CheckAds : Extension() {
 			)
 			
 			action {
+				if (hasRole(STAFF_ROLE)(event)) {
+					
+					val sanctionMessageFind = sanctionMessages.find {
+						it.sanction.toString(configuration["PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
+					}
+					if (sanctionMessageFind != null) {
+						sanctionMessages.remove(sanctionMessageFind)
+						sanctionMessageFind.sanctionMessage.edit {
+							embed {
+								sanctionEmbed(event, sanctionMessageFind.sanction)()
+								field {
+									name = "Sanctionnée par :"
+									value = event.message.author!!.mention
+								}
+							}
+						}
+						sanctionMessageFind.sanctionMessage.addReaction(event.getGuild()!!.getEmoji(Snowflake("525406069913157641")))
+					}
+					
+				}
 				createSanction(event, SanctionType.WARN, getReasonForMessage(event.message))
 			}
-		}
-	}
-	
-	suspend fun getReasonForMessage(message: Message): String? {
-		val mention = Regex("@(everyone|here)").find(message.content)
-		val inviteLink = findInviteLink(message.content)
-		val invite = if (inviteLink != null) getInvite(inviteLink) else null
-		
-		val isBannedGuild = invite != null &&
-			(
-				invite.partialGuild?.id?.let { searchBannedGuild(it) } != null ||
-					invite.partialGuild?.name?.let { searchBannedGuild(it) } != null
-				)
-		
-		return when {
-			!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
-			mention != null -> "Tentative de mention `${mention.value.removeMatches("@")}`."
-			message.content == "test" -> "Test."
-			isBannedGuild -> "Publicité pour un serveur interdit."
-			else -> null
 		}
 	}
 }

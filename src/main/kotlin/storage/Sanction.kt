@@ -25,17 +25,17 @@ data class Sanction(
 	
 	@OptIn(ExperimentalTime::class)
 	val formattedDuration: String
-	get() {
-		return when {
-			duration.inMilliseconds == 0.0 -> ""
-			duration.inHours > 24 -> "${duration.inDays.roundToInt()}d"
-			duration.inHours < 1 -> "${duration.inMinutes.roundToInt()}m"
-			else -> "${duration.inHours.roundToInt()}h"
+		get() {
+			return when {
+				duration.inMilliseconds == 0.0 -> ""
+				duration.inHours > 24 -> " ${duration.inDays.roundToInt()}d"
+				duration.inHours < 1 -> " ${duration.inMinutes.roundToInt()}m"
+				else -> " ${duration.inHours.roundToInt()}h"
+			}
 		}
-	}
 	
 	fun toString(prefix: String): String {
-		return "$prefix${type.name.toLowerCase()} <@${member.asString}> $reason $formattedDuration"
+		return "$prefix${type.name.toLowerCase()} <@${member.asString}> $reason$formattedDuration"
 	}
 }
 

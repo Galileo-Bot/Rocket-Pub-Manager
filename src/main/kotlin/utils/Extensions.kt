@@ -25,3 +25,6 @@ fun String.removeMatches(regex: Regex) = replace(regex, "")
 fun String.removeMatches(pattern: String) = replace(Regex(pattern), "")
 
 fun <E> MutableList<E>.getFromValue(old: E): E = this[indexOf(old)]
+
+val String.asSafeUsersMentions: String
+	get() = replace(Regex("(<@)!?(\\d{17,19}>)"), "$1$2")
