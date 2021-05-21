@@ -11,8 +11,8 @@ import utils.addBannedGuild
 import utils.modifyGuildValue
 import utils.removeBannedGuild
 import utils.searchBannedGuild
-import utils.templateBannedGuild
-import utils.templateModifiedGuild
+import utils.bannedGuildEmbed
+import utils.modifiedGuildEmbed
 
 
 fun isValidGuild(guild: String): Boolean {
@@ -85,7 +85,7 @@ class BannedGuilds : Extension() {
 					publicFollowUp {
 						val guild = searchBannedGuild(arguments.guild)
 						if (guild != null) embed {
-							templateBannedGuild(bot.getKoin().get(), guild)()
+							bannedGuildEmbed(bot.getKoin().get(), guild)()
 						}
 						else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
 					}
@@ -103,7 +103,7 @@ class BannedGuilds : Extension() {
 						if (guild != null) {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
 							embed {
-								templateModifiedGuild(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)()
+								modifiedGuildEmbed(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)()
 							}
 						} else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
 					}

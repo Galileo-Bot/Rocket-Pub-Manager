@@ -8,6 +8,7 @@ import extensions.CheckAds
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
 import java.sql.Connection
+import java.util.*
 
 
 val logger = KotlinLogging.logger("main")
@@ -26,6 +27,10 @@ suspend fun main() {
 			sentry = false
 			add(::CheckAds)
 			add(::BannedGuilds)
+		}
+		
+		i18n {
+			defaultLocale = Locale.FRENCH
 		}
 		
 		intents {

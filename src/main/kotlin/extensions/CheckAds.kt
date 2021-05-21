@@ -10,10 +10,8 @@ import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Message
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
@@ -30,12 +28,14 @@ import utils.findInviteLink
 import utils.fromEmbedUnlessFields
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
+import utils.getInvite
 import utils.getLogChannel
 import utils.isInAdChannel
 import utils.isNotBot
 import utils.removeMatches
 import utils.sanctionEmbed
 import utils.searchBannedGuild
+import utils.verificationEmbed
 import kotlin.time.ExperimentalTime
 import kotlin.time.days
 import kotlin.time.minutes
@@ -51,8 +51,6 @@ suspend fun adsCheck(event: MessageCreateEvent) =
 class CheckAds : Extension() {
 	override val name = "CheckAds"
 	val sanctionMessages = mutableListOf<SanctionMessage>()
-	
-	suspend fun getInvite(text: String): Invite? = bot.getKoin().get<Kord>().getInvite(text, false)
 	
 	suspend fun createSanction(event: MessageCreateEvent, type: SanctionType, reason: String?) {
 		if (reason == null) return
@@ -115,7 +113,7 @@ class CheckAds : Extension() {
 	suspend fun getReasonForMessage(message: Message): String? {
 		val mention = Regex("@(everyone|here)").find(message.content)
 		val inviteLink = findInviteLink(message.content)
-		val invite = if (inviteLink != null) getInvite(inviteLink) else null
+		val invite = if (inviteLink != null) getInvite(message.kord, inviteLink) else null
 		
 		val isBannedGuild = invite != null &&
 			(
@@ -186,7 +184,6 @@ class CheckAds : Extension() {
 			
 			action {
 				if (hasRole(STAFF_ROLE)(event)) {
-					
 					val sanctionMessageFind = sanctionMessages.find {
 						it.sanction.toString(configuration["PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
 					}
@@ -205,7 +202,11 @@ class CheckAds : Extension() {
 					}
 					
 				}
-				createSanction(event, SanctionType.WARN, getReasonForMessage(event.message))
+				val reason = getReasonForMessage(event.message)
+				if (reason != null) createSanction(event, SanctionType.WARN, reason)
+				else getLogChannel(event).createMessage {
+					embed { verificationEmbed(event)() }
+				}
 			}
 		}
 	}
