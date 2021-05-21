@@ -1,5 +1,6 @@
 package utils
 
+import com.kotlindiscord.kord.extensions.events.EventContext
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
@@ -21,7 +22,7 @@ suspend fun isInCategoryAdChannel(event: MessageCreateEvent): Boolean {
 		&& channel.topic!!.contains(VALIDATION_EMOJI_2))
 }
 
-suspend fun getLogChannel(event: MessageCreateEvent): TextChannel {
+suspend fun EventContext<MessageCreateEvent>.getLogChannel(): TextChannel {
 	return event.getGuild()!!.channels.first { it.id == SANCTION_LOGGER_CHANNEL } as TextChannel
 }
 

@@ -98,7 +98,7 @@ suspend fun verificationEmbed(event: MessageCreateEvent): suspend EmbedBuilder.(
 	val link = findInviteCode(event.message.content)
 	
 	field {
-		name = "Dans :"
+		name = "Salons :"
 		value = event.message.channel.mention
 	}
 	

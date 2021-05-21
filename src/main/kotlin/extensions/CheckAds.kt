@@ -3,18 +3,20 @@ package extensions
 import com.kotlindiscord.kord.extensions.checks.channelType
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.checks.inGuild
+import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.delete
 import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.ChannelType
-import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
+import dev.kord.core.live.LiveMessage
 import dev.kord.core.live.live
 import dev.kord.core.live.onReactionAdd
 import kotlinx.coroutines.flow.firstOrNull
@@ -24,17 +26,13 @@ import utils.ROCKET_PUB_GUILD
 import utils.STAFF_ROLE
 import utils.SanctionMessage
 import utils.asSafeUsersMentions
-import utils.findInviteLink
-import utils.fromEmbedUnlessFields
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
-import utils.getInvite
 import utils.getLogChannel
+import utils.getReasonForMessage
 import utils.isInAdChannel
 import utils.isNotBot
-import utils.removeMatches
 import utils.sanctionEmbed
-import utils.searchBannedGuild
 import utils.verificationEmbed
 import kotlin.time.ExperimentalTime
 import kotlin.time.days
@@ -52,7 +50,7 @@ class CheckAds : Extension() {
 	override val name = "CheckAds"
 	val sanctionMessages = mutableListOf<SanctionMessage>()
 	
-	suspend fun createSanction(event: MessageCreateEvent, type: SanctionType, reason: String?) {
+	suspend fun EventContext<MessageCreateEvent>.createSanction(type: SanctionType, reason: String?) {
 		if (reason == null) return
 		val sanction = Sanction(type, reason, event.member!!.id)
 		
@@ -84,25 +82,12 @@ class CheckAds : Extension() {
 				embed { sanctionEmbed(event, sanction, channels.toList())() }
 			}
 		} else {
-			val message = getLogChannel(event).createMessage {
+			val message = getLogChannel().createMessage {
 				embed { sanctionEmbed(event, sanction)() }
 			}
-			message.addReaction("\uD83D\uDDD1️")
 			
 			val liveMessage = message.live()
-			liveMessage.onReactionAdd { reactionEvent ->
-				if (reactionEvent.getUser().isBot) return@onReactionAdd
-				
-				val channels = getChannelsFromSanctionMessage(message, bot)
-				channels.forEach {
-					it.getMessagesBefore(it.getLastMessage()!!.id).firstOrNull { findMessage ->
-						sanctionMessages.find { sanctionMessage ->
-							sanctionMessage.sanction.reason == getReasonForMessage(findMessage) &&
-								sanctionMessage.member.id == findMessage.author!!.id
-						} != null
-					}?.delete()
-				}
-			}
+			setBinDeleteAllSimilarAds(liveMessage, message)
 			
 			sanctionMessages.add(SanctionMessage(event.member!!, message, sanction))
 		}
@@ -110,23 +95,29 @@ class CheckAds : Extension() {
 		event.message.delete(5.minutes.toLongMilliseconds())
 	}
 	
-	suspend fun getReasonForMessage(message: Message): String? {
-		val mention = Regex("@(everyone|here)").find(message.content)
-		val inviteLink = findInviteLink(message.content)
-		val invite = if (inviteLink != null) getInvite(message.kord, inviteLink) else null
+	suspend fun EventContext<MessageCreateEvent>.verificationMessage() {
+		val message = getLogChannel().createMessage {
+			embed { verificationEmbed(event)() }
+		}
 		
-		val isBannedGuild = invite != null &&
-			(
-				invite.partialGuild?.id?.let { searchBannedGuild(it) } != null ||
-					invite.partialGuild?.name?.let { searchBannedGuild(it) } != null
-				)
-		
-		return when {
-			!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
-			mention != null -> "Tentative de mention `${mention.value.removeMatches("@")}`."
-			message.content == "test" -> "Test."
-			isBannedGuild -> "Publicité pour un serveur interdit."
-			else -> null
+		val liveMessage = message.live()
+		setBinDeleteAllSimilarAds(liveMessage, message)
+	}
+	
+	suspend fun setBinDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
+		message.addReaction("\uD83D\uDDD1️")
+		liveMessage.onReactionAdd { reactionEvent ->
+			if (reactionEvent.getUser().isBot) return@onReactionAdd
+			
+			val channels = getChannelsFromSanctionMessage(message, bot)
+			channels.forEach {
+				it.getMessagesBefore(it.getLastMessage()!!.id).firstOrNull { findMessage ->
+					sanctionMessages.find { sanctionMessage ->
+						sanctionMessage.sanction.reason == getReasonForMessage(findMessage) &&
+							sanctionMessage.member.id == findMessage.author!!.id
+					} != null
+				}?.delete()
+			}
 		}
 	}
 	
@@ -135,46 +126,22 @@ class CheckAds : Extension() {
 			check(::adsCheck)
 			
 			action {
-				val content = event.message?.content ?: return@action
-				val mention = Regex("@(everyone|here)").find(content)
-				
-				val reason = when {
-					!Regex("\\s").containsMatchIn(content) -> "Publicité sans description."
-					mention != null -> "Tentative de mention ${mention.value}."
-					content == "test" -> "Test."
-					else -> null
-				}
+				val reason = getReasonForMessage(event.message!!)
 				
 				if (reason != null) {
-					val old = sanctionMessages.find {
+					val oldSanction = sanctionMessages.find {
 						it.sanction.member == event.message!!.author!!.id
 							&& it.sanction.reason == reason
 					}
 					
-					if (old != null) {
-						val oldEmbed = old.sanctionMessage.embeds[0]
-						val channels = oldEmbed.fields.find { it.name == "Salons" }!!.value.split(Regex("\n")).toMutableList()
-						val find = channels.find { it == event.channel.mention } ?: return@action
-						
-						channels.remove(find)
-						channels.add(find.plus(" (supprimé)"))
-						
-						sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
-							embed {
-								fromEmbedUnlessFields(oldEmbed)
-								
-								field {
-									name = "Utilisateur incriminé :"
-									value = "${event.message?.author?.tag} (`${event.message?.author?.id?.asString}`)"
-								}
-								
-								field {
-									name = "Salons"
-									value = channels.joinToString("\n")
-								}
-							}
-						}
+					if (oldSanction != null) {
+						sanctionMessages.getFromValue(oldSanction).sanctionMessage = updateChannels(oldSanction.sanctionMessage) ?: return@action
 					}
+					
+					val channel = getLoggerChannel()
+					val oldMessage = getOldVerificationMessage(channel, event.message)
+					
+					if (oldMessage != null) updateChannels(oldMessage)
 				}
 			}
 		}
@@ -187,27 +154,23 @@ class CheckAds : Extension() {
 					val sanctionMessageFind = sanctionMessages.find {
 						it.sanction.toString(configuration["PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
 					}
+					
 					if (sanctionMessageFind != null) {
 						sanctionMessages.remove(sanctionMessageFind)
-						sanctionMessageFind.sanctionMessage.edit {
-							embed {
-								sanctionEmbed(event, sanctionMessageFind.sanction)()
-								field {
-									name = "Sanctionnée par :"
-									value = event.message.author!!.mention
-								}
-							}
-						}
-						sanctionMessageFind.sanctionMessage.addReaction(event.getGuild()!!.getEmoji(Snowflake("525406069913157641")))
+						setSanctionedBy(sanctionMessageFind.sanctionMessage, sanctionMessageFind.sanction)
 					}
-					
 				}
+				
 				val reason = getReasonForMessage(event.message)
-				if (reason != null) createSanction(event, SanctionType.WARN, reason)
-				else getLogChannel(event).createMessage {
-					embed { verificationEmbed(event)() }
-				}
+				if (reason != null) createSanction(SanctionType.WARN, reason)
+				else verificationMessage()
 			}
 		}
 	}
+	
+	suspend fun getOldVerificationMessage(oldVerification: TextChannel, message: Message?) =
+		oldVerification.messages.firstOrNull {
+			it.embeds[0].description == message?.content &&
+				it.embeds[0].fields.find { name == "Par :" }?.value?.contains(message?.author!!.id.asString) == true
+		}
 }
