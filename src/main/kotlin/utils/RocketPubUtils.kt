@@ -1,6 +1,7 @@
 package utils
 
 import com.kotlindiscord.kord.extensions.events.EventContext
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
@@ -29,6 +30,7 @@ suspend fun EventContext<MessageCreateEvent>.getLogChannel(): TextChannel {
 const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z0-9-]+)"
 const val VALIDATION_EMOJI_2 = "🔗"
 const val VALIDATION_EMOJI = "<:validate:525405975289659402>"
-val ROCKET_PUB_GUILD = dev.kord.common.entity.Snowflake("465918902254436362")
-val STAFF_ROLE = dev.kord.common.entity.Snowflake("494521544618278934")
-val SANCTION_LOGGER_CHANNEL = dev.kord.common.entity.Snowflake("779115065001115649")
+val VALID_EMOJI = Snowflake("525406069913157641")
+val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
+val STAFF_ROLE = Snowflake("494521544618278934")
+val SANCTION_LOGGER_CHANNEL = Snowflake("779115065001115649")

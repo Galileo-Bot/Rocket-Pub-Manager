@@ -57,7 +57,7 @@ suspend fun sanctionEmbed(
 	}
 	
 	field {
-		name = "Salons"
+		name = "Salons :"
 		value = channels.joinToString("\n") { it.mention }
 	}
 }
@@ -136,9 +136,17 @@ suspend fun verificationEmbed(event: MessageCreateEvent): suspend EmbedBuilder.(
 	}
 }
 
-fun EmbedBuilder.fromEmbedUnlessFields(oldEmbed: Embed) {
+fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
+	oldEmbed.fields.forEach {
+		if (it.name == "Salons :") return@forEach
+		field {
+			name = it.name
+			value = it.value
+		}
+	}
+	
 	description = oldEmbed.description
-	title = oldEmbed.description
+	title = oldEmbed.title
 	url = oldEmbed.url
 	timestamp = oldEmbed.timestamp
 	color = oldEmbed.color

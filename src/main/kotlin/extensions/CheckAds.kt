@@ -1,15 +1,12 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.checks.channelType
 import com.kotlindiscord.kord.extensions.checks.hasRole
-import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.delete
 import configuration
 import dev.kord.common.annotation.KordPreview
-import dev.kord.common.entity.ChannelType
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
@@ -22,27 +19,19 @@ import dev.kord.core.live.onReactionAdd
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
 import storage.SanctionType
-import utils.ROCKET_PUB_GUILD
 import utils.STAFF_ROLE
 import utils.SanctionMessage
+import utils.VALID_EMOJI
 import utils.asSafeUsersMentions
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
 import utils.getLogChannel
 import utils.getReasonForMessage
-import utils.isInAdChannel
-import utils.isNotBot
 import utils.sanctionEmbed
 import utils.verificationEmbed
 import kotlin.time.ExperimentalTime
 import kotlin.time.days
 import kotlin.time.minutes
-
-suspend fun adsCheck(event: MessageCreateEvent) =
-	inGuild(ROCKET_PUB_GUILD)(event) &&
-		channelType(ChannelType.GuildText)(event) &&
-		isNotBot(event) &&
-		isInAdChannel(event)
 
 
 @OptIn(ExperimentalTime::class, KordPreview::class)
@@ -99,15 +88,20 @@ class CheckAds : Extension() {
 		val message = getLogChannel().createMessage {
 			embed { verificationEmbed(event)() }
 		}
+		addValidReaction(message)
 		
 		val liveMessage = message.live()
 		setBinDeleteAllSimilarAds(liveMessage, message)
+		liveMessage.onReactionAdd {
+			if (it.getUser().isBot || it.emoji.name != VALID_EMOJI.asString) return@onReactionAdd
+			validate(message)
+		}
 	}
 	
 	suspend fun setBinDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
 		message.addReaction("\uD83D\uDDD1️")
 		liveMessage.onReactionAdd { reactionEvent ->
-			if (reactionEvent.getUser().isBot) return@onReactionAdd
+			if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
 			
 			val channels = getChannelsFromSanctionMessage(message, bot)
 			channels.forEach {
@@ -126,6 +120,8 @@ class CheckAds : Extension() {
 			check(::adsCheck)
 			
 			action {
+				if (event.message == null) return@action
+				
 				val reason = getReasonForMessage(event.message!!)
 				
 				if (reason != null) {
