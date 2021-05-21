@@ -1,6 +1,5 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.channelType
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.checks.inGuild
@@ -15,22 +14,25 @@ import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Invite
-import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.MessageChannel
-import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.live.live
 import dev.kord.core.live.onReactionAdd
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
 import storage.SanctionType
+import utils.ROCKET_PUB_GUILD
+import utils.STAFF_ROLE
+import utils.SanctionMessage
 import utils.asSafeUsersMentions
-import utils.forChannel
+import utils.findInviteLink
 import utils.fromEmbedUnlessFields
+import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
+import utils.getLogChannel
+import utils.isInAdChannel
+import utils.isNotBot
 import utils.removeMatches
 import utils.sanctionEmbed
 import utils.searchBannedGuild
@@ -38,43 +40,12 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.days
 import kotlin.time.minutes
 
-suspend fun isInAdChannel(event: MessageCreateEvent): Boolean {
-	val channel = event.message.channel.asChannel()
-	return (channel is TextChannel
-		&& channel.topic != null
-		&& channel.topic!!.contains(VALIDATION_EMOJI))
-}
+suspend fun adsCheck(event: MessageCreateEvent) =
+	inGuild(ROCKET_PUB_GUILD)(event) &&
+		channelType(ChannelType.GuildText)(event) &&
+		isNotBot(event) &&
+		isInAdChannel(event)
 
-suspend fun isInCategoryAdChannel(event: MessageCreateEvent): Boolean {
-	val channel = event.message.channel.asChannel()
-	return (channel is TextChannel
-		&& channel.topic != null
-		&& channel.topic!!.contains(VALIDATION_EMOJI_2))
-}
-
-suspend fun getLogChannel(event: MessageCreateEvent): TextChannel {
-	return event.getGuild()!!.channels.first { it.id == SANCTION_LOGGER_CHANNEL } as TextChannel
-}
-
-fun isNotBot(event: MessageCreateEvent): Boolean = if (event.member != null) !event.member!!.isBot else false
-
-suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot): MutableSet<MessageChannel> {
-	val embed = message.embeds[0]
-	val field = embed.fields.find { it.name == "Salons" }
-	return field!!.value.split(Regex("\n")).mapNotNull {
-		val id = Snowflake.forChannel(it)
-		bot.getKoin().get<Kord>().getChannel(id) as MessageChannel?
-	}.toMutableSet()
-}
-
-const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z0-9-]+)"
-const val VALIDATION_EMOJI_2 = "🔗"
-const val VALIDATION_EMOJI = "<:validate:525405975289659402>"
-val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
-val STAFF_ROLE = Snowflake("494521544618278934")
-val SANCTION_LOGGER_CHANNEL = Snowflake("779115065001115649")
-
-data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
 
 @OptIn(ExperimentalTime::class, KordPreview::class)
 class CheckAds : Extension() {
@@ -82,8 +53,6 @@ class CheckAds : Extension() {
 	val sanctionMessages = mutableListOf<SanctionMessage>()
 	
 	suspend fun getInvite(text: String): Invite? = bot.getKoin().get<Kord>().getInvite(text, false)
-	
-	fun findInviteLink(text: String): String? = Regex(DISCORD_INVITE_LINK_REGEX).find(text)?.value
 	
 	suspend fun createSanction(event: MessageCreateEvent, type: SanctionType, reason: String?) {
 		if (reason == null) return
@@ -165,7 +134,7 @@ class CheckAds : Extension() {
 	
 	override suspend fun setup() {
 		event<MessageDeleteEvent> {
-			check(inGuild(ROCKET_PUB_GUILD), channelType(ChannelType.GuildText), ::isNotBot, ::isInAdChannel)
+			check(::adsCheck)
 			
 			action {
 				val content = event.message?.content ?: return@action
@@ -213,13 +182,7 @@ class CheckAds : Extension() {
 		}
 		
 		event<MessageCreateEvent> {
-			check(
-				channelType(ChannelType.GuildText),
-				inGuild(ROCKET_PUB_GUILD),
-				/*hasRole(STAFF_ROLE),*/
-				::isInAdChannel,
-				::isNotBot
-			)
+			check(/*hasRole(STAFF_ROLE), */::adsCheck)
 			
 			action {
 				if (hasRole(STAFF_ROLE)(event)) {

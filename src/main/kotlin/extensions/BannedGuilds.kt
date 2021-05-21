@@ -6,6 +6,7 @@ import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.annotation.KordPreview
+import utils.ROCKET_PUB_GUILD
 import utils.addBannedGuild
 import utils.modifyGuildValue
 import utils.removeBannedGuild
