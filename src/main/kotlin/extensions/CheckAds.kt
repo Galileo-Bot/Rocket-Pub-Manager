@@ -95,7 +95,7 @@ class CheckAds : Extension() {
 		setBinDeleteAllSimilarAds(liveMessage, message)
 		liveMessage.onReactionAdd {
 			if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.asString) return@onReactionAdd
-			validate(message)
+			validate(message, it)
 		}
 	}
 	

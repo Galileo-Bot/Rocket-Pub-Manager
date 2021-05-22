@@ -9,6 +9,7 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
+import dev.kord.core.event.message.ReactionAddEvent
 import storage.Sanction
 import utils.ROCKET_PUB_GUILD
 import utils.SANCTION_LOGGER_CHANNEL
@@ -62,7 +63,7 @@ suspend fun EventContext<MessageCreateEvent>.setSanctionedBy(message: Message, s
 	addValidReaction(message)
 }
 
-suspend fun EventContext<MessageCreateEvent>.validate(message: Message) {
+suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reactionEvent: ReactionAddEvent) {
 	val oldEmbed = message.embeds[0]
 	
 	message.edit {
@@ -70,7 +71,7 @@ suspend fun EventContext<MessageCreateEvent>.validate(message: Message) {
 			fromEmbedUnlessChannelField(oldEmbed)
 			field {
 				name = "Validée par :"
-				value = event.message.author!!.mention
+				value = reactionEvent.user.mention
 			}
 		}
 	}
