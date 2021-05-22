@@ -16,7 +16,6 @@ version = "1.0"
 
 repositories {
 	mavenCentral()
-	jcenter()
 	
 	maven {
 		name = "Kotlin Discord"
@@ -41,7 +40,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-	kotlinOptions.jvmTarget = "11"
+	kotlinOptions.jvmTarget = "15"
 	
 	kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
