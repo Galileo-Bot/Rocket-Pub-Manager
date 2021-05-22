@@ -86,16 +86,26 @@ class CheckAds : Extension() {
 	}
 	
 	suspend fun EventContext<MessageCreateEvent>.verificationMessage() {
-		val message = getLogChannel().createMessage {
-			embed { verificationEmbed(event)() }
-		}
-		addValidReaction(message)
-		
-		val liveMessage = message.live()
-		setBinDeleteAllSimilarAds(liveMessage, message)
-		liveMessage.onReactionAdd {
-			if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.asString) return@onReactionAdd
-			validate(message, it)
+		val old = getOldVerificationMessage(getLogChannel(), event.message)
+		if (old != null) {
+			val channels = getChannelsFromSanctionMessage(old, bot)
+			channels.add(event.message.channel.asChannel())
+			
+			old.edit {
+				embed { verificationEmbed(event, channels)() }
+			}
+		} else {
+			val message = getLogChannel().createMessage {
+				embed { verificationEmbed(event, mutableSetOf(event.message.channel.asChannel()))() }
+			}
+			addValidReaction(message)
+			
+			val liveMessage = message.live()
+			setBinDeleteAllSimilarAds(liveMessage, message)
+			liveMessage.onReactionAdd {
+				if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.asString) return@onReactionAdd
+				validate(message, it)
+			}
 		}
 	}
 	
@@ -133,9 +143,7 @@ class CheckAds : Extension() {
 					}
 				}
 				
-				val channel = getLoggerChannel()
-				val oldMessage = getOldVerificationMessage(channel, event.message)
-				
+				val oldMessage = getOldVerificationMessage(getLoggerChannel(), event.message)
 				if (oldMessage != null) updateChannels(oldMessage)
 			}
 		}
