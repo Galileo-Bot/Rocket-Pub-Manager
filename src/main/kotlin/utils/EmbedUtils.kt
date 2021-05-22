@@ -5,7 +5,7 @@ import configuration
 import dev.kord.core.Kord
 import dev.kord.core.entity.Embed
 import dev.kord.core.entity.channel.Channel
-import dev.kord.core.entity.channel.MessageChannel
+import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -96,7 +96,7 @@ suspend fun modifiedGuildEmbed(
 
 suspend fun verificationEmbed(
 	event: MessageCreateEvent,
-	channels: MutableSet<MessageChannel>
+	channels: MutableSet<TextChannel>
 ): suspend EmbedBuilder.() -> Unit = {
 	completeEmbed(event.kord, "Nouvelle publicité à vérifier.", event.message.content)()
 	val link = findInviteCode(event.message.content)

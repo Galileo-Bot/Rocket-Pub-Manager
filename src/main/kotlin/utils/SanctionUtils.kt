@@ -4,15 +4,15 @@ import com.kotlindiscord.kord.extensions.ExtensibleBot
 import dev.kord.core.Kord
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.MessageChannel
+import dev.kord.core.entity.channel.TextChannel
 import storage.Sanction
 
-suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot): MutableSet<MessageChannel> {
+suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot): MutableSet<TextChannel> {
 	val embed = message.embeds[0]
 	val field = embed.fields.find { it.name == "Salons :" }
 	return field!!.value.split("\n").mapNotNull {
 		val id = dev.kord.common.entity.Snowflake.forChannel(it)
-		bot.getKoin().get<Kord>().getChannel(id) as MessageChannel?
+		bot.getKoin().get<Kord>().getChannel(id) as TextChannel?
 	}.toMutableSet()
 }
 

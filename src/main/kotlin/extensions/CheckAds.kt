@@ -52,7 +52,7 @@ class CheckAds : Extension() {
 		
 		if (old != null) {
 			val channels = getChannelsFromSanctionMessage(old.sanctionMessage, bot)
-			channels.add(event.message.channel.asChannel())
+			channels.add(event.message.channel.asChannel() as TextChannel)
 			
 			when (channels.size) {
 				1 -> return
@@ -89,14 +89,14 @@ class CheckAds : Extension() {
 		val old = getOldVerificationMessage(getLogChannel(), event.message)
 		if (old != null) {
 			val channels = getChannelsFromSanctionMessage(old, bot)
-			channels.add(event.message.channel.asChannel())
+			channels.add(event.message.channel.asChannel() as TextChannel)
 			
 			old.edit {
 				embed { verificationEmbed(event, channels)() }
 			}
 		} else {
 			val message = getLogChannel().createMessage {
-				embed { verificationEmbed(event, mutableSetOf(event.message.channel.asChannel()))() }
+				embed { verificationEmbed(event, mutableSetOf(event.message.channel.asChannel() as TextChannel))() }
 			}
 			addValidReaction(message)
 			
@@ -112,12 +112,13 @@ class CheckAds : Extension() {
 	suspend fun setBinDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
 		message.addReaction("\uD83D\uDDD1️")
 		liveMessage.onReactionAdd { reactionEvent ->
-			if (reactionEvent.getUser().isBot || reactionEvent.emoji.id != "\uD83D\uDDD1️") return@onReactionAdd
+			if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
 			
 			val channels = getChannelsFromSanctionMessage(message, bot)
-			channels.forEach {
-				it.messages.firstOrNull { findMessage ->
-					message.embeds[0].description == findMessage.content &&
+			channels.forEach { channel ->
+				channel.messages.firstOrNull { findMessage ->
+					val reason = getReasonForMessage(findMessage)
+					(if (reason != null) message.embeds[0].description!!.contains(reason) else false) &&
 						message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author!!.id.asString) == true
 				}?.delete()
 			}
