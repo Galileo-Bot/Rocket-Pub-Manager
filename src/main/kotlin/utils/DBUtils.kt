@@ -58,18 +58,15 @@ fun searchBannedGuild(name: String): BannedGuild? {
 	
 	result.next()
 	
-	return if (
-		result.getNString("name") == null &&
-		result.getNString("id") == null
-	) {
-		null
-	} else {
+	return try {
 		BannedGuild(
 			result.getNString("name"),
 			result.getNString("id"),
 			result.getString("reason"),
 			result.getTimestamp("bannedSince")
 		)
+	} catch(e: Exception) {
+		null
 	}
 }
 
