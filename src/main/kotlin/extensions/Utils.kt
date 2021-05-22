@@ -18,21 +18,6 @@ import utils.isInAdChannel
 import utils.isNotBot
 import utils.sanctionEmbed
 
-suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): Message? {
-	val oldEmbed = message.embeds[0]
-	val channels = updateDeletedMessagesInChannelList(message) ?: return null
-	
-	return message.edit {
-		embed {
-			fromEmbedUnlessChannelField(oldEmbed)
-			field {
-				name = "Salons :"
-				value = channels.joinToString("\n")
-			}
-		}
-	}
-}
-
 suspend fun adsCheck(event: MessageCreateEvent) =
 	inGuild(ROCKET_PUB_GUILD)(event) &&
 		channelType(ChannelType.GuildText)(event) &&
@@ -47,6 +32,21 @@ fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message:
 	channels.remove(find)
 	channels.add(find.plus(" (supprimé)"))
 	return channels
+}
+
+suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): Message? {
+	val oldEmbed = message.embeds[0]
+	val channels = updateDeletedMessagesInChannelList(message) ?: return null
+	
+	return message.edit {
+		embed {
+			fromEmbedUnlessChannelField(oldEmbed)
+			field {
+				name = "Salons :"
+				value = channels.joinToString("\n")
+			}
+		}
+	}
 }
 
 suspend fun EventContext<MessageCreateEvent>.setSanctionedBy(message: Message, sanction: Sanction) {

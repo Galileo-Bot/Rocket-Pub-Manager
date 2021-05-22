@@ -52,7 +52,7 @@ suspend fun sanctionEmbed(
 	}
 	
 	field {
-		name = "Utilisateur incriminé :"
+		name = "Par :"
 		value = "${event.member!!.tag} (`${sanction.member.asString}`)"
 	}
 	
@@ -125,7 +125,7 @@ suspend fun verificationEmbed(event: MessageCreateEvent): suspend EmbedBuilder.(
 		} catch (ignore: Exception) {
 			field {
 				name = "Invitation :"
-				value = link
+				value = findInviteLink(event.message.content)!!
 			}
 		}
 	}

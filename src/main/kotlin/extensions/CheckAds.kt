@@ -27,6 +27,7 @@ import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
 import utils.getLogChannel
 import utils.getReasonForMessage
+import utils.id
 import utils.sanctionEmbed
 import utils.verificationEmbed
 import kotlin.time.ExperimentalTime
@@ -93,7 +94,7 @@ class CheckAds : Extension() {
 		val liveMessage = message.live()
 		setBinDeleteAllSimilarAds(liveMessage, message)
 		liveMessage.onReactionAdd {
-			if (it.getUser().isBot || it.emoji.name != VALID_EMOJI.asString) return@onReactionAdd
+			if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.asString) return@onReactionAdd
 			validate(message)
 		}
 	}
@@ -101,15 +102,13 @@ class CheckAds : Extension() {
 	suspend fun setBinDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
 		message.addReaction("\uD83D\uDDD1️")
 		liveMessage.onReactionAdd { reactionEvent ->
-			if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
+			if (reactionEvent.getUser().isBot || reactionEvent.emoji.id != "\uD83D\uDDD1️") return@onReactionAdd
 			
 			val channels = getChannelsFromSanctionMessage(message, bot)
 			channels.forEach {
-				it.getMessagesBefore(it.getLastMessage()!!.id).firstOrNull { findMessage ->
-					sanctionMessages.find { sanctionMessage ->
-						sanctionMessage.sanction.reason == getReasonForMessage(findMessage) &&
-							sanctionMessage.member.id == findMessage.author!!.id
-					} != null
+				it.messages.firstOrNull { findMessage ->
+					message.embeds[0].description == findMessage.content &&
+						message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author!!.id.asString) == true
 				}?.delete()
 			}
 		}
@@ -123,7 +122,6 @@ class CheckAds : Extension() {
 				if (event.message == null) return@action
 				
 				val reason = getReasonForMessage(event.message!!)
-				
 				if (reason != null) {
 					val oldSanction = sanctionMessages.find {
 						it.sanction.member == event.message!!.author!!.id
@@ -133,12 +131,12 @@ class CheckAds : Extension() {
 					if (oldSanction != null) {
 						sanctionMessages.getFromValue(oldSanction).sanctionMessage = updateChannels(oldSanction.sanctionMessage) ?: return@action
 					}
-					
-					val channel = getLoggerChannel()
-					val oldMessage = getOldVerificationMessage(channel, event.message)
-					
-					if (oldMessage != null) updateChannels(oldMessage)
 				}
+				
+				val channel = getLoggerChannel()
+				val oldMessage = getOldVerificationMessage(channel, event.message)
+				
+				if (oldMessage != null) updateChannels(oldMessage)
 			}
 		}
 		
@@ -164,9 +162,12 @@ class CheckAds : Extension() {
 		}
 	}
 	
-	suspend fun getOldVerificationMessage(oldVerification: TextChannel, message: Message?) =
-		oldVerification.messages.firstOrNull {
+	suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?): Message? {
+		return channel.messages.firstOrNull {
+			if (it.embeds.isEmpty()) return@firstOrNull false
+			
 			it.embeds[0].description == message?.content &&
-				it.embeds[0].fields.find { name == "Par :" }?.value?.contains(message?.author!!.id.asString) == true
+				it.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.asString) == true
 		}
+	}
 }
