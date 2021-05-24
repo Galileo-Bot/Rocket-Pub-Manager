@@ -14,6 +14,7 @@ import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.ReactionAddEvent
 import storage.Sanction
 import storage.saveVerification
+import storage.searchVerificationMessage
 import utils.ROCKET_PUB_GUILD
 import utils.SANCTION_LOGGER_CHANNEL
 import utils.STAFF_ROLE
@@ -85,8 +86,9 @@ suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reaction
 			}
 		}
 	}
+	
 	addValidReaction(message)
-	saveVerification(reactionEvent.userId, message.id)
+	if (searchVerificationMessage(message.id) == null) saveVerification(reactionEvent.userId, message.id)
 }
 
 suspend fun EventContext<MessageCreateEvent>.addValidReaction(message: Message) {
