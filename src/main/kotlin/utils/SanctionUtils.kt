@@ -6,6 +6,7 @@ import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import storage.Sanction
+import storage.searchBannedGuild
 
 suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot): MutableSet<TextChannel> {
 	val embed = message.embeds[0]

@@ -43,6 +43,11 @@ suspend fun ReactionEmoji.toGuildEmoji(kord: Kord): GuildEmoji? {
 	return kord.getGuild(ROCKET_PUB_GUILD)?.getEmoji(Snowflake(this))
 }
 
+fun Member.hasRole(role: Snowflake): Boolean = roleIds.contains(role)
+
+val String?.enquote: String?
+	get() = this?.let { "'${this.replace("'", "''")}'" }
+
 val ReactionEmoji.id: String
 	get() = urlFormat.removeMatches("$name:")
 

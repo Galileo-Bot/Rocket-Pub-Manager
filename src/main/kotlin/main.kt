@@ -5,6 +5,7 @@ import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import extensions.BannedGuilds
 import extensions.CheckAds
+import extensions.Sanctions
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
 import java.sql.Connection
@@ -27,6 +28,7 @@ suspend fun main() {
 			sentry = false
 			add(::CheckAds)
 			add(::BannedGuilds)
+			add(::Sanctions)
 		}
 		
 		i18n {

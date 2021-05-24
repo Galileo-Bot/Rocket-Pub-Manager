@@ -1,12 +1,28 @@
 package storage
 
+import connection
 import dev.kord.common.entity.Snowflake
+import extensions.ModifySanctionValues
 import kotlinx.serialization.Serializable
+import utils.enquote
+import java.sql.SQLException
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.util.*
 import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
+
+enum class SanctionType {
+	BAN,
+	KICK,
+	MUTE,
+	WARN
+}
+
+data class SanctionCount(val appliedBy: Snowflake?)
 
 @Serializable
 data class Sanction(
@@ -17,6 +33,7 @@ data class Sanction(
 	var durationMS: Int = 0
 ) {
 	constructor(type: SanctionType, reason: String, member: Snowflake) : this(type, reason, member, null)
+	
 	constructor(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake) : this(type, reason, member, appliedBy, 0)
 	
 	@OptIn(ExperimentalTime::class)
@@ -39,9 +56,84 @@ data class Sanction(
 	}
 }
 
-enum class SanctionType {
-	BAN,
-	KICK,
-	MUTE,
-	WARN
+fun saveSanction(sanction: Sanction) = saveSanction(
+	sanction.type,
+	sanction.reason,
+	sanction.member,
+	sanction.appliedBy,
+	sanction.durationMS
+)
+
+fun saveSanction(type: SanctionType, reason: String, member: Snowflake) = saveSanction(
+	type,
+	reason,
+	member,
+	null,
+	null
+)
+
+fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake?) = saveSanction(
+	type,
+	reason,
+	member,
+	appliedBy,
+	null
+)
+
+fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake?, durationMS: Int?) {
+	val state = connection.createStatement()
+	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
+	state.executeUpdate(
+		"""
+		INSERT INTO sanctions (reason, memberID, appliedByID, durationMS, type, sanctionedAt)
+		VALUES (
+			${reason.enquote},
+			${member.asString.enquote},
+			${appliedBy?.asString.enquote},
+			$durationMS,
+			${type.name.toLowerCase().enquote},
+			$dateTime
+		)
+		""".trimIndent()
+	)
+}
+
+fun modifySanction(id: Int, value: ModifySanctionValues, newValue: String) {
+	val state = connection.createStatement()
+	state.executeUpdate(
+		"""
+		UPDATE sanctions SET ${value.name.toLowerCase()}=${newValue.enquote}
+		WHERE ID = $id
+		""".trimIndent()
+	)
+}
+
+fun getSanctionCount(): List<SanctionCount> {
+	val sanctions: MutableList<SanctionCount> = mutableListOf()
+	val state = connection.createStatement()
+	val result = state.executeQuery(
+		"""
+		SELECT * FROM sanctions ORDER BY ID
+		""".trimIndent()
+	)
+	
+	while (result.next()) {
+		try {
+			val appliedBy = result.getNString("appliedByID")
+			sanctions += SanctionCount(appliedBy?.let { Snowflake(it) })
+		} catch (_: SQLException) {
+		}
+	}
+	
+	return sanctions.filter { it.appliedBy != null }
+}
+
+fun removeSanction(id: Int) {
+	val state = connection.createStatement()
+	state.executeUpdate(
+		"""
+		DELETE FROM banned_guilds
+		WHERE ID = $id
+		""".trimIndent()
+	)
 }

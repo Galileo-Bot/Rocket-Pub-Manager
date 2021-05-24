@@ -10,6 +10,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import extensions.ModifyGuildValues
+import storage.BannedGuild
 import storage.Sanction
 import java.text.SimpleDateFormat
 import java.time.Instant

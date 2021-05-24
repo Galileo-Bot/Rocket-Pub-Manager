@@ -2,6 +2,8 @@ package extensions
 
 import com.kotlindiscord.kord.extensions.checks.channelType
 import com.kotlindiscord.kord.extensions.checks.inGuild
+import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
 import com.kotlindiscord.kord.extensions.events.EventContext
 import dev.kord.common.entity.ChannelType
 import dev.kord.core.behavior.edit
@@ -13,8 +15,10 @@ import dev.kord.core.event.message.ReactionAddEvent
 import storage.Sanction
 import utils.ROCKET_PUB_GUILD
 import utils.SANCTION_LOGGER_CHANNEL
+import utils.STAFF_ROLE
 import utils.VALID_EMOJI
 import utils.fromEmbedUnlessChannelField
+import utils.hasRole
 import utils.isInAdChannel
 import utils.isNotBot
 import utils.sanctionEmbed
@@ -24,6 +28,11 @@ suspend fun adsCheck(event: MessageCreateEvent) =
 		channelType(ChannelType.GuildText)(event) &&
 		isNotBot(event) &&
 		isInAdChannel(event)
+
+suspend fun isStaff(context: SlashCommandContext<out Arguments>): Boolean =
+	isNotBot(context) &&
+		context.getGuild()!!.asGuild().id == ROCKET_PUB_GUILD &&
+		context.getMember()!!.asMember().hasRole(STAFF_ROLE)
 
 fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message: Message): MutableList<String>? {
 	val oldEmbed = message.embeds[0]
