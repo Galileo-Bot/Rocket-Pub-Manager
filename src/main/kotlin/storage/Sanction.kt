@@ -108,24 +108,24 @@ fun modifySanction(id: Int, value: ModifySanctionValues, newValue: String) {
 	)
 }
 
-fun getSanctionCount(): List<SanctionCount> {
-	val sanctions: MutableList<SanctionCount> = mutableListOf()
+fun getSanctionCount(): List<Snowflake> {
+	val sanctions: MutableList<Snowflake?> = mutableListOf()
 	val state = connection.createStatement()
 	val result = state.executeQuery(
 		"""
-		SELECT * FROM sanctions ORDER BY ID
+		SELECT appliedByID FROM sanctions ORDER BY ID
 		""".trimIndent()
 	)
 	
 	while (result.next()) {
 		try {
 			val appliedBy = result.getNString("appliedByID")
-			sanctions += SanctionCount(appliedBy?.let { Snowflake(it) })
+			sanctions += appliedBy?.let { Snowflake(it) }
 		} catch (_: SQLException) {
 		}
 	}
 	
-	return sanctions.filter { it.appliedBy != null }
+	return sanctions.filterNotNull()
 }
 
 fun removeSanction(id: Int) {

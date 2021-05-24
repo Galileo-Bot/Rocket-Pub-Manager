@@ -20,7 +20,6 @@ class RemoveAds : Extension() {
 			check(::isNotBot, inGuild(ROCKET_PUB_GUILD))
 			
 			action {
-				
 				run {
 					event.guild.channels.getTextChannels().filter { isAdChannel(it) }.collect { channel ->
 						channel.messages.filter { it.author!! == event.user }.collect { it.delete() }
@@ -29,5 +28,4 @@ class RemoveAds : Extension() {
 			}
 		}
 	}
-	
 }

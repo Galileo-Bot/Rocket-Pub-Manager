@@ -42,9 +42,9 @@ class Sanctions : Extension() {
 							completeEmbed(
 								bot.getKoin().get(),
 								"Liste des sanctions appliquées.",
-								sanctions.groupBy { it.appliedBy!! }.map {
+								sanctions.groupBy { it }.map {
 									"**${guild!!.getMember(it.key).tag}** : ${it.value.size} sanctions appliquées."
-								}.joinToString("\n")
+								}.joinToString("\n\n")
 							)()
 						}
 					}
