@@ -80,6 +80,7 @@ suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reaction
 	message.edit {
 		embed {
 			fromEmbedUnlessChannelField(oldEmbed)
+			title = "Publicité validée."
 			field {
 				name = "Validée par :"
 				value = reactionEvent.user.mention

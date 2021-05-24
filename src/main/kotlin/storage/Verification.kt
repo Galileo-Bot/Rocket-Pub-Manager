@@ -27,7 +27,6 @@ fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake?) {
 
 fun searchVerificationMessage(messageID: Snowflake): String? {
 	val state = connection.createStatement()
-	
 	val result = state.executeQuery(
 		"""
 			SELECT messageID FROM verifications
@@ -35,7 +34,12 @@ fun searchVerificationMessage(messageID: Snowflake): String? {
 		""".trimIndent()
 	)
 	result.next()
-	return result.getNString("messageID")
+	
+	return try {
+		result.getNString("messageID")
+	} catch (e: SQLException) {
+		null
+	}
 }
 
 fun getVerificationCount(): List<Snowflake> {
