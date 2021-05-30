@@ -5,6 +5,7 @@ import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import extensions.BannedGuilds
 import extensions.CheckAds
+import extensions.RemoveAds
 import extensions.Sanctions
 import extensions.Verifications
 import io.github.cdimascio.dotenv.dotenv
@@ -27,8 +28,9 @@ suspend fun main() {
 		
 		extensions {
 			sentry = false
-			add(::CheckAds)
 			add(::BannedGuilds)
+			add(::CheckAds)
+			add(::RemoveAds)
 			add(::Sanctions)
 			add(::Verifications)
 		}
@@ -53,12 +55,12 @@ suspend fun main() {
 	
 	val dataSource = MysqlConnectionPoolDataSource()
 	dataSource.apply {
-		serverName = configuration["IP"]
-		port = configuration["PORT"].toInt()
-		databaseName = "Galileo"
-		password = configuration["MDP"]
+		serverName = configuration["DB_IP"]
+		port = configuration["DB_PORT"].toInt()
+		databaseName = configuration["DB_NAME"]
+		password = configuration["DB_MDP"]
 		allowMultiQueries = true
-		user = configuration["USER"]
+		user = configuration["DB_USER"]
 	}
 	connection = dataSource.connection
 	logger.info("Connection to DataBase established !")
