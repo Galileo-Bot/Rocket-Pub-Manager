@@ -1,6 +1,7 @@
 package utils
 
 import com.kotlindiscord.kord.extensions.events.EventContext
+import configuration
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.TextChannel
@@ -33,4 +34,4 @@ const val VALIDATION_EMOJI = "<:validate:525405975289659402>"
 val VALID_EMOJI = Snowflake("525406069913157641")
 val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
 val STAFF_ROLE = Snowflake("494521544618278934")
-val SANCTION_LOGGER_CHANNEL = Snowflake("779115065001115649")
+val SANCTION_LOGGER_CHANNEL = Snowflake(configuration["AYFRI_ROCKETMANAGER_LOGCHANNEL_ID"])
