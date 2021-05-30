@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val kordexVersion: String by project
@@ -8,6 +9,7 @@ val exposedVersion: String by project
 plugins {
 	kotlin("jvm") version "1.4.32"
 	kotlin("plugin.serialization") version "1.4.32"
+	id("com.github.johnrengelman.shadow") version "7.0.0"
 	application
 }
 
@@ -35,14 +37,19 @@ dependencies {
 	implementation("mysql:mysql-connector-java:8.0.23")
 }
 
-tasks.test {
-	useJUnitPlatform()
-}
-
 tasks.withType<KotlinCompile> {
 	kotlinOptions.jvmTarget = "15"
 	
 	kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+}
+
+
+tasks.withType<ShadowJar> {
+	manifest.attributes.apply {
+		put("Implementation-Title", "Rocket Manager")
+		//put("Implementation-Version" version)
+		put("Main-Class", "MainKT")
+	}
 }
 
 application {
