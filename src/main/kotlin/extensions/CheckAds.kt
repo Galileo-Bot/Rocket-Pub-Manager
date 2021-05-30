@@ -155,7 +155,7 @@ class CheckAds : Extension() {
 			action {
 				if (hasRole(STAFF_ROLE)(event)) {
 					val sanctionMessageFind = sanctionMessages.find {
-						it.sanction.toString(configuration["PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
+						it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
 					}
 					
 					if (sanctionMessageFind != null) {

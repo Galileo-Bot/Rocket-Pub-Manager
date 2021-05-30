@@ -21,7 +21,7 @@ lateinit var connection: Connection
 
 @PrivilegedIntent
 suspend fun main() {
-	bot = ExtensibleBot(configuration["TOKEN"]) {
+	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
 		cache {
 			cachedMessages = 1000
 		}
@@ -55,12 +55,12 @@ suspend fun main() {
 	
 	val dataSource = MysqlConnectionPoolDataSource()
 	dataSource.apply {
-		serverName = configuration["DB_IP"]
-		port = configuration["DB_PORT"].toInt()
-		databaseName = configuration["DB_NAME"]
-		password = configuration["DB_MDP"]
+		serverName = configuration["AYFRI_ROCKETMANAGER_DB_IP"]
+		port = configuration["AYFRI_ROCKETMANAGER_DB_PORT"].toInt()
+		databaseName = configuration["AYFRI_ROCKETMANAGER_DB_NAME"]
+		password = configuration["AYFRI_ROCKETMANAGER_DB_MDP"]
 		allowMultiQueries = true
-		user = configuration["DB_USER"]
+		user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
 	}
 	connection = dataSource.connection
 	logger.info("Connection to DataBase established !")

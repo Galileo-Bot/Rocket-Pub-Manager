@@ -44,7 +44,7 @@ suspend fun sanctionEmbed(
 	completeEmbed(
 		event.kord,
 		sanction.reason,
-		sanction.toString(configuration["PREFIX"])
+		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
 	)()
 	
 	url = event.message.getUrl()
