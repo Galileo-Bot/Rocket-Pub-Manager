@@ -9,16 +9,17 @@ import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.flow.first
 
 
-suspend fun isInAdChannel(event: MessageCreateEvent): Boolean = isAdChannel(event.message.channel.asChannel())
+suspend fun isInAdCategoryChannel(event: MessageCreateEvent) = isInCategoryAdChannel(event.message.channel.asChannel())
 
-fun isAdChannel(channel: Channel): Boolean {
+fun isInCategoryAdChannel(channel: Channel): Boolean {
 	return (channel is TextChannel
 		&& channel.topic != null
 		&& channel.topic!!.contains(VALIDATION_EMOJI))
 }
 
-suspend fun isInCategoryAdChannel(event: MessageCreateEvent): Boolean {
-	val channel = event.message.channel.asChannel()
+suspend fun isInAdChannel(event: MessageCreateEvent) = isInAdChannel(event.message.channel.asChannel())
+
+fun isInAdChannel(channel: Channel): Boolean {
 	return (channel is TextChannel
 		&& channel.topic != null
 		&& channel.topic!!.contains(VALIDATION_EMOJI_2))

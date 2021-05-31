@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import utils.ROCKET_PUB_GUILD
 import utils.getTextChannels
-import utils.isAdChannel
+import utils.isInAdChannel
 import utils.isNotBot
 
 class RemoveAds : Extension() {
@@ -21,7 +21,7 @@ class RemoveAds : Extension() {
 			
 			action {
 				run {
-					event.guild.channels.getTextChannels().filter { isAdChannel(it) }.collect { channel ->
+					event.guild.channels.getTextChannels().filter(::isInAdChannel).collect { channel ->
 						channel.messages.filter { it.author!! == event.user }.collect { it.delete() }
 					}
 				}
