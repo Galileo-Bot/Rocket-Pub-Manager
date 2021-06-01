@@ -1,7 +1,7 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.commands.converters.enum
-import com.kotlindiscord.kord.extensions.commands.converters.string
+import com.kotlindiscord.kord.extensions.commands.converters.impl.enum
+import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
