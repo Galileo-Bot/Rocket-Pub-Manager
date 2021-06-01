@@ -47,11 +47,10 @@ tasks.withType<KotlinCompile> {
 tasks.withType<ShadowJar> {
 	manifest.attributes.apply {
 		put("Implementation-Title", "Rocket Manager")
-		//put("Implementation-Version" version)
 		put("Main-Class", "MainKT")
 	}
 }
 
 application {
-	mainClassName = "MainKt"
+	mainClass.set("MainKt")
 }
