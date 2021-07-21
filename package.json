@@ -7,7 +7,7 @@
 		"advanced-command-handler": "^1.2.1",
 		"discord.js": "^12.5.1",
 		"dotenv": "^8.2.0",
-		"enmap": "^5.8.2",
+		"enmap": "^5.8.6",
 		"prettier": "^2.3.2"
 	},
 	"description": "Le bot pour surveiller les membres du serveur Rocket Pub.",
