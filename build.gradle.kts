@@ -7,8 +7,8 @@ val dotEnvVersion: String by project
 val exposedVersion: String by project
 
 plugins {
-	kotlin("jvm") version "1.4.32"
-	kotlin("plugin.serialization") version "1.4.32"
+	kotlin("jvm") version "1.5.21"
+	kotlin("plugin.serialization") version "1.5.20"
 	id("com.github.johnrengelman.shadow") version "7.0.0"
 	application
 }
@@ -29,16 +29,16 @@ dependencies {
 	implementation("com.kotlindiscord.kord.extensions:kord-extensions:$kordexVersion")
 	implementation("io.github.cdimascio:dotenv-kotlin:$dotEnvVersion")
 	
-	implementation("ch.qos.logback:logback-classic:1.2.3")
-	implementation("io.github.microutils:kotlin-logging:2.0.6")
-	implementation("org.codehaus.groovy:groovy:3.0.7")
+	implementation("ch.qos.logback:logback-classic:1.2.5")
+	implementation("io.github.microutils:kotlin-logging:2.0.10")
+	implementation("org.codehaus.groovy:groovy:3.0.8")
 	
-	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
-	implementation("mysql:mysql-connector-java:8.0.23")
+	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+	implementation("mysql:mysql-connector-java:8.0.25")
 }
 
 tasks.withType<KotlinCompile> {
-	kotlinOptions.jvmTarget = "15"
+	kotlinOptions.jvmTarget = "16"
 	
 	kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
