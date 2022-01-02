@@ -38,7 +38,6 @@ tasks.withType<KotlinCompile> {
 	kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
 
-
 tasks.withType<ShadowJar> {
 	manifest.attributes.apply {
 		put("Implementation-Title", "Rocket Manager")
