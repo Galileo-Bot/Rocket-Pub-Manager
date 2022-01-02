@@ -26,8 +26,13 @@ suspend fun main() {
 			cachedMessages = 1000
 		}
 		
+		chatCommands {
+			enabled = true
+		}
+		
 		extensions {
-			sentry = false
+			sentry { enable = false }
+			
 			add(::BannedGuilds)
 			add(::CheckAds)
 			add(::RemoveAds)
@@ -47,10 +52,6 @@ suspend fun main() {
 			status = PresenceStatus.Idle
 			listening(" les membres.")
 		}
-		
-		slashCommands {
-			enabled = true
-		}
 	}
 	
 	val dataSource = MysqlConnectionPoolDataSource()
@@ -63,7 +64,7 @@ suspend fun main() {
 		user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
 	}
 	connection = dataSource.connection
-	logger.info("Connection to DataBase established !")
+	logger.info("Connection to the Database established.")
 	
 	bot.start()
 }

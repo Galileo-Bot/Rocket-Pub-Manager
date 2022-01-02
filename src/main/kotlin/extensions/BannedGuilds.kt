@@ -1,11 +1,14 @@
 package extensions
 
+import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.enum
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.commands.parser.Arguments
-import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.common.annotation.KordPreview
+import dev.kord.rest.builder.message.create.embed
 import storage.addBannedGuild
 import storage.modifyGuildValue
 import storage.removeBannedGuild
@@ -52,18 +55,17 @@ class BannedGuilds : Extension() {
 	}
 	
 	override suspend fun setup() {
-		slashCommand {
+		publicSlashCommand {
 			name = "serveurs"
 			description = "Permet de gérer les serveurs interdits."
-			guild = ROCKET_PUB_GUILD
+			guild(ROCKET_PUB_GUILD)
 			
-			subCommand(::AddBannedGuildArguments) {
+			publicSubCommand(::AddBannedGuildArguments) {
 				name = "add"
 				description = "Ajoute un serveur à la liste des serveurs interdits."
-				autoAck = AutoAckType.PUBLIC
 				
 				action {
-					publicFollowUp {
+					respond {
 						content = if (isValidGuild(arguments.guild)) {
 							addBannedGuild(arguments.guild, arguments.reason)
 							"Serveur `${arguments.guild}` ajouté !"
@@ -75,29 +77,24 @@ class BannedGuilds : Extension() {
 			}
 			
 			
-			subCommand(::GetBannedGuildArguments) {
+			publicSubCommand(::GetBannedGuildArguments) {
 				name = "get"
 				description = "Permet d'avoir des informations sur un serveur interdit."
-				autoAck = AutoAckType.PUBLIC
-				
 				action {
-					publicFollowUp {
+					respond {
 						val guild = searchBannedGuild(arguments.guild)
-						if (guild != null) embed {
-							bannedGuildEmbed(bot.getKoin().get(), guild)()
-						}
+						if (guild != null) embed { bannedGuildEmbed(bot.getKoin().get(), guild)() }
 						else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
 					}
 				}
 			}
 			
-			subCommand(::ModifyBannedGuildArguments) {
+			publicSubCommand(::ModifyBannedGuildArguments) {
 				name = "modifier"
 				description = "Permet de modifier un serveur interdit."
-				autoAck = AutoAckType.PUBLIC
 				
 				action {
-					publicFollowUp {
+					respond {
 						val guild = searchBannedGuild(arguments.guild)
 						if (guild != null) {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
@@ -109,13 +106,12 @@ class BannedGuilds : Extension() {
 				}
 			}
 			
-			subCommand(::RemoveBannedGuildArguments) {
+			publicSubCommand(::RemoveBannedGuildArguments) {
 				name = "remove"
 				description = "Retire un serveur de la liste des serveurs interdits."
-				autoAck = AutoAckType.PUBLIC
 				
 				action {
-					publicFollowUp {
+					respond {
 						content =
 							if (isValidGuild(arguments.guild)) {
 								removeBannedGuild(arguments.guild)

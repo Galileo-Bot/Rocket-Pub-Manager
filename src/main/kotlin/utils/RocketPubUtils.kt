@@ -1,33 +1,41 @@
 package utils
 
+import com.kotlindiscord.kord.extensions.checks.channelFor
+import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.events.EventContext
 import configuration
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.channel.Channel
+import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.flow.first
 
-
-suspend fun isInAdCategoryChannel(event: MessageCreateEvent) = isInCategoryAdChannel(event.message.channel.asChannel())
-
-fun isInCategoryAdChannel(channel: Channel): Boolean {
+fun isInCategoryAdChannel(channel: ChannelBehavior): Boolean {
 	return (channel is TextChannel
 		&& channel.topic != null
 		&& channel.topic!!.contains(VALIDATION_EMOJI))
 }
 
-suspend fun isInAdChannel(event: MessageCreateEvent) = isInAdChannel(event.message.channel.asChannel())
-
-fun isInAdChannel(channel: Channel): Boolean {
+fun isInAdChannel(channel: ChannelBehavior): Boolean {
 	return (channel is TextChannel
 		&& channel.topic != null
 		&& channel.topic!!.contains(VALIDATION_EMOJI_2))
 }
 
-suspend fun EventContext<MessageCreateEvent>.getLogChannel(): TextChannel {
-	return event.getGuild()!!.channels.first { it.id == SANCTION_LOGGER_CHANNEL } as TextChannel
+suspend fun <T : Event> CheckContext<T>.isInAdChannel() {
+	if (!passed) return
+	passIf { isInAdChannel(channelFor(event) ?: return@passIf false) }
 }
+
+suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
+	if (!passed) return
+	passIf { isInCategoryAdChannel(channelFor(event) ?: return@passIf false) }
+}
+
+suspend fun EventContext<MessageCreateEvent>.getLogChannel() = event.getGuild()!!.channels.first {
+	it.id == SANCTION_LOGGER_CHANNEL
+} as TextChannel
 
 const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z0-9-]+)"
 const val VALIDATION_EMOJI_2 = "🔗"

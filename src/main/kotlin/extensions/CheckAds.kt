@@ -3,6 +3,7 @@ package extensions
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.delete
 import configuration
@@ -16,6 +17,8 @@ import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.live.LiveMessage
 import dev.kord.core.live.live
 import dev.kord.core.live.onReactionAdd
+import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
 import storage.SanctionType
@@ -30,9 +33,9 @@ import utils.getReasonForMessage
 import utils.id
 import utils.sanctionEmbed
 import utils.verificationEmbed
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.days
-import kotlin.time.minutes
 
 
 @OptIn(ExperimentalTime::class, KordPreview::class)
@@ -82,7 +85,7 @@ class CheckAds : Extension() {
 			sanctionMessages.add(SanctionMessage(event.member!!, message, sanction))
 		}
 		
-		event.message.delete(5.minutes.toLongMilliseconds())
+		event.message.delete(Duration.minutes(5).inWholeMilliseconds)
 	}
 	
 	suspend fun EventContext<MessageCreateEvent>.verificationMessage() {
@@ -127,7 +130,7 @@ class CheckAds : Extension() {
 	
 	override suspend fun setup() {
 		event<MessageDeleteEvent> {
-			check(::adsCheck)
+			check { adsCheck() }
 			
 			action {
 				if (event.message == null) return@action
@@ -150,18 +153,19 @@ class CheckAds : Extension() {
 		}
 		
 		event<MessageCreateEvent> {
-			check(/*hasRole(STAFF_ROLE), */::adsCheck)
+			check {
+				adsCheck()
+				hasRole(STAFF_ROLE)
+			}
 			
 			action {
-				if (hasRole(STAFF_ROLE)(event)) {
-					val sanctionMessageFind = sanctionMessages.find {
-						it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
-					}
-					
-					if (sanctionMessageFind != null) {
-						sanctionMessages.remove(sanctionMessageFind)
-						setSanctionedBy(sanctionMessageFind.sanctionMessage, sanctionMessageFind.sanction)
-					}
+				val sanctionMessageFind = sanctionMessages.find {
+					it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
+				}
+				
+				if (sanctionMessageFind != null) {
+					sanctionMessages.remove(sanctionMessageFind)
+					setSanctionedBy(sanctionMessageFind.sanctionMessage, sanctionMessageFind.sanction)
 				}
 				
 				val reason = getReasonForMessage(event.message)

@@ -1,6 +1,6 @@
 package utils
 
-import com.kotlindiscord.kord.extensions.utils.getUrl
+import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import configuration
 import dev.kord.core.Kord
 import dev.kord.core.entity.Embed
@@ -10,19 +10,19 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import extensions.ModifyGuildValues
+import kotlinx.datetime.Clock
 import storage.BannedGuild
 import storage.Sanction
 import java.text.SimpleDateFormat
-import java.time.Instant
 
 suspend fun basicEmbed(client: Kord): suspend EmbedBuilder.() -> Unit = {
 	val user = client.getSelf(EntitySupplyStrategy.cacheWithRestFallback)
 	
 	footer {
-		icon = user.avatar.url
+		icon = user.avatar?.url
 		text = user.username
 	}
-	timestamp = Instant.now()
+	timestamp = Clock.System.now()
 }
 
 suspend fun completeEmbed(client: Kord, title: String, description: String): suspend EmbedBuilder.() -> Unit = {
@@ -47,7 +47,7 @@ suspend fun sanctionEmbed(
 		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
 	)()
 	
-	url = event.message.getUrl()
+	url = event.message.getJumpUrl()
 	
 	footer {
 		text = "Cliquez sur le titre de l'embed pour aller sur le message."
@@ -60,7 +60,7 @@ suspend fun sanctionEmbed(
 	
 	field {
 		name = "Salons :"
-		value = channels.joinToString("\n") { it.mention }
+		value = channels.joinToString("\n", transform = Channel::mention)
 	}
 }
 
@@ -70,7 +70,7 @@ suspend fun bannedGuildEmbed(client: Kord, guild: BannedGuild): suspend EmbedBui
 	title = "Serveur interdit."
 	description = "Voici des informations sur ce serveur interdit."
 	
-	timestamp = Instant.now()
+	timestamp = Clock.System.now()
 	field {
 		name = "Nom/ID"
 		value = if (guild.name == null) "ID: ${guild.id}" else "Nom: ${guild.name}"
@@ -104,7 +104,7 @@ suspend fun verificationEmbed(
 	
 	field {
 		name = "Salons :"
-		value = channels.joinToString("\n") { it.mention }
+		value = channels.joinToString("\n", transform = TextChannel::mention)
 	}
 	
 	if (link != null) {
@@ -137,7 +137,7 @@ suspend fun verificationEmbed(
 	
 	field {
 		name = "Par :"
-		value = "${event.message.author!!.mention} (`${event.message.author!!.id.asString}`)"
+		value = "${event.message.author!!.mention} (`${event.message.author!!.id}`)"
 	}
 }
 

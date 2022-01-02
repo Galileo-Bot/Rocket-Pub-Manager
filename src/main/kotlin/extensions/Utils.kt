@@ -2,16 +2,20 @@ package extensions
 
 import com.kotlindiscord.kord.extensions.checks.channelType
 import com.kotlindiscord.kord.extensions.checks.inGuild
-import com.kotlindiscord.kord.extensions.commands.parser.Arguments
-import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
+import com.kotlindiscord.kord.extensions.checks.isNotBot
+import com.kotlindiscord.kord.extensions.checks.memberFor
+import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.events.EventContext
 import dev.kord.common.entity.ChannelType
+import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.ReactionAddEvent
+import dev.kord.rest.builder.message.modify.embed
 import storage.Sanction
 import storage.saveVerification
 import storage.searchVerificationMessage
@@ -22,28 +26,34 @@ import utils.VALID_EMOJI
 import utils.fromEmbedUnlessChannelField
 import utils.hasRole
 import utils.isInAdChannel
-import utils.isNotBot
 import utils.sanctionEmbed
 
-suspend fun adsCheck(event: MessageCreateEvent) =
-	inGuild(ROCKET_PUB_GUILD)(event) &&
-		channelType(ChannelType.GuildText)(event) &&
-		isNotBot(event) &&
-		isInAdChannel(event)
+suspend fun <T : Event> CheckContext<T>.adsCheck() {
+	if (!passed) return
+	inGuild(ROCKET_PUB_GUILD)
+	channelType(ChannelType.GuildText)
+	isNotBot()
+	isInAdChannel()
+}
 
-suspend fun isStaff(context: SlashCommandContext<out Arguments>): Boolean =
-	isNotBot(context) &&
-		context.getGuild()!!.asGuild().id == ROCKET_PUB_GUILD &&
-		context.getMember()!!.asMember().hasRole(STAFF_ROLE)
+suspend fun <T : Event> CheckContext<T>.isStaff() {
+	if (!passed) return
+	passIf { memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true }
+}
 
-fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message: Message): MutableList<String>? {
+suspend fun isStaff(member: MemberBehavior?) = member?.let {
+	!it.asUser().isBot &&
+		it.guild.id == ROCKET_PUB_GUILD &&
+		it.asMember().hasRole(STAFF_ROLE)
+} ?: false
+
+fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message: Message): List<String>? {
 	val oldEmbed = message.embeds[0]
 	val channels = oldEmbed.fields.find { it.name == "Salons :" }!!.value.split(Regex("\n")).toMutableList()
 	val find = channels.find { it == event.channel.mention } ?: return null
 	
-	channels.remove(find)
-	channels.add(find.plus(" (supprimé)"))
-	return channels
+	channels -= find
+	return channels + "$find supprimé"
 }
 
 suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): Message? {
@@ -96,6 +106,4 @@ suspend fun EventContext<MessageCreateEvent>.addValidReaction(message: Message) 
 	message.addReaction(event.getGuild()!!.getEmoji(VALID_EMOJI))
 }
 
-suspend fun EventContext<MessageDeleteEvent>.getLoggerChannel(): TextChannel {
-	return event.guild!!.getChannel(SANCTION_LOGGER_CHANNEL) as TextChannel
-}
+suspend fun EventContext<MessageDeleteEvent>.getLoggerChannel() = event.guild!!.getChannel(SANCTION_LOGGER_CHANNEL) as TextChannel
