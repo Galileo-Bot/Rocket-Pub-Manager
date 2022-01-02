@@ -47,7 +47,7 @@ class Sanctions : Extension() {
 								sanctions.groupBy { it }.map {
 									"**${guild!!.getMember(it.key).tag}** : ${it.value.size} sanctions appliquées."
 								}.joinToString("\n\n")
-							)()
+							)
 						}
 					}
 				}

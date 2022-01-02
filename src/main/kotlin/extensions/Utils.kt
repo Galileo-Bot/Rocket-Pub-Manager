@@ -74,7 +74,7 @@ suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): M
 suspend fun EventContext<MessageCreateEvent>.setSanctionedBy(message: Message, sanction: Sanction) {
 	message.edit {
 		embed {
-			sanctionEmbed(event, sanction)()
+			sanctionEmbed(event, sanction)
 			field {
 				name = "Sanctionnée par :"
 				value = event.message.author!!.mention
@@ -102,8 +102,6 @@ suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reaction
 	if (searchVerificationMessage(message.id) == null) saveVerification(reactionEvent.userId, message.id)
 }
 
-suspend fun EventContext<MessageCreateEvent>.addValidReaction(message: Message) {
-	message.addReaction(event.getGuild()!!.getEmoji(VALID_EMOJI))
-}
+suspend fun EventContext<MessageCreateEvent>.addValidReaction(message: Message) = message.addReaction(event.getGuild()!!.getEmoji(VALID_EMOJI))
 
 suspend fun EventContext<MessageDeleteEvent>.getLoggerChannel() = event.guild!!.getChannel(SANCTION_LOGGER_CHANNEL) as TextChannel

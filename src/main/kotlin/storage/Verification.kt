@@ -43,7 +43,7 @@ fun searchVerificationMessage(messageID: Snowflake): String? {
 }
 
 fun getVerificationCount(): List<Snowflake> {
-	val verifications: MutableList<Snowflake?> = mutableListOf()
+	val verifications = mutableListOf<Snowflake?>()
 	val state = connection.createStatement()
 	val result = state.executeQuery(
 		"""
@@ -52,10 +52,9 @@ fun getVerificationCount(): List<Snowflake> {
 	)
 	
 	while (result.next()) {
-		try {
+		runCatching {
 			val appliedBy = result.getNString("staffID")
 			verifications += appliedBy?.let { Snowflake(it) }
-		} catch (_: SQLException) {
 		}
 	}
 	

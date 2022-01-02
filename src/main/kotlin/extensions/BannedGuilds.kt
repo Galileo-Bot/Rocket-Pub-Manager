@@ -18,9 +18,7 @@ import utils.bannedGuildEmbed
 import utils.modifiedGuildEmbed
 
 
-fun isValidGuild(guild: String): Boolean {
-	return guild.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
-}
+fun isValidGuild(string: String) = string.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
 
 enum class ModifyGuildValues(val translation: String) {
 	NAME("Nom"),
@@ -76,14 +74,13 @@ class BannedGuilds : Extension() {
 				}
 			}
 			
-			
 			publicSubCommand(::GetBannedGuildArguments) {
 				name = "get"
 				description = "Permet d'avoir des informations sur un serveur interdit."
 				action {
 					respond {
 						val guild = searchBannedGuild(arguments.guild)
-						if (guild != null) embed { bannedGuildEmbed(bot.getKoin().get(), guild)() }
+						if (guild != null) embed { bannedGuildEmbed(bot.getKoin().get(), guild) }
 						else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
 					}
 				}
@@ -99,7 +96,7 @@ class BannedGuilds : Extension() {
 						if (guild != null) {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
 							embed {
-								modifiedGuildEmbed(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)()
+								modifiedGuildEmbed(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)
 							}
 						} else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
 					}

@@ -15,7 +15,7 @@ import storage.BannedGuild
 import storage.Sanction
 import java.text.SimpleDateFormat
 
-suspend fun basicEmbed(client: Kord): suspend EmbedBuilder.() -> Unit = {
+suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	val user = client.getSelf(EntitySupplyStrategy.cacheWithRestFallback)
 	
 	footer {
@@ -25,27 +25,27 @@ suspend fun basicEmbed(client: Kord): suspend EmbedBuilder.() -> Unit = {
 	timestamp = Clock.System.now()
 }
 
-suspend fun completeEmbed(client: Kord, title: String, description: String): suspend EmbedBuilder.() -> Unit = {
-	basicEmbed(client)()
+suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String) {
+	basicEmbed(client)
 	
 	this.title = title
 	this.description = description
 }
 
-suspend fun sanctionEmbed(event: MessageCreateEvent, sanction: Sanction): suspend EmbedBuilder.() -> Unit = {
-	sanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))()
+suspend fun EmbedBuilder.sanctionEmbed(event: MessageCreateEvent, sanction: Sanction) {
+	sanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))
 }
 
-suspend fun sanctionEmbed(
+suspend fun EmbedBuilder.sanctionEmbed(
 	event: MessageCreateEvent,
 	sanction: Sanction,
 	channels: List<Channel>
-): suspend EmbedBuilder.() -> Unit = {
+) {
 	completeEmbed(
 		event.kord,
 		sanction.reason,
 		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
-	)()
+	)
 	
 	url = event.message.getJumpUrl()
 	
@@ -64,8 +64,8 @@ suspend fun sanctionEmbed(
 	}
 }
 
-suspend fun bannedGuildEmbed(client: Kord, guild: BannedGuild): suspend EmbedBuilder.() -> Unit = {
-	basicEmbed(client)()
+suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
+	basicEmbed(client)
 	
 	title = "Serveur interdit."
 	description = "Voici des informations sur ce serveur interdit."
@@ -83,23 +83,23 @@ suspend fun bannedGuildEmbed(client: Kord, guild: BannedGuild): suspend EmbedBui
 	}
 }
 
-suspend fun modifiedGuildEmbed(
+suspend fun EmbedBuilder.modifiedGuildEmbed(
 	client: Kord,
 	guild: BannedGuild,
 	value: ModifyGuildValues,
 	valueBefore: String,
 	valueAfter: String
-): suspend EmbedBuilder.() -> Unit = {
-	bannedGuildEmbed(client, guild)()
+) {
+	bannedGuildEmbed(client, guild)
 	
 	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
 }
 
-suspend fun verificationEmbed(
+suspend fun EmbedBuilder.verificationEmbed(
 	event: MessageCreateEvent,
 	channels: MutableSet<TextChannel>
-): suspend EmbedBuilder.() -> Unit = {
-	completeEmbed(event.kord, "Nouvelle publicité à vérifier.", event.message.content)()
+) {
+	completeEmbed(event.kord, "Nouvelle publicité à vérifier.", event.message.content)
 	val link = findInviteCode(event.message.content)
 	
 	field {

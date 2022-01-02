@@ -36,7 +36,7 @@ class Verifications : Extension() {
 							verifications.groupBy { it }.map {
 								"**${guild!!.getMember(it.key).tag}** : ${it.value.size} publicités vérifiées."
 							}.joinToString("\n\n")
-						)()
+						)
 					}
 				}
 			}

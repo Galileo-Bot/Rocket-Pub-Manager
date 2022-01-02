@@ -33,9 +33,9 @@ import utils.getReasonForMessage
 import utils.id
 import utils.sanctionEmbed
 import utils.verificationEmbed
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
-import kotlin.time.days
 
 
 @OptIn(ExperimentalTime::class, KordPreview::class)
@@ -61,22 +61,22 @@ class CheckAds : Extension() {
 				1 -> return
 				in 5..9 -> {
 					sanction.type = SanctionType.MUTE
-					sanction.durationMS = channels.size.div(2).days.inMilliseconds.toInt()
+					sanction.durationMS = channels.size.div(2).days.inWholeMilliseconds
 				}
 				
 				in 10..Int.MAX_VALUE -> {
 					sanction.type = SanctionType.MUTE
-					sanction.durationMS = channels.size.days.inMilliseconds.toInt()
+					sanction.durationMS = channels.size.days.inWholeMilliseconds
 					sanction.reason = "Publicité dans toutes les catégories."
 				}
 			}
 			
 			sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
-				embed { sanctionEmbed(event, sanction, channels.toList())() }
+				embed { sanctionEmbed(event, sanction, channels.toList()) }
 			}
 		} else {
 			val message = getLogChannel().createMessage {
-				embed { sanctionEmbed(event, sanction)() }
+				embed { sanctionEmbed(event, sanction) }
 			}
 			
 			val liveMessage = message.live()
@@ -85,7 +85,7 @@ class CheckAds : Extension() {
 			sanctionMessages.add(SanctionMessage(event.member!!, message, sanction))
 		}
 		
-		event.message.delete(Duration.minutes(5).inWholeMilliseconds)
+		event.message.delete(5.minutes.inWholeMilliseconds)
 	}
 	
 	suspend fun EventContext<MessageCreateEvent>.verificationMessage() {
@@ -95,11 +95,11 @@ class CheckAds : Extension() {
 			channels.add(event.message.channel.asChannel() as TextChannel)
 			
 			old.edit {
-				embed { verificationEmbed(event, channels)() }
+				embed { verificationEmbed(event, channels) }
 			}
 		} else {
 			val message = getLogChannel().createMessage {
-				embed { verificationEmbed(event, mutableSetOf(event.message.channel.asChannel() as TextChannel))() }
+				embed { verificationEmbed(event, mutableSetOf(event.message.channel.asChannel() as TextChannel)) }
 			}
 			addValidReaction(message)
 			

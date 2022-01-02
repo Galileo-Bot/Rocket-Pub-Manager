@@ -9,12 +9,10 @@ import java.time.Instant
 import java.util.*
 
 data class BannedGuild(val name: String?, val id: String?, val reason: String, val bannedSince: Date) {
-	operator fun get(value: ModifyGuildValues): String {
-		return when (value) {
-			ModifyGuildValues.NAME -> name.toString()
-			ModifyGuildValues.ID -> id.toString()
-			ModifyGuildValues.REASON -> reason
-		}
+	operator fun get(value: ModifyGuildValues) = when (value) {
+		ModifyGuildValues.NAME -> name.toString()
+		ModifyGuildValues.ID -> id.toString()
+		ModifyGuildValues.REASON -> reason
 	}
 }
 
@@ -60,7 +58,7 @@ fun modifyGuildValue(name: String, value: ModifyGuildValues, newValue: String) {
 	val state = connection.createStatement()
 	state.executeUpdate(
 		"""
-		UPDATE banned_guilds SET ${value.name.toLowerCase()}=${newValue.enquote}
+		UPDATE banned_guilds SET ${value.name.lowercase()}=${newValue.enquote}
 		${where(name)}
 	""".trimIndent()
 	)
@@ -78,5 +76,7 @@ fun removeBannedGuild(name: String) {
 }
 
 fun where(name: String) =
-	"""WHERE NAME = ${name.enquote}
-			OR ID = ${name.enquote}"""
+	"""
+	WHERE NAME = ${name.enquote}
+	OR ID = ${name.enquote}
+""".trimIndent()

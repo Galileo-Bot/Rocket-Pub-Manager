@@ -1,3 +1,4 @@
+
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
@@ -40,13 +41,9 @@ suspend fun main() {
 			add(::Verifications)
 		}
 		
-		i18n {
-			defaultLocale = Locale.FRENCH
-		}
+		i18n { defaultLocale = Locale.FRENCH }
 		
-		intents {
-			+Intents.all
-		}
+		intents { +Intents.all }
 		
 		presence {
 			status = PresenceStatus.Idle
