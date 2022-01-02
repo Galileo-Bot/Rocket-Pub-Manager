@@ -1,14 +1,9 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kordexVersion: String by project
-val kordVersion: String by project
-val dotEnvVersion: String by project
-val exposedVersion: String by project
-
 plugins {
-	kotlin("jvm") version "1.5.21"
-	kotlin("plugin.serialization") version "1.5.20"
+	kotlin("jvm") version "1.6.10"
+	kotlin("plugin.serialization") version "1.6.10"
 	id("com.github.johnrengelman.shadow") version "7.0.0"
 	application
 }
@@ -26,20 +21,20 @@ repositories {
 }
 
 dependencies {
-	implementation("com.kotlindiscord.kord.extensions:kord-extensions:$kordexVersion")
-	implementation("io.github.cdimascio:dotenv-kotlin:$dotEnvVersion")
+	implementation(libs.kord.extensions)
+	implementation(libs.kotlin.stdlib)
+	implementation(libs.dotEnv)
 	
-	implementation("ch.qos.logback:logback-classic:1.2.5")
-	implementation("io.github.microutils:kotlin-logging:2.0.10")
-	implementation("org.codehaus.groovy:groovy:3.0.8")
+	implementation(libs.groovy)
+	implementation(libs.logback)
+	implementation(libs.logging)
 	
-	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
-	implementation("mysql:mysql-connector-java:8.0.25")
+	implementation(libs.serialization)
+	implementation(libs.connector)
 }
 
 tasks.withType<KotlinCompile> {
-	kotlinOptions.jvmTarget = "16"
-	
+	kotlinOptions.jvmTarget = "17"
 	kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
 
