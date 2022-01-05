@@ -11,6 +11,7 @@ import extensions.Sanctions
 import extensions.Verifications
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
+import utils.ROCKET_PUB_GUILD_STAFF
 import java.sql.Connection
 import java.util.*
 
@@ -23,6 +24,10 @@ lateinit var connection: Connection
 @PrivilegedIntent
 suspend fun main() {
 	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
+		applicationCommands {
+			defaultGuild = ROCKET_PUB_GUILD_STAFF
+		}
+		
 		cache {
 			cachedMessages = 1000
 		}

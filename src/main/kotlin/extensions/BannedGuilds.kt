@@ -12,7 +12,6 @@ import storage.addBannedGuild
 import storage.modifyGuildValue
 import storage.removeBannedGuild
 import storage.searchBannedGuild
-import utils.ROCKET_PUB_GUILD
 import utils.bannedGuildEmbed
 import utils.modifiedGuildEmbed
 
@@ -55,7 +54,6 @@ class BannedGuilds : Extension() {
 		publicSlashCommand {
 			name = "serveurs"
 			description = "Permet de gérer les serveurs interdits."
-			guild(ROCKET_PUB_GUILD)
 			
 			publicSubCommand(::AddBannedGuildArguments) {
 				name = "add"
@@ -76,6 +74,7 @@ class BannedGuilds : Extension() {
 			publicSubCommand(::GetBannedGuildArguments) {
 				name = "get"
 				description = "Permet d'avoir des informations sur un serveur interdit."
+				
 				action {
 					respond {
 						searchBannedGuild(arguments.guild)?.let {
