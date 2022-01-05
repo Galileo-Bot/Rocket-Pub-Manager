@@ -8,7 +8,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.common.annotation.KordPreview
-import dev.kord.rest.builder.message.create.embed
 import storage.addBannedGuild
 import storage.modifyGuildValue
 import storage.removeBannedGuild
@@ -79,9 +78,11 @@ class BannedGuilds : Extension() {
 				description = "Permet d'avoir des informations sur un serveur interdit."
 				action {
 					respond {
-						val guild = searchBannedGuild(arguments.guild)
-						if (guild != null) embed { bannedGuildEmbed(bot.getKoin().get(), guild) }
-						else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
+						searchBannedGuild(arguments.guild)?.let {
+							bannedGuildEmbed(bot.getKoin().get(), it)
+						} ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also {
+							this.content = it
+						}
 					}
 				}
 			}
@@ -95,9 +96,7 @@ class BannedGuilds : Extension() {
 						val guild = searchBannedGuild(arguments.guild)
 						if (guild != null) {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
-							embed {
-								modifiedGuildEmbed(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)
-							}
+							modifiedGuildEmbed(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)
 						} else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
 					}
 				}

@@ -5,7 +5,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.common.annotation.KordPreview
-import dev.kord.rest.builder.message.create.embed
 import storage.getSanctionCount
 import utils.ROCKET_PUB_GUILD
 import utils.completeEmbed
@@ -31,24 +30,19 @@ class Sanctions : Extension() {
 				name = "compte"
 				description = "Permet d'avoir le nombre de sanctions mises par les modérateurs."
 				
+				check { isStaff() }
+				
 				action {
-					if (!isStaff(member)) respond {
-						content = "Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise."
-						return@action
-					}
-					
 					val sanctions = getSanctionCount()
 					
 					respond {
-						embed {
-							completeEmbed(
-								bot.getKoin().get(),
-								"Liste des sanctions appliquées.",
-								sanctions.groupBy { it }.map {
-									"**${guild!!.getMember(it.key).tag}** : ${it.value.size} sanctions appliquées."
-								}.joinToString("\n\n")
-							)
-						}
+						completeEmbed(
+							bot.getKoin().get(),
+							"Liste des sanctions appliquées.",
+							sanctions.groupBy { it }.map {
+								"**${guild!!.getMember(it.key).tag}** : ${it.value.size} sanctions appliquées."
+							}.joinToString("\n\n")
+						)
 					}
 				}
 			}

@@ -29,6 +29,7 @@ suspend fun main() {
 		
 		chatCommands {
 			enabled = true
+			defaultPrefix = configuration["AYFRI_ROCKETMANAGER_PREFIX"]
 		}
 		
 		extensions {

@@ -17,8 +17,7 @@ data class BannedGuild(val name: String?, val id: String?, val reason: String, v
 }
 
 fun addBannedGuild(id: Snowflake, reason: String) = addBannedGuild(id.asString, reason)
-fun addBannedGuild(name: String, reason: String) = addBannedGuild(name, reason, null)
-fun addBannedGuild(name: String, reason: String, id: Snowflake?) {
+fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
 	val state = connection.createStatement()
 	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
 	state.executeUpdate(
@@ -36,22 +35,20 @@ fun searchBannedGuild(name: String): BannedGuild? {
 	val result = state.executeQuery(
 		"""
 		SELECT * FROM banned_guilds
-		${where(name)}
+		${whereNameOrId(name)}
 	""".trimIndent()
 	)
 	
 	result.next()
 	
-	return try {
+	return runCatching {
 		BannedGuild(
 			result.getNString("name"),
 			result.getNString("id"),
 			result.getString("reason"),
 			result.getTimestamp("bannedSince")
 		)
-	} catch (e: Exception) {
-		null
-	}
+	}.getOrNull()
 }
 
 fun modifyGuildValue(name: String, value: ModifyGuildValues, newValue: String) {
@@ -59,7 +56,7 @@ fun modifyGuildValue(name: String, value: ModifyGuildValues, newValue: String) {
 	state.executeUpdate(
 		"""
 		UPDATE banned_guilds SET ${value.name.lowercase()}=${newValue.enquote}
-		${where(name)}
+		${whereNameOrId(name)}
 	""".trimIndent()
 	)
 }
@@ -70,12 +67,12 @@ fun removeBannedGuild(name: String) {
 	state.executeUpdate(
 		"""
 		DELETE FROM banned_guilds
-		${where(name)}
+		${whereNameOrId(name)}
 	""".trimIndent()
 	)
 }
 
-fun where(name: String) =
+fun whereNameOrId(name: String) =
 	"""
 	WHERE NAME = ${name.enquote}
 	OR ID = ${name.enquote}

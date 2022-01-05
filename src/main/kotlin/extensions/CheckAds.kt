@@ -80,7 +80,7 @@ class CheckAds : Extension() {
 			}
 			
 			val liveMessage = message.live()
-			setBinDeleteAllSimilarAds(liveMessage, message)
+			setBinReactionDeleteAllSimilarAds(liveMessage, message)
 			
 			sanctionMessages.add(SanctionMessage(event.member!!, message, sanction))
 		}
@@ -104,7 +104,7 @@ class CheckAds : Extension() {
 			addValidReaction(message)
 			
 			val liveMessage = message.live()
-			setBinDeleteAllSimilarAds(liveMessage, message)
+			setBinReactionDeleteAllSimilarAds(liveMessage, message)
 			liveMessage.onReactionAdd {
 				if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.asString) return@onReactionAdd
 				validate(message, it)
@@ -112,7 +112,7 @@ class CheckAds : Extension() {
 		}
 	}
 	
-	suspend fun setBinDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
+	suspend fun setBinReactionDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
 		message.addReaction("\uD83D\uDDD1️")
 		liveMessage.onReactionAdd { reactionEvent ->
 			if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
@@ -128,6 +128,13 @@ class CheckAds : Extension() {
 		}
 	}
 	
+	suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) = channel.messages.firstOrNull {
+		if (it.embeds.isEmpty()) return@firstOrNull false
+		
+		val firstEmbed = it.embeds[0]
+		firstEmbed.description == message?.content && firstEmbed.fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.asString) == true
+	}
+	
 	override suspend fun setup() {
 		event<MessageDeleteEvent> {
 			check { adsCheck() }
@@ -135,20 +142,15 @@ class CheckAds : Extension() {
 			action {
 				if (event.message == null) return@action
 				
-				val reason = getReasonForMessage(event.message!!)
-				if (reason != null) {
-					val oldSanction = sanctionMessages.find {
-						it.sanction.member == event.message!!.author!!.id
-							&& it.sanction.reason == reason
-					}
-					
-					if (oldSanction != null) {
-						sanctionMessages.getFromValue(oldSanction).sanctionMessage = updateChannels(oldSanction.sanctionMessage) ?: return@action
+				getReasonForMessage(event.message!!)?.let { reason ->
+					sanctionMessages.find {
+						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
+					}?.let {
+						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage) ?: return@action
 					}
 				}
 				
-				val oldMessage = getOldVerificationMessage(getLoggerChannel(), event.message)
-				if (oldMessage != null) updateChannels(oldMessage)
+				getOldVerificationMessage(getLoggerChannel(), event.message)?.let { updateChannels(it) }
 			}
 		}
 		
@@ -159,28 +161,17 @@ class CheckAds : Extension() {
 			}
 			
 			action {
-				val sanctionMessageFind = sanctionMessages.find {
+				sanctionMessages.find {
 					it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
+				}?.let {
+					sanctionMessages.remove(it)
+					setSanctionedBy(it.sanctionMessage, it.sanction)
 				}
 				
-				if (sanctionMessageFind != null) {
-					sanctionMessages.remove(sanctionMessageFind)
-					setSanctionedBy(sanctionMessageFind.sanctionMessage, sanctionMessageFind.sanction)
-				}
-				
-				val reason = getReasonForMessage(event.message)
-				if (reason != null) createSanction(SanctionType.WARN, reason)
-				else verificationMessage()
+				getReasonForMessage(event.message)?.let {
+					createSanction(SanctionType.WARN, it)
+				} ?: verificationMessage()
 			}
-		}
-	}
-	
-	suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?): Message? {
-		return channel.messages.firstOrNull {
-			if (it.embeds.isEmpty()) return@firstOrNull false
-			
-			it.embeds[0].description == message?.content &&
-				it.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.asString) == true
 		}
 	}
 }

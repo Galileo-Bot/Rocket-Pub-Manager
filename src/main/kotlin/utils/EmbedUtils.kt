@@ -9,6 +9,8 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kord.rest.builder.message.create.embed
 import extensions.ModifyGuildValues
 import kotlinx.datetime.Clock
 import storage.BannedGuild
@@ -171,3 +173,15 @@ fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
 		}
 	}
 }
+
+suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String) = embed { completeEmbed(client, title, description) }
+
+suspend fun FollowupMessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
+
+suspend fun FollowupMessageCreateBuilder.modifiedGuildEmbed(
+	client: Kord,
+	guild: BannedGuild,
+	value: ModifyGuildValues,
+	valueBefore: String,
+	valueAfter: String
+) = embed { modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter) }

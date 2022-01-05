@@ -5,7 +5,9 @@ import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.checks.memberFor
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
+import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.events.EventContext
+import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.common.entity.ChannelType
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.edit
@@ -39,6 +41,7 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 suspend fun <T : Event> CheckContext<T>.isStaff() {
 	if (!passed) return
 	passIf { memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true }
+	fail("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.")
 }
 
 suspend fun isStaff(member: MemberBehavior?) = member?.let {
@@ -57,12 +60,11 @@ fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message:
 }
 
 suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): Message? {
-	val oldEmbed = message.embeds[0]
 	val channels = updateDeletedMessagesInChannelList(message) ?: return null
 	
 	return message.edit {
 		embed {
-			fromEmbedUnlessChannelField(oldEmbed)
+			fromEmbedUnlessChannelField(message.embeds[0])
 			field {
 				name = "Salons :"
 				value = channels.joinToString("\n")
@@ -85,11 +87,9 @@ suspend fun EventContext<MessageCreateEvent>.setSanctionedBy(message: Message, s
 }
 
 suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reactionEvent: ReactionAddEvent) {
-	val oldEmbed = message.embeds[0]
-	
 	message.edit {
 		embed {
-			fromEmbedUnlessChannelField(oldEmbed)
+			fromEmbedUnlessChannelField(message.embeds[0])
 			title = "Publicité validée."
 			field {
 				name = "Validée par :"
@@ -105,3 +105,4 @@ suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reaction
 suspend fun EventContext<MessageCreateEvent>.addValidReaction(message: Message) = message.addReaction(event.getGuild()!!.getEmoji(VALID_EMOJI))
 
 suspend fun EventContext<MessageDeleteEvent>.getLoggerChannel() = event.guild!!.getChannel(SANCTION_LOGGER_CHANNEL) as TextChannel
+suspend fun PublicSlashCommandContext<*>.respond(reply: String) = respond { content = reply }

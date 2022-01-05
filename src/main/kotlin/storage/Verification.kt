@@ -3,13 +3,11 @@ package storage
 import connection
 import dev.kord.common.entity.Snowflake
 import utils.enquote
-import java.sql.SQLException
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.*
 
-fun saveVerification(verifiedBy: Snowflake) = saveVerification(verifiedBy, null)
-fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake?) {
+fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake? = null) {
 	val state = connection.createStatement()
 	
 	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
@@ -35,11 +33,7 @@ fun searchVerificationMessage(messageID: Snowflake): String? {
 	)
 	result.next()
 	
-	return try {
-		result.getNString("messageID")
-	} catch (e: SQLException) {
-		null
-	}
+	return runCatching { result.getNString("messageID") }.getOrNull()
 }
 
 fun getVerificationCount(): List<Snowflake> {
