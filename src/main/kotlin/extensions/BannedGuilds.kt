@@ -6,13 +6,20 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.enum
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import com.kotlindiscord.kord.extensions.time.TimestampType
+import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import dev.kord.common.annotation.KordPreview
+import kotlinx.datetime.toKotlinInstant
 import storage.addBannedGuild
+import storage.getAllBannedGuilds
 import storage.modifyGuildValue
 import storage.removeBannedGuild
 import storage.searchBannedGuild
 import utils.bannedGuildEmbed
+import utils.completeEmbed
+import utils.cutFormatting
 import utils.modifiedGuildEmbed
 
 
@@ -85,6 +92,38 @@ class BannedGuilds : Extension() {
 					}
 				}
 			}
+			
+			publicSubCommand {
+				name = "list"
+				description = "Permet d'avoir la liste des serveurs interdits."
+				
+				action {
+					val bannedGuilds = getAllBannedGuilds()
+					
+					if (bannedGuilds.isEmpty()) {
+						respond("Aucun serveur interdit pour le moment.")
+					} else {
+						respondingPaginator {
+							bannedGuilds.chunked(20).forEach {
+								page {
+									val list = it.map {
+										val date = it.bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
+										val result = "${it.name ?: it.id}${it.id?.run { "(`${this})`" } ?: ""} $date"
+										"$result - ${it.reason.cutFormatting(80 - result.length)}"
+									}
+									
+									completeEmbed(
+										client = this@publicSubCommand.kord,
+										title = "Liste des serveurs bannis",
+										description = list.joinToString("\n") + "\n\nFaites `/${this@publicSlashCommand.name} get <id>` pour avoir plus d'informations sur un serveur."
+									)
+								}
+							}
+						}.send()
+					}
+				}
+			}
+			
 			
 			publicSubCommand(::ModifyBannedGuildArguments) {
 				name = "modifier"

@@ -4,7 +4,6 @@ import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
-import dev.kord.core.entity.Message
 import dev.kord.core.event.guild.MemberLeaveEvent
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -29,7 +28,9 @@ class RemoveAds : Extension() {
 				event.guild.channels.getTextChannels().filter(::isInAdChannel).collect { channel ->
 					channel.messages.filter {
 						it.author!! == event.user
-					}.collect(Message::delete)
+					}.collect {
+						it.delete()
+					}
 				}
 			}
 		}

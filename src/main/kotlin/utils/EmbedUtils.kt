@@ -27,11 +27,11 @@ suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	timestamp = Clock.System.now()
 }
 
-suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String) {
+suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String = "") {
 	basicEmbed(client)
 	
 	this.title = title
-	this.description = description
+	if (description.isNotBlank()) this.description = description
 }
 
 suspend fun EmbedBuilder.sanctionEmbed(event: MessageCreateEvent, sanction: Sanction) {

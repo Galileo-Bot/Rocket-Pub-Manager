@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.filterIsInstance
 fun String.remove(regex: Regex) = replace(regex, "")
 fun String.remove(pattern: String) = replace(Regex(pattern), "")
 
+fun String.cutFormatting(index: Int) = if (length > index - 3) take(index - 3) + "..." else this
+
 fun <E> MutableList<E>.getFromValue(old: E) = this[indexOf(old)]
 
 fun <T : Channel> Flow<T>.getTextChannels() = filterIsInstance<TextChannel>()
