@@ -25,7 +25,7 @@ class RemoveAds : Extension() {
 			}
 			
 			action {
-				event.guild.channels.getTextChannels().filter(::isInAdChannel).collect { channel ->
+				event.guild.channels.getTextChannels().filter { isInAdChannel(it) }.collect { channel ->
 					channel.messages.filter {
 						it.author!! == event.user
 					}.collect {

@@ -38,17 +38,17 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	isInAdChannel()
 }
 
-suspend fun <T : Event> CheckContext<T>.isStaff() {
-	if (!passed) return
-	passIf { memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true }
-	fail("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.")
-}
-
 suspend fun isStaff(member: MemberBehavior?) = member?.let {
 	!it.asUser().isBot &&
 		it.guild.id == ROCKET_PUB_GUILD &&
 		it.asMember().hasRole(STAFF_ROLE)
 } ?: false
+
+suspend fun <T : Event> CheckContext<T>.isStaff() {
+	if (!passed) return
+	passIf { memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true }
+	fail("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.")
+}
 
 fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message: Message): List<String>? {
 	val oldEmbed = message.embeds[0]

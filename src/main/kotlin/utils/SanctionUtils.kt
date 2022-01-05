@@ -1,6 +1,7 @@
 package utils
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import debug
 import dev.kord.core.Kord
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
@@ -36,5 +37,7 @@ suspend fun getReasonForMessage(message: Message): String? {
 		message.content == "test" -> "Test."
 		isBannedGuild -> "Publicité pour un serveur interdit."
 		else -> null
+	}.also {
+		if (debug && it != null) println("Found reason in channel ${message.channelId} for message ${message.id} : $it")
 	}
 }

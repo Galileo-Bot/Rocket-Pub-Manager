@@ -70,7 +70,7 @@ class BannedGuilds : Extension() {
 					respond {
 						content = if (isValidGuild(arguments.guild)) {
 							addBannedGuild(arguments.guild, arguments.reason)
-							"Serveur `${arguments.guild}` ajouté !"
+							"Serveur `${arguments.guild}` ajouté à la liste des serveurs interdits !"
 						} else {
 							"Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
 						}
@@ -124,7 +124,6 @@ class BannedGuilds : Extension() {
 				}
 			}
 			
-			
 			publicSubCommand(::ModifyBannedGuildArguments) {
 				name = "modifier"
 				description = "Permet de modifier un serveur interdit."
@@ -149,7 +148,7 @@ class BannedGuilds : Extension() {
 						content =
 							if (isValidGuild(arguments.guild)) {
 								removeBannedGuild(arguments.guild)
-								"Serveur `${arguments.guild}` retiré !"
+								"Serveur `${arguments.guild}` retiré de la liste des serveurs interdits !"
 							} else {
 								"Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
 							}
