@@ -27,6 +27,25 @@ suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	timestamp = Clock.System.now()
 }
 
+suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
+	basicEmbed(client)
+	
+	title = "Serveur interdit."
+	description = "Voici des informations sur ce serveur interdit."
+	
+	timestamp = Clock.System.now()
+	field {
+		name = "Nom/ID"
+		value = if (guild.name == null) "ID: ${guild.id}" else "Nom: ${guild.name}"
+		inline = true
+	}
+	
+	field {
+		name = "Depuis :"
+		value = SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(guild.bannedSince)
+	}
+}
+
 suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String = "") {
 	basicEmbed(client)
 	
@@ -34,9 +53,50 @@ suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description:
 	if (description.isNotBlank()) this.description = description
 }
 
-suspend fun EmbedBuilder.sanctionEmbed(event: MessageCreateEvent, sanction: Sanction) {
-	sanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))
+fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
+	oldEmbed.fields.forEach {
+		if (it.name == "Salons :") return@forEach
+		field {
+			name = it.name
+			value = it.value
+		}
+	}
+	
+	description = oldEmbed.description
+	title = oldEmbed.title
+	url = oldEmbed.url
+	timestamp = oldEmbed.timestamp
+	color = oldEmbed.color
+	
+	if (oldEmbed.author != null) {
+		author {
+			name = oldEmbed.author!!.name
+			icon = oldEmbed.author!!.iconUrl
+			url = oldEmbed.author!!.url
+		}
+	}
+	
+	if (oldEmbed.footer != null) {
+		footer {
+			text = oldEmbed.footer!!.text
+			icon = oldEmbed.footer!!.iconUrl
+		}
+	}
 }
+
+suspend fun EmbedBuilder.modifiedGuildEmbed(
+	client: Kord,
+	guild: BannedGuild,
+	value: ModifyGuildValues,
+	valueBefore: String,
+	valueAfter: String
+) {
+	bannedGuildEmbed(client, guild)
+	
+	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
+}
+
+suspend fun EmbedBuilder.sanctionEmbed(event: MessageCreateEvent, sanction: Sanction) = sanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))
 
 suspend fun EmbedBuilder.sanctionEmbed(
 	event: MessageCreateEvent,
@@ -64,37 +124,6 @@ suspend fun EmbedBuilder.sanctionEmbed(
 		name = "Salons :"
 		value = channels.joinToString("\n", transform = Channel::mention)
 	}
-}
-
-suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
-	basicEmbed(client)
-	
-	title = "Serveur interdit."
-	description = "Voici des informations sur ce serveur interdit."
-	
-	timestamp = Clock.System.now()
-	field {
-		name = "Nom/ID"
-		value = if (guild.name == null) "ID: ${guild.id}" else "Nom: ${guild.name}"
-		inline = true
-	}
-	
-	field {
-		name = "Depuis :"
-		value = SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(guild.bannedSince)
-	}
-}
-
-suspend fun EmbedBuilder.modifiedGuildEmbed(
-	client: Kord,
-	guild: BannedGuild,
-	value: ModifyGuildValues,
-	valueBefore: String,
-	valueAfter: String
-) {
-	bannedGuildEmbed(client, guild)
-	
-	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
 }
 
 suspend fun EmbedBuilder.verificationEmbed(
@@ -143,37 +172,6 @@ suspend fun EmbedBuilder.verificationEmbed(
 	}
 }
 
-fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
-	oldEmbed.fields.forEach {
-		if (it.name == "Salons :") return@forEach
-		field {
-			name = it.name
-			value = it.value
-		}
-	}
-	
-	description = oldEmbed.description
-	title = oldEmbed.title
-	url = oldEmbed.url
-	timestamp = oldEmbed.timestamp
-	color = oldEmbed.color
-	
-	if (oldEmbed.author != null) {
-		author {
-			name = oldEmbed.author!!.name
-			icon = oldEmbed.author!!.iconUrl
-			url = oldEmbed.author!!.url
-		}
-	}
-	
-	if (oldEmbed.footer != null) {
-		footer {
-			text = oldEmbed.footer!!.text
-			icon = oldEmbed.footer!!.iconUrl
-		}
-	}
-}
-
 suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String) = embed { completeEmbed(client, title, description) }
 
 suspend fun FollowupMessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
@@ -185,3 +183,34 @@ suspend fun FollowupMessageCreateBuilder.modifiedGuildEmbed(
 	valueBefore: String,
 	valueAfter: String
 ) = embed { modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter) }
+
+suspend fun FollowupMessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
+	embed {
+		val user = kord.getUser(sanction.member)!!
+		
+		completeEmbed(
+			kord,
+			"${sanction.type.translation} de ${user.tag} (${user.id.asString})",
+			"Nouvelle sanction appliquée à ${user.tag} (`${user.id.asString}`)."
+		)
+		
+		field {
+			name = "Raison :"
+			value = sanction.reason
+		}
+		
+		if (sanction.appliedBy != null) {
+			field {
+				name = "Par :"
+				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy.asString}`)"
+			}
+		}
+		
+		if (sanction.durationMS != 0L) {
+			field {
+				name = "Durée :"
+				value = sanction.formattedDuration
+			}
+		}
+	}
+}

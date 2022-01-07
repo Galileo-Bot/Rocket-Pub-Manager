@@ -15,14 +15,12 @@ import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
 
-enum class SanctionType {
-	BAN,
-	KICK,
-	MUTE,
-	WARN
+enum class SanctionType(val translation: String) {
+	BAN("Bannissement"),
+	KICK("Expulsion"),
+	MUTE("Exclusion"),
+	WARN("Avertissement")
 }
-
-data class SanctionCount(val appliedBy: Snowflake?)
 
 @Serializable
 data class Sanction(
@@ -82,7 +80,7 @@ fun getSanctions(user: Snowflake): List<Sanction> {
 		""".trimIndent()
 	)
 	while (result.next()) {
-		val type = SanctionType.valueOf(result.getString("type"))
+		val type = SanctionType.valueOf(result.getString("type").uppercase())
 		val reason = result.getString("reason")
 		val member = Snowflake(result.getString("memberID"))
 		val id = result.getInt("id")
@@ -125,9 +123,9 @@ fun removeSanction(id: Int) = connection.createStatement().executeUpdate(
 	""".trimIndent()
 )
 
-fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long? = null) {
+fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long? = null): Int {
 	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
-	connection.createStatement().executeUpdate(
+	return connection.createStatement().executeUpdate(
 		"""
 		INSERT INTO sanctions (reason, memberID, appliedByID, durationMS, type, sanctionedAt)
 		VALUES (

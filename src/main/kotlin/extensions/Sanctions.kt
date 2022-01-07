@@ -16,6 +16,7 @@ import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import dev.kord.common.annotation.KordPreview
 import dev.kord.core.supplier.EntitySupplyStrategy
 import kotlinx.coroutines.runBlocking
+import storage.Sanction
 import storage.SanctionType
 import storage.containsSanction
 import storage.getSanctionCount
@@ -24,6 +25,7 @@ import storage.modifySanction
 import storage.removeSanction
 import utils.ROCKET_PUB_GUILD
 import utils.completeEmbed
+import utils.sanctionEmbed
 
 enum class ModifySanctionValues(val translation: String) {
 	APPLIED_BY("Appliquée par"),
@@ -66,6 +68,11 @@ class Sanctions : Extension() {
 				throw DiscordRelayedException("La personne n'a pas le rôle staff et n'est donc pas modérateur, impossible de l'utiliser.")
 			}
 		}
+	}
+	
+	class WarnArguments : Arguments() {
+		val member by member("membre", "L'utilisateur à qui avertir.")
+		val reason by coalescedString("raison", "Raison de l'avertissement.")
 	}
 	
 	override suspend fun setup() {
@@ -191,6 +198,22 @@ class Sanctions : Extension() {
 				
 				action {
 					modifySanction(arguments.id, ModifySanctionValues.TYPE, arguments.type.name)
+				}
+			}
+		}
+		
+		publicSlashCommand(::WarnArguments) {
+			name = "warn"
+			description = "Avertit un membre, enregistre cette sanction."
+			
+			check { isStaff() }
+			
+			action {
+				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
+					save()
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
+					}
 				}
 			}
 		}
