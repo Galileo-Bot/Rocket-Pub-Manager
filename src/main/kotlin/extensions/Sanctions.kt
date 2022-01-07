@@ -8,13 +8,20 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
 import com.kotlindiscord.kord.extensions.commands.converters.impl.enum
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
+import com.kotlindiscord.kord.extensions.commands.converters.impl.user
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import dev.kord.common.annotation.KordPreview
+import dev.kord.core.supplier.EntitySupplyStrategy
+import kotlinx.coroutines.runBlocking
 import storage.SanctionType
+import storage.containsSanction
 import storage.getSanctionCount
+import storage.getSanctions
 import storage.modifySanction
+import storage.removeSanction
 import utils.ROCKET_PUB_GUILD
 import utils.completeEmbed
 
@@ -29,8 +36,16 @@ enum class ModifySanctionValues(val translation: String) {
 class Sanctions : Extension() {
 	override val name: String = "Sanctions"
 	
+	class DeleteSanctionArguments : Arguments() {
+		val id by int("cas", "Le numéro de la sanction à supprimer.")
+	}
+	
+	class ListSanctionsArguments : Arguments() {
+		val user by user("user", "L'utilisateur à qui afficher les sanctions.")
+	}
+	
 	abstract class ModifySanction : Arguments() {
-		val case by int("cas", "Le numéro de la sanction à modifier.")
+		val id by int("cas", "Le numéro de la sanction à modifier.")
 	}
 	
 	class ModifySanctionTypeArguments : ModifySanction() {
@@ -78,6 +93,65 @@ class Sanctions : Extension() {
 					}
 				}
 			}
+			
+			publicSubCommand(::ListSanctionsArguments) {
+				name = "liste"
+				description = "Permet d'avoir la liste des sanctions appliquées à un utilisateur."
+				
+				action {
+					val user = arguments.user
+					val sanctions = getSanctions(user.id)
+					if (sanctions.isEmpty()) respond("Aucune sanction n'a été appliquée à cet utilisateur.").also { return@action }
+					
+					respondingPaginator {
+						sanctions.chunked(20).forEach {
+							page {
+								completeEmbed(
+									client = bot.getKoin().get(),
+									title = "Liste des sanctions appliquées à ${user.tag} (${user.id.asString}).",
+									description = it.joinToString("\n\n") {
+										val duration = if (it.durationMS > 0) "\n**Duration** : ${it.formattedDuration}" else ""
+										val appliedBy = it.appliedBy?.let { appliedById ->
+											val getUserTag = runBlocking {
+												this@publicSlashCommand.kord.getUser(
+													appliedById,
+													EntitySupplyStrategy.cacheWithCachingRestFallback
+												)?.tag ?: appliedById.asString
+											}
+											
+											"$getUserTag (${appliedById.asString})"
+										} ?: "Automatique ou non trouvé"
+										
+										"""
+											> **Cas numéro ${it.id}**
+											**Type** : ${it.type.name.lowercase()} $duration
+											**Raison** : ${it.reason}
+											**Appliquée par** : $appliedBy
+										""".trimIndent()
+									}
+								)
+							}
+						}
+					}.send()
+					
+				}
+			}
+			
+			publicSubCommand(::DeleteSanctionArguments) {
+				name = "supprimer"
+				description = "Permet de supprimer une sanction."
+				
+				action {
+					respond {
+						if (containsSanction(arguments.id)) {
+							removeSanction(arguments.id)
+							completeEmbed(this@publicSubCommand.kord, "Sanction supprimée.", "La sanction a été supprimée avec succès.")
+						} else {
+							content = "Sanction non trouvée."
+						}
+					}
+				}
+			}
 		}
 		
 		publicSlashCommand {
@@ -89,7 +163,7 @@ class Sanctions : Extension() {
 				description = "Permet de modifier le modérateur de la sanction."
 				
 				action {
-					modifySanction(arguments.case, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.asString)
+					modifySanction(arguments.id, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.asString)
 				}
 			}
 			
@@ -98,7 +172,7 @@ class Sanctions : Extension() {
 				description = "Permet de modifier la durée de la sanction."
 				
 				action {
-					modifySanction(arguments.case, ModifySanctionValues.DURATION, arguments.duration.toString())
+					modifySanction(arguments.id, ModifySanctionValues.DURATION, arguments.duration.toString())
 				}
 			}
 			
@@ -107,7 +181,7 @@ class Sanctions : Extension() {
 				description = "Permet de modifier la raison de la sanction."
 				
 				action {
-					modifySanction(arguments.case, ModifySanctionValues.REASON, arguments.reason)
+					modifySanction(arguments.id, ModifySanctionValues.REASON, arguments.reason)
 				}
 			}
 			
@@ -116,7 +190,7 @@ class Sanctions : Extension() {
 				description = "Permet de modifier le type de la sanction."
 				
 				action {
-					modifySanction(arguments.case, ModifySanctionValues.TYPE, arguments.type.name)
+					modifySanction(arguments.id, ModifySanctionValues.TYPE, arguments.type.name)
 				}
 			}
 		}

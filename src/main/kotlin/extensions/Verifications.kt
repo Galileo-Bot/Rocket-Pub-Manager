@@ -5,7 +5,6 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.common.annotation.KordPreview
 import storage.getVerificationCount
-import utils.ROCKET_PUB_GUILD
 import utils.completeEmbed
 
 @OptIn(KordPreview::class)
@@ -16,8 +15,6 @@ class Verifications : Extension() {
 		publicSlashCommand {
 			name = "verif"
 			description = "Permet de voir les vérifications du staff."
-			
-			guild(ROCKET_PUB_GUILD)
 			
 			check { isStaff() }
 			

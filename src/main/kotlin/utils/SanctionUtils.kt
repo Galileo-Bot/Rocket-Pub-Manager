@@ -6,6 +6,7 @@ import dev.kord.core.Kord
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
+import logger
 import storage.Sanction
 import storage.searchBannedGuild
 
@@ -38,6 +39,6 @@ suspend fun getReasonForMessage(message: Message): String? {
 		isBannedGuild -> "Publicité pour un serveur interdit."
 		else -> null
 	}.also {
-		if (debug && it != null) println("Found reason in channel ${message.channelId} for message ${message.id} : $it")
+		if (debug && it != null) logger.debug("Found reason in channel ${message.channelId.asString} for message ${message.id.asString} : $it")
 	}
 }

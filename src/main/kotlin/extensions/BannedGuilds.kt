@@ -33,7 +33,7 @@ enum class ModifyGuildValues(val translation: String) {
 
 @OptIn(KordPreview::class)
 class BannedGuilds : Extension() {
-	override val name = "bannedGuilds"
+	override val name = "BannedGuilds"
 	
 	class AddBannedGuildArguments : Arguments() {
 		/**
@@ -130,11 +130,10 @@ class BannedGuilds : Extension() {
 				
 				action {
 					respond {
-						val guild = searchBannedGuild(arguments.guild)
-						if (guild != null) {
+						searchBannedGuild(arguments.guild)?.let {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
-							modifiedGuildEmbed(bot.getKoin().get(), guild, arguments.value, guild[arguments.value], arguments.newValue)
-						} else content = "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits."
+							modifiedGuildEmbed(bot.getKoin().get(), it, arguments.value, it[arguments.value], arguments.newValue)
+						} ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also { content = it }
 					}
 				}
 			}

@@ -28,10 +28,10 @@ lateinit var connection: Connection
 suspend fun main() {
 	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
 		applicationCommands {
-			defaultGuild = ROCKET_PUB_GUILD_STAFF
+			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
 			
 			slashCommandCheck {
-				if (debug) println("Got a message from ${userFor(event)?.id} in ${channelFor(event)?.id ?: "dm"}")
+				if (debug) logger.info("Got a message from ${userFor(event)?.id?.asString} in ${channelFor(event)?.id?.asString ?: "dm"}")
 				pass()
 			}
 		}

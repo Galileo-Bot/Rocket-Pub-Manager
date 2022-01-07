@@ -8,7 +8,10 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.utils.hasPermission
+import debug
 import dev.kord.common.entity.ChannelType
+import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
@@ -39,15 +42,18 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 }
 
 suspend fun isStaff(member: MemberBehavior?) = member?.let {
-	!it.asUser().isBot &&
-		it.guild.id == ROCKET_PUB_GUILD &&
-		it.asMember().hasRole(STAFF_ROLE)
+	if (debug && it.asMemberOrNull()?.hasPermission(Permission.Administrator) == true) return@isStaff true
+	
+	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMember().hasRole(STAFF_ROLE)
 } ?: false
 
 suspend fun <T : Event> CheckContext<T>.isStaff() {
 	if (!passed) return
-	passIf { memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true }
-	fail("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.")
+	passIf {
+		memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true
+	}.whenFalse {
+		fail("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.")
+	}
 }
 
 fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message: Message): List<String>? {
