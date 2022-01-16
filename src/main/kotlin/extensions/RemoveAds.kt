@@ -4,19 +4,17 @@ import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import dev.kord.core.event.guild.MemberLeaveEvent
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import utils.ROCKET_PUB_GUILD
 import utils.getTextChannels
-import utils.isInAdChannel
+import utils.isAdChannel
 
 
 class RemoveAds : Extension() {
 	override val name: String = "Remove ads"
 	
-	@OptIn(InternalCoroutinesApi::class)
 	override suspend fun setup() {
 		event<MemberLeaveEvent> {
 			check {
@@ -25,11 +23,11 @@ class RemoveAds : Extension() {
 			}
 			
 			action {
-				event.guild.channels.getTextChannels().filter { isInAdChannel(it) }.collect { channel ->
+				event.guild.channels.getTextChannels().filter { isAdChannel(it) }.collect { channel ->
 					channel.messages.filter {
-						it.author!! == event.user
+						it.author?.fetchUserOrNull() == event.user
 					}.collect {
-						it.delete()
+						it.deleteIgnoringNotFound()
 					}
 				}
 			}

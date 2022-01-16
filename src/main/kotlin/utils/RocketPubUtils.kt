@@ -20,19 +20,19 @@ val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
 val ROCKET_PUB_GUILD_STAFF = Snowflake("770763755265064980")
 val VALID_EMOJI = Snowflake("525406069913157641")
 
-fun isInCategoryAdChannel(channel: ChannelBehavior) = channel is TextChannel && channel.topic?.contains(AD_CHANNEL_EMOTE) == true
-fun isInAdChannel(channel: ChannelBehavior) = channel is TextChannel && channel.topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true
+fun isCategoryChannel(channel: ChannelBehavior) = channel is TextChannel && channel.topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true
+fun isAdChannel(channel: ChannelBehavior) = channel is TextChannel && channel.topic?.contains(AD_CHANNEL_EMOTE) == true
 
-suspend fun <T : Event> CheckContext<T>.isInAdChannel() {
+suspend fun <T : Event> CheckContext<T>.isAdChannel() {
 	if (!passed) return
 	val channel = channelFor(event) ?: return
-	failIfNot("Channel isn't an ad channel.") { isInAdChannel(channel.fetchChannel()) }
+	failIfNot("Channel isn't an ad channel.") { isAdChannel(channel.fetchChannel()) }
 }
 
 suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	if (!passed) return
 	val channel = channelFor(event) ?: return
-	failIfNot("Channel isn't an ad category channel.") { isInCategoryAdChannel(channel.fetchChannel()) }
+	failIfNot("Channel isn't an ad category channel.") { isCategoryChannel(channel.fetchChannel()) }
 }
 
 suspend fun EventContext<MessageCreateEvent>.getLogChannel() = event.getGuild()!!.channels.first { it.id == SANCTION_LOGGER_CHANNEL } as TextChannel

@@ -30,7 +30,7 @@ import utils.STAFF_ROLE
 import utils.VALID_EMOJI
 import utils.fromEmbedUnlessChannelField
 import utils.hasRole
-import utils.isInAdChannel
+import utils.isAdChannel
 import utils.sanctionEmbed
 
 suspend fun <T : Event> CheckContext<T>.adsCheck() {
@@ -38,7 +38,7 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	inGuild(ROCKET_PUB_GUILD)
 	channelType(ChannelType.GuildText)
 	isNotBot()
-	isInAdChannel()
+	isAdChannel()
 }
 
 suspend fun isStaff(member: MemberBehavior?) = member?.let {
