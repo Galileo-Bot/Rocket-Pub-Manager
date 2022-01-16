@@ -26,11 +26,8 @@ suspend fun getReasonForMessage(message: Message): String? {
 	val inviteLink = findInviteLink(message.content)
 	val invite = if (inviteLink != null) getInvite(message.kord, inviteLink) else null
 	
-	val isBannedGuild = invite != null &&
-		(
-			invite.partialGuild?.id?.let { searchBannedGuild(it) } != null ||
-				invite.partialGuild?.name?.let { searchBannedGuild(it) } != null
-			)
+	val guild = invite?.partialGuild
+	val isBannedGuild = invite != null && (guild?.id?.let { searchBannedGuild(it) } != null || guild?.name?.let { searchBannedGuild(it) } != null)
 	
 	return when {
 		!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
@@ -39,6 +36,6 @@ suspend fun getReasonForMessage(message: Message): String? {
 		isBannedGuild -> "Publicité pour un serveur interdit."
 		else -> null
 	}.also {
-		if (debug && it != null) logger.debug("Found reason in channel ${message.channelId.enquote} for message ${message.id.enquote} : $it")
+		if (debug && it != null) logger.debug("Found reason in channel ${message.channelId.enquote} for message ${message.id.enquote} by ${message.author?.id.enquote} : $it")
 	}
 }
