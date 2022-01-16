@@ -20,3 +20,5 @@ fun Snowflake.Companion.forChannel(channel: String) = Snowflake(channel.remove("
 fun Snowflake.Companion.forUser(user: String) = Snowflake(user.remove("[<>@!]"))
 fun Snowflake.Companion.forRole(role: String) = Snowflake(role.remove("[<>@&]"))
 fun Snowflake.Companion.forEmoji(emoji: String) = Snowflake(emoji.replace("<a?:.+?:(\\d+)>", "$1"))
+
+val Snowflake?.enquote get() = toString().enquote

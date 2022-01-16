@@ -32,7 +32,7 @@ suspend fun main() {
 			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
 			
 			slashCommandCheck {
-				if (debug) logger.info("Got a message from ${userFor(event)?.id?.toString().enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
+				if (debug) logger.info("Got a message from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
 				pass()
 			}
 		}

@@ -79,7 +79,7 @@ fun getSanctions(user: Snowflake): List<Sanction> {
 	val result = connection.createStatement().executeQuery(
 		"""
 		SELECT * FROM sanctions
-		WHERE memberID = ${user.toString().enquote}
+		WHERE memberID = ${user.enquote}
 		""".trimIndent()
 	)
 	while (result.next()) {
@@ -129,7 +129,7 @@ fun removeSanction(id: Int) = connection.createStatement().executeUpdate(
 fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate(
 	"""
 	DELETE FROM sanctions
-	WHERE memberID = ${user.toString().enquote}
+	WHERE memberID = ${user.enquote}
 	${type?.let { "AND type = ${it.lowercase().enquote}" } ?: ""}
 	""".trimIndent()
 )
@@ -141,8 +141,8 @@ fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedB
 		INSERT INTO sanctions (reason, memberID, appliedByID, durationMS, type, sanctionedAt)
 		VALUES (
 			${reason.enquote},
-			${member.toString().enquote},
-			${appliedBy?.toString().enquote},
+			${member.enquote},
+			${appliedBy.enquote},
 			$durationMS,
 			${type.name.lowercase().enquote},
 			$dateTime

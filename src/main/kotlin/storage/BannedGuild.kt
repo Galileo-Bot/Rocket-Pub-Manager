@@ -26,7 +26,7 @@ fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
 		"""
 		INSERT INTO banned_guilds
 			(name, id, reason, bannedSince)
-		VALUES (${name.enquote}, ${id?.toString().enquote}, ${reason.enquote}, $dateTime);
+		VALUES (${name.enquote}, ${id.enquote}, ${reason.enquote}, $dateTime);
 		""".trimIndent()
 	)
 }

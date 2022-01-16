@@ -39,6 +39,6 @@ suspend fun getReasonForMessage(message: Message): String? {
 		isBannedGuild -> "Publicité pour un serveur interdit."
 		else -> null
 	}.also {
-		if (debug && it != null) logger.debug("Found reason in channel ${message.channelId} for message ${message.id} : $it")
+		if (debug && it != null) logger.debug("Found reason in channel ${message.channelId.enquote} for message ${message.id.enquote} : $it")
 	}
 }

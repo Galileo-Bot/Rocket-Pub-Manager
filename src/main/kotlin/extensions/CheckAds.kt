@@ -63,7 +63,6 @@ class CheckAds : Extension() {
 					sanction.type = SanctionType.MUTE
 					sanction.durationMS = channels.size.div(2).days.inWholeMilliseconds
 				}
-				
 				in 10..Int.MAX_VALUE -> {
 					sanction.type = SanctionType.MUTE
 					sanction.durationMS = channels.size.days.inWholeMilliseconds
