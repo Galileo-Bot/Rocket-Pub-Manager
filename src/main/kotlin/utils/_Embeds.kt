@@ -1,5 +1,7 @@
 package utils
 
+import com.kotlindiscord.kord.extensions.time.TimestampType
+import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import configuration
 import dev.kord.core.Kord
@@ -13,9 +15,9 @@ import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.embed
 import extensions.ModifyGuildValues
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toKotlinInstant
 import storage.BannedGuild
 import storage.Sanction
-import java.text.SimpleDateFormat
 
 suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	val user = client.getSelf(EntitySupplyStrategy.cacheWithRestFallback)
@@ -42,7 +44,7 @@ suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	
 	field {
 		name = "Depuis :"
-		value = SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(guild.bannedSince)
+		value = guild.bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.LongDateTime)
 	}
 }
 

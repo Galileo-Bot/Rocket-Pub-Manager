@@ -90,7 +90,7 @@ class BannedGuilds : Extension() {
 						searchBannedGuild(arguments.guild)?.let {
 							bannedGuildEmbed(bot.getKoin().get(), it)
 						} ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also {
-							this.content = it
+							content = it
 						}
 					}
 				}
