@@ -4,6 +4,8 @@ import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingCoalescingString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.user
@@ -23,6 +25,7 @@ import storage.getSanctions
 import storage.removeSanction
 import storage.removeSanctions
 import utils.completeEmbed
+import utils.milliseconds
 import utils.sanctionEmbed
 
 @OptIn(KordPreview::class)
@@ -40,6 +43,12 @@ class Sanctions : Extension() {
 	
 	class ListSanctionsArguments : Arguments() {
 		val user by user("user", "L'utilisateur à qui afficher les sanctions.")
+	}
+	
+	class MuteArguments : Arguments() {
+		val member by member("membre", "Le membre à mute.")
+		val duration by duration("duration", "La durée du mute.")
+		val reason by defaultingCoalescingString("raison", "La raison du mute.", "Aucune raison donnée.")
 	}
 	
 	class WarnArguments : Arguments() {
@@ -159,6 +168,25 @@ class Sanctions : Extension() {
 								}
 							}
 						}
+					}
+				}
+			}
+		}
+		
+		publicSlashCommand(::MuteArguments) {
+			name = "mute"
+			description = "Mute une personne en utilisant les timeout (ejections) discord."
+			
+			check { isStaff() }
+			
+			action {
+				respond("Commande non disponible pour le moment.").also { return@action }
+				@Suppress("UNREACHABLE_CODE")
+				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = arguments.duration.milliseconds.toLong(), appliedBy = user.id).apply {
+					save()
+					arguments.member
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}
 			}
