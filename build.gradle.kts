@@ -21,6 +21,7 @@ repositories {
 }
 
 dependencies {
+	implementation(libs.kord.base)
 	implementation(libs.kord.extensions)
 	implementation(libs.kotlin.stdlib)
 	implementation(libs.dotEnv)

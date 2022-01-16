@@ -59,7 +59,7 @@ class ModifySanctions : Extension() {
 				description = "Permet de modifier le modérateur de la sanction."
 				
 				action {
-					modifySanction(arguments.id, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.asString)
+					modifySanction(arguments.id, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.toString())
 				}
 			}
 			

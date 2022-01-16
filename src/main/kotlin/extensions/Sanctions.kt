@@ -96,7 +96,7 @@ class Sanctions : Extension() {
 							page {
 								completeEmbed(
 									client = bot.getKoin().get(),
-									title = "Liste des sanctions appliquées à ${user.tag} (${user.id.asString}).",
+									title = "Liste des sanctions appliquées à ${user.tag} (${user.id}).",
 									description = it.joinToString("\n\n") {
 										val duration = if (it.durationMS > 0) "\n**Duration** : ${it.formattedDuration}" else ""
 										val appliedBy = it.appliedBy?.let { appliedById ->
@@ -104,10 +104,10 @@ class Sanctions : Extension() {
 												this@publicSlashCommand.kord.getUser(
 													appliedById,
 													EntitySupplyStrategy.cacheWithCachingRestFallback
-												)?.tag ?: appliedById.asString
+												)?.tag ?: appliedById.toString()
 											}
 											
-											"$getUserTag (${appliedById.asString})"
+											"$getUserTag ($appliedById)"
 										} ?: "Automatique ou non trouvé"
 										
 										"""

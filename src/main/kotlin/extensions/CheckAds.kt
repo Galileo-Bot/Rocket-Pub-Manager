@@ -106,7 +106,7 @@ class CheckAds : Extension() {
 			val liveMessage = message.live()
 			setBinReactionDeleteAllSimilarAds(liveMessage, message)
 			liveMessage.onReactionAdd {
-				if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.asString) return@onReactionAdd
+				if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
 				validate(message, it)
 			}
 		}
@@ -122,7 +122,7 @@ class CheckAds : Extension() {
 				channel.messages.firstOrNull { findMessage ->
 					val reason = getReasonForMessage(findMessage)
 					(if (reason != null) message.embeds[0].description!!.contains(reason) else false) &&
-						message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author!!.id.asString) == true
+						message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author!!.id.toString()) == true
 				}?.delete()
 			}
 		}
@@ -132,7 +132,7 @@ class CheckAds : Extension() {
 		if (it.embeds.isEmpty()) return@firstOrNull false
 		
 		val firstEmbed = it.embeds[0]
-		firstEmbed.description == message?.content && firstEmbed.fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.asString) == true
+		firstEmbed.description == message?.content && firstEmbed.fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.toString()) == true
 	}
 	
 	override suspend fun setup() {

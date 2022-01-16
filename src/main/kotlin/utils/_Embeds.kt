@@ -119,7 +119,7 @@ suspend fun EmbedBuilder.sanctionEmbed(
 	
 	field {
 		name = "Par :"
-		value = "${event.member!!.tag} (`${sanction.member.asString}`)"
+		value = "${event.member!!.tag} (`${sanction.member}`)"
 	}
 	
 	field {
@@ -149,12 +149,12 @@ suspend fun EmbedBuilder.verificationEmbed(
 				name = "Invitation :"
 				value = """
 				Serveur: ${invite?.partialGuild?.name ?: "Non trouvé."}
-				ID du serveur : ${invite?.partialGuild?.id?.asString ?: "Non trouvé."}
+				ID du serveur : ${invite?.partialGuild?.id?.toString() ?: "Non trouvé."}
 				Nombre de membres : ${guild?.memberCount ?: invite?.approximateMemberCount ?: "Non trouvé."}
 				Owner : ${
 					when {
 						invite?.partialGuild?.owner == true -> "${event.member?.mention} (`${event.member?.id}`)"
-						guild?.owner != null -> "${guild.owner.mention} (`${guild.ownerId.asString}`)"
+						guild?.owner != null -> "${guild.owner.mention} (`${guild.ownerId}`)"
 						else -> "Non trouvé."
 					}
 				}
@@ -192,8 +192,8 @@ suspend fun FollowupMessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: San
 		
 		completeEmbed(
 			kord,
-			"${sanction.type.translation} de ${user.tag} (${user.id.asString})",
-			"Nouvelle sanction appliquée à ${user.tag} (`${user.id.asString}`)."
+			"${sanction.type.translation} de ${user.tag} (${user.id})",
+			"Nouvelle sanction appliquée à ${user.tag} (`${user.id}`)."
 		)
 		
 		field {
@@ -204,7 +204,7 @@ suspend fun FollowupMessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: San
 		if (sanction.appliedBy != null) {
 			field {
 				name = "Par :"
-				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy.asString}`)"
+				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
 			}
 		}
 		

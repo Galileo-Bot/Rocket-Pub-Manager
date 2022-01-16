@@ -18,7 +18,7 @@ data class BannedGuild(val name: String?, val id: String?, val reason: String, v
 	}
 }
 
-fun addBannedGuild(id: Snowflake, reason: String) = addBannedGuild(id.asString, reason)
+fun addBannedGuild(id: Snowflake, reason: String) = addBannedGuild(id.toString(), reason)
 fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
 	val state = connection.createStatement()
 	val dateTime = SimpleDateFormat(datePattern).format(Date.from(Instant.now())).enquote
@@ -26,7 +26,7 @@ fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
 		"""
 		INSERT INTO banned_guilds
 			(name, id, reason, bannedSince)
-		VALUES (${name.enquote}, ${id?.asString.enquote}, ${reason.enquote}, $dateTime);
+		VALUES (${name.enquote}, ${id?.toString().enquote}, ${reason.enquote}, $dateTime);
 		""".trimIndent()
 	)
 }
@@ -58,7 +58,7 @@ fun modifyGuildValue(name: String, value: ModifyGuildValues, newValue: String) {
 	)
 }
 
-fun searchBannedGuild(id: Snowflake) = searchBannedGuild(id.asString)
+fun searchBannedGuild(id: Snowflake) = searchBannedGuild(id.toString())
 fun searchBannedGuild(name: String): BannedGuild? {
 	val state = connection.createStatement()
 	val result = state.executeQuery(
@@ -80,7 +80,7 @@ fun searchBannedGuild(name: String): BannedGuild? {
 	}.getOrNull()
 }
 
-fun removeBannedGuild(id: Snowflake) = removeBannedGuild(id.asString)
+fun removeBannedGuild(id: Snowflake) = removeBannedGuild(id.toString())
 fun removeBannedGuild(name: String) {
 	val state = connection.createStatement()
 	state.executeUpdate(

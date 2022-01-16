@@ -15,9 +15,9 @@ fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake? = null) {
 		"""
 		INSERT INTO verifications (staffID, verifiedAt, messageID)
 		VALUES (
-			${verifiedBy.asString.enquote},
+			${verifiedBy.toString().enquote},
 			$dateTime,
-			${messageID?.asString.enquote}
+			${messageID?.toString().enquote}
 		)
 		"""
 	)
@@ -28,7 +28,7 @@ fun searchVerificationMessage(messageID: Snowflake): String? {
 	val result = state.executeQuery(
 		"""
 			SELECT messageID FROM verifications
-			WHERE messageID = ${messageID.asString.enquote}
+			WHERE messageID = ${messageID.toString().enquote}
 		""".trimIndent()
 	)
 	result.next()

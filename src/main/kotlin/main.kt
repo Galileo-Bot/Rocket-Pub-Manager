@@ -14,6 +14,7 @@ import extensions.Verifications
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
 import utils.ROCKET_PUB_GUILD_STAFF
+import utils.enquote
 import java.sql.Connection
 import java.util.*
 
@@ -31,7 +32,7 @@ suspend fun main() {
 			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
 			
 			slashCommandCheck {
-				if (debug) logger.info("Got a message from ${userFor(event)?.id?.asString} in ${channelFor(event)?.id?.asString ?: "dm"}")
+				if (debug) logger.info("Got a message from ${userFor(event)?.id?.toString().enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
 				pass()
 			}
 		}
