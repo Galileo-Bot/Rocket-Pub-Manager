@@ -1,5 +1,6 @@
 package storage
 
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import connection
 import dev.kord.common.entity.Snowflake
@@ -15,11 +16,13 @@ import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
 
-enum class SanctionType(val translation: String) {
+enum class SanctionType(val translation: String) : ChoiceEnum {
 	BAN("Bannissement"),
 	KICK("Expulsion"),
 	MUTE("Exclusion"),
-	WARN("Avertissement")
+	WARN("Avertissement");
+	
+	override val readableName = translation
 }
 
 @Serializable
@@ -120,6 +123,14 @@ fun removeSanction(id: Int) = connection.createStatement().executeUpdate(
 	"""
 	DELETE FROM sanctions
 	WHERE ID = ${id.toString().enquote}
+	""".trimIndent()
+)
+
+fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate(
+	"""
+	DELETE FROM sanctions
+	WHERE memberID = ${user.asString.enquote}
+	${type?.let { "AND type = ${it.lowercase().enquote}" } ?: ""}
 	""".trimIndent()
 )
 

@@ -1,8 +1,9 @@
 package extensions
 
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.enum
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
@@ -25,10 +26,12 @@ import utils.modifiedGuildEmbed
 
 fun isValidGuild(string: String) = string.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
 
-enum class ModifyGuildValues(val translation: String) {
+enum class ModifyGuildValues(val translation: String) : ChoiceEnum {
 	NAME("Nom"),
 	ID("ID"),
-	REASON("Raison")
+	REASON("Raison");
+	
+	override val readableName = translation
 }
 
 @OptIn(KordPreview::class)
@@ -53,7 +56,7 @@ class BannedGuilds : Extension() {
 	
 	class ModifyBannedGuildArguments : Arguments() {
 		val guild by string("serveur", "Le serveur à modifier.")
-		val value by enum<ModifyGuildValues>("propriété", "La propriété à modifier.", "nom/raison/id")
+		val value by enumChoice<ModifyGuildValues>("propriété", "La propriété à modifier.", "nom/raison/id")
 		val newValue by string("valeur", "La nouvelle valeur à utiliser.")
 	}
 	
