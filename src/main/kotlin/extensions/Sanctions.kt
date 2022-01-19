@@ -24,7 +24,6 @@ import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import storage.Sanction
-import storage.SanctionType
 import storage.containsSanction
 import storage.getSanctionCount
 import storage.getSanctions
@@ -37,7 +36,16 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 
-enum class DurationUnits(val translation: String, val durationUnit: DurationUnit) : ChoiceEnum {
+enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
+	BAN("Bannissement", "<:ban:498482002601705482>"),
+	KICK("Expulsion", "<:kick:933505066273501184>\n"),
+	MUTE("Exclusion (mute)", "<:mute:933505777354834021>\n"),
+	WARN("Avertissement", "⚠️");
+	
+	override val readableName = translation
+}
+
+enum class DurationUnits(translation: String, val durationUnit: DurationUnit) : ChoiceEnum {
 	DAYS("jours", DurationUnit.DAYS),
 	HOURS("heures", DurationUnit.HOURS),
 	MINUTES("minutes", DurationUnit.MINUTES);
@@ -64,7 +72,6 @@ class Sanctions : Extension() {
 	
 	class MuteArguments : Arguments() {
 		val member by member("membre", "Le membre à mute.")
-//		val duration by duration("duration", "La durée du mute.")
 		val duration by int("durée", "La durée du mute.")
 		val unit by enumChoice<DurationUnits>("unité", "L'unité de la durée du mute.", "unité")
 		val reason by defaultingCoalescingString("raison", "La raison du mute.", "Aucune raison donnée.")
@@ -108,7 +115,7 @@ class Sanctions : Extension() {
 				action {
 					val user = arguments.user
 					val sanctions = getSanctions(user.id)
-					if (sanctions.isEmpty()) respond("Aucune sanction n'a été appliquée à cet utilisateur.").also { return@action }
+					if (sanctions.isEmpty()) throw DiscordRelayedException("Aucune sanction n'a été appliquée à cet utilisateur.")
 					
 					respondingPaginator {
 						sanctions.chunked(20).forEach {
@@ -123,15 +130,15 @@ class Sanctions : Extension() {
 												this@publicSlashCommand.kord.getUser(
 													appliedById,
 													EntitySupplyStrategy.cacheWithCachingRestFallback
-												)?.tag ?: appliedById.toString()
+												)?.tag ?: "`$appliedById`"
 											}
 											
-											"$getUserTag ($appliedById)"
+											"$getUserTag (`$appliedById`)"
 										} ?: "Automatique ou non trouvé"
 										
 										"""
-											> **Cas numéro ${it.id}**
-											**Type** : ${it.type.name.lowercase()} $duration
+											> **Cas numéro ${it.id}** ${it.type.emote}
+											**Type** : ${it.type.translation} $duration
 											**Raison** : ${it.reason}
 											**Appliquée par** : $appliedBy
 										""".trimIndent()
@@ -199,7 +206,6 @@ class Sanctions : Extension() {
 			check { isStaff() }
 			
 			action {
-				@Suppress("UNREACHABLE_CODE")
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
 				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
 				

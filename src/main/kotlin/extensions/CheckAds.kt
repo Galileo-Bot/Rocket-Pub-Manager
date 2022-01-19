@@ -35,7 +35,6 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
-import storage.SanctionType
 import utils.AD_CATEGORY_CHANNEL_EMOTE
 import utils.AD_CHANNEL_EMOTE
 import utils.ROCKET_PUB_GUILD

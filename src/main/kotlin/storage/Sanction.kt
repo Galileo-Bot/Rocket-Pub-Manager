@@ -1,10 +1,10 @@
 package storage
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import connection
 import dev.kord.common.entity.Snowflake
 import extensions.ModifySanctionValues
+import extensions.SanctionType
 import kotlinx.serialization.Serializable
 import utils.enquote
 import java.sql.ResultSet
@@ -15,15 +15,6 @@ import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
-
-enum class SanctionType(val translation: String) : ChoiceEnum {
-	BAN("Bannissement"),
-	KICK("Expulsion"),
-	MUTE("Exclusion"),
-	WARN("Avertissement");
-	
-	override val readableName = translation
-}
 
 @Serializable
 data class Sanction(

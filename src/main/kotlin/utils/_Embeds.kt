@@ -118,12 +118,12 @@ suspend fun EmbedBuilder.sanctionEmbed(
 	}
 	
 	field {
-		name = "Par :"
+		name = "<:moderator:933507900092072046> Par :"
 		value = "${event.member!!.tag} (`${sanction.member}`)"
 	}
 	
 	field {
-		name = "Salons :"
+		name = "<:textuel:658085848092508220> Salons :"
 		value = channels.joinToString("\n", transform = Channel::mention)
 	}
 }
@@ -136,7 +136,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 	val link = findInviteCode(event.message.content)
 	
 	field {
-		name = "Salons :"
+		name = "<:textuel:658085848092508220> Salons :"
 		value = channels.joinToString("\n", transform = TextChannel::mention)
 	}
 	
@@ -160,7 +160,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 				}
 				""".trimIndent()
 			}
-		} catch (ignore: Exception) {
+		} catch (_: Exception) {
 			field {
 				name = "Invitation :"
 				value = findInviteLink(event.message.content)!!
@@ -169,7 +169,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 	}
 	
 	field {
-		name = "Par :"
+		name = "<:user:933508955722899477> Par :"
 		value = "${event.message.author!!.mention} (`${event.message.author!!.id}`)"
 	}
 }
@@ -192,25 +192,25 @@ suspend fun FollowupMessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: San
 		
 		completeEmbed(
 			kord,
-			"${sanction.type.translation} de ${user.tag} (${user.id})",
+			"${sanction.type.emote}${sanction.type.translation} de ${user.tag} (${user.id})",
 			"Nouvelle sanction appliquée à ${user.tag} (`${user.id}`)."
 		)
 		
 		field {
-			name = "Raison :"
+			name = "\uD83D\uDCC4 Raison :"
 			value = sanction.reason
 		}
 		
 		if (sanction.appliedBy != null) {
 			field {
-				name = "Par :"
+				name = "<:moderator:933507900092072046> Par :"
 				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
 			}
 		}
 		
 		if (sanction.durationMS != 0L) {
 			field {
-				name = "Durée :"
+				name = ":clock1: Durée :"
 				value = sanction.formattedDuration
 			}
 		}
