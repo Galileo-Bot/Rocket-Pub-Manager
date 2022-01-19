@@ -2,6 +2,7 @@
 kotlin = "1.6.10"
 
 connector = "8.0.27"
+datetime = "0.3.2"
 dotenv = "6.2.2"
 groovy = "3.0.9"
 kord-base = "0.8.x-SNAPSHOT"
@@ -12,6 +13,7 @@ serialization = "1.3.2"
 
 [libraries]
 connector = { module = "mysql:mysql-connector-java", version.ref = "connector" }
+datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 dotEnv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
 kord-base = { module = "dev.kord:kord-core", version.ref = "kord-base" }

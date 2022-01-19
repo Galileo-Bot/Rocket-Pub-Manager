@@ -32,6 +32,7 @@ dependencies {
 	
 	implementation(libs.serialization)
 	implementation(libs.connector)
+	implementation(libs.datetime)
 }
 
 tasks.withType<KotlinCompile> {
