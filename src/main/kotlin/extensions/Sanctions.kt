@@ -1,11 +1,13 @@
 package extensions
 
+import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingCoalescingString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.user
@@ -13,10 +15,14 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondingPaginator
+import com.kotlindiscord.kord.extensions.utils.canInteract
+import com.kotlindiscord.kord.extensions.utils.selfMember
 import dev.kord.common.annotation.KordPreview
+import dev.kord.core.behavior.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import storage.Sanction
 import storage.SanctionType
 import storage.containsSanction
@@ -25,8 +31,19 @@ import storage.getSanctions
 import storage.removeSanction
 import storage.removeSanctions
 import utils.completeEmbed
-import utils.milliseconds
 import utils.sanctionEmbed
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
+
+
+enum class DurationUnits(val translation: String, val durationUnit: DurationUnit) : ChoiceEnum {
+	DAYS("jours", DurationUnit.DAYS),
+	HOURS("heures", DurationUnit.HOURS),
+	MINUTES("minutes", DurationUnit.MINUTES);
+	
+	override val readableName = translation
+}
 
 @OptIn(KordPreview::class)
 class Sanctions : Extension() {
@@ -47,7 +64,9 @@ class Sanctions : Extension() {
 	
 	class MuteArguments : Arguments() {
 		val member by member("membre", "Le membre à mute.")
-		val duration by duration("duration", "La durée du mute.")
+//		val duration by duration("duration", "La durée du mute.")
+		val duration by int("durée", "La durée du mute.")
+		val unit by enumChoice<DurationUnits>("unité", "L'unité de la durée du mute.", "unité")
 		val reason by defaultingCoalescingString("raison", "La raison du mute.", "Aucune raison donnée.")
 	}
 	
@@ -180,11 +199,17 @@ class Sanctions : Extension() {
 			check { isStaff() }
 			
 			action {
-				respond("Commande non disponible pour le moment.").also { return@action }
 				@Suppress("UNREACHABLE_CODE")
-				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = arguments.duration.milliseconds.toLong(), appliedBy = user.id).apply {
+				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
+				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
+				
+				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = duration.inWholeMilliseconds, appliedBy = user.id).apply {
 					save()
-					arguments.member
+					if (!guild!!.selfMember().canInteract(arguments.member)) {
+						throw DiscordRelayedException("Je ne peux pas mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
+					}
+					
+					arguments.member.edit { communicationDisabledUntil = Clock.System.now() + duration }
 					respond {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
