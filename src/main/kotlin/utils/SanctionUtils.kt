@@ -12,7 +12,7 @@ import storage.searchBannedGuild
 
 suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot): MutableSet<TextChannel> {
 	val embed = message.embeds[0]
-	val field = embed.fields.find { it.name == "Salons :" }
+	val field = embed.fields.find { it.name.contains("Salons :") }
 	return field!!.value.split("\n").mapNotNull {
 		val id = dev.kord.common.entity.Snowflake.forChannel(it)
 		bot.getKoin().get<Kord>().getChannel(id) as TextChannel?
