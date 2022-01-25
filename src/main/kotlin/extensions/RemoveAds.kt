@@ -5,6 +5,7 @@ import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
+import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.guild.MemberLeaveEvent
 import kotlinx.coroutines.flow.filter
 import utils.ROCKET_PUB_GUILD
@@ -23,7 +24,7 @@ class RemoveAds : Extension() {
 			}
 			
 			action {
-				event.guild.channels.getTextChannels().filter { isAdChannel(it) }.collect { channel ->
+				event.guild.channels.getTextChannels().filter(TextChannel::isAdChannel).collect { channel ->
 					channel.messages.filter {
 						it.author?.fetchUserOrNull() == event.user
 					}.collect {

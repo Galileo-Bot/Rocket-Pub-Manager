@@ -10,7 +10,6 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.UtcOffset
 
 const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z0-9-]+)"
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
@@ -20,21 +19,20 @@ val STAFF_ROLE = Snowflake("494521544618278934")
 val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
 val ROCKET_PUB_GUILD_STAFF = Snowflake("770763755265064980")
 val VALID_EMOJI = Snowflake("525406069913157641")
-val utcOffset = UtcOffset(2)
 
-fun isCategoryChannel(channel: ChannelBehavior) = channel is TextChannel && channel.topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true
-fun isAdChannel(channel: ChannelBehavior) = channel is TextChannel && channel.topic?.contains(AD_CHANNEL_EMOTE) == true
+fun ChannelBehavior.isAdChannel() = this is TextChannel && topic?.contains(AD_CHANNEL_EMOTE) == true
+fun ChannelBehavior.isCategoryChannel() = this is TextChannel && topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true
 
 suspend fun <T : Event> CheckContext<T>.isAdChannel() {
 	if (!passed) return
 	val channel = channelFor(event) ?: return
-	failIfNot("Channel isn't an ad channel.") { isAdChannel(channel.fetchChannel()) }
+	failIfNot("Channel isn't an ad channel.") { channel.fetchChannel().isAdChannel() }
 }
 
 suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	if (!passed) return
 	val channel = channelFor(event) ?: return
-	failIfNot("Channel isn't an ad category channel.") { isCategoryChannel(channel.fetchChannel()) }
+	failIfNot("Channel isn't an ad category channel.") { channel.fetchChannel().isCategoryChannel() }
 }
 
 suspend fun EventContext<MessageCreateEvent>.getLogChannel() = event.getGuild()!!.channels.first { it.id == SANCTION_LOGGER_CHANNEL } as TextChannel

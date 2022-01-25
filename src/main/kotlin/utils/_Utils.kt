@@ -8,7 +8,6 @@ import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.datetime.DateTimePeriod
 
 fun <T : Channel> Flow<T>.getTextChannels() = filterIsInstance<TextChannel>()
 
@@ -22,8 +21,6 @@ fun String.cutFormatting(index: Int) = if (length > index - 3) take(index - 3) +
 
 fun String.remove(regex: Regex) = replace(regex, "")
 fun String.remove(pattern: String) = replace(Regex(pattern), "")
-
-val DateTimePeriod.milliseconds get() = nanoseconds / 1000000
 
 val ReactionEmoji.id get() = urlFormat.remove("$name:")
 

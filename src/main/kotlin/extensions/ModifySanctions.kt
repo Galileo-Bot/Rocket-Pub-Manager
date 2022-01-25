@@ -30,7 +30,7 @@ class ModifySanctions : Extension() {
 	
 	class ModifyAppliedByArguments : ModifySanction() {
 		val appliedBy by member("modérateur", "Par qui la sanction a été appliquée.", { ROCKET_PUB_GUILD }) { _, member ->
-			if (!isStaff(member)) {
+			if (!member.isStaff()) {
 				throw DiscordRelayedException("La personne n'a pas le rôle staff et n'est donc pas modérateur, impossible de l'utiliser.")
 			}
 		}

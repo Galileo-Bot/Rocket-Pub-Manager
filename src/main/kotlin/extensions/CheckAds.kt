@@ -35,22 +35,7 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
-import utils.AD_CATEGORY_CHANNEL_EMOTE
-import utils.AD_CHANNEL_EMOTE
-import utils.ROCKET_PUB_GUILD
-import utils.STAFF_ROLE
-import utils.SanctionMessage
-import utils.VALID_EMOJI
-import utils.asSafeUsersMentions
-import utils.getChannelsFromSanctionMessage
-import utils.getFromValue
-import utils.getLogChannel
-import utils.getReasonForMessage
-import utils.id
-import utils.isAdChannel
-import utils.isCategoryChannel
-import utils.sanctionEmbed
-import utils.verificationEmbed
+import utils.*
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
@@ -102,7 +87,7 @@ class CheckAds : Extension() {
 						val addedChannels = mutableListOf<String>()
 						channel.channels.collect {
 							if (it !is TextChannel) return@collect
-							if ((isTypeCategory && isCategoryChannel(channel)) || (!isTypeCategory && isAdChannel(channel))) return@collect
+							if ((isTypeCategory && channel.isCategoryChannel()) || (!isTypeCategory && channel.isAdChannel())) return@collect
 							it.edit { topic = "${type.emote} ${it.topic}" }
 							addedChannels.add(it.mention)
 						}
@@ -114,8 +99,8 @@ class CheckAds : Extension() {
 					}
 					is TextChannel -> {
 						when {
-							isTypeCategory && isCategoryChannel(channel) -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
-							!isTypeCategory && isAdChannel(channel) -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
+							isTypeCategory && channel.isCategoryChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
+							!isTypeCategory && channel.isAdChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
 							else -> {
 								channel.edit { topic = "${type.emote} ${channel.topic}" }
 								respond("Le salon ${channel.mention} a été ajouté à la ${type.sentence} à vérifier.")
@@ -172,8 +157,8 @@ class CheckAds : Extension() {
 		
 		val old = sanctionMessages.find {
 			it.sanction.member == sanction.member
-				&& it.sanction.reason == sanction.reason
-				&& it.sanction.type == sanction.type
+					&& it.sanction.reason == sanction.reason
+					&& it.sanction.type == sanction.type
 		}
 		
 		if (old != null) {
@@ -244,7 +229,7 @@ class CheckAds : Extension() {
 				channel.messages.firstOrNull { findMessage ->
 					val reason = getReasonForMessage(findMessage)
 					(if (reason != null) message.embeds[0].description!!.contains(reason) else false) &&
-						message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
+							message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
 				}?.delete()
 			}
 		}

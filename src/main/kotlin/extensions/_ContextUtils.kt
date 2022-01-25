@@ -1,6 +1,7 @@
 package extensions
 
 import com.kotlindiscord.kord.extensions.checks.channelType
+import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.checks.memberFor
@@ -25,6 +26,7 @@ import storage.Sanction
 import storage.saveVerification
 import storage.searchVerificationMessage
 import utils.ROCKET_PUB_GUILD
+import utils.ROCKET_PUB_GUILD_STAFF
 import utils.SANCTION_LOGGER_CHANNEL
 import utils.STAFF_ROLE
 import utils.VALID_EMOJI
@@ -41,18 +43,21 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	isAdChannel()
 }
 
-suspend fun isStaff(member: MemberBehavior?) = member?.let {
+
+suspend fun MemberBehavior?.isStaff() = this?.let {
 	if (debug && it.asMemberOrNull()?.hasPermission(Permission.Administrator) == true) return@isStaff true
-	
-	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMember().hasRole(STAFF_ROLE)
+	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMemberOrNull()?.hasRole(STAFF_ROLE) == true
 } ?: false
 
 suspend fun <T : Event> CheckContext<T>.isStaff() {
 	if (!passed) return
-	passIf {
-		memberFor(event)?.asMemberOrNull()?.let { isStaff(it) } == true
-	}.whenFalse {
-		fail("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.")
+	val guild = guildFor(event)
+	
+	val inStaffGuild = guild?.id == ROCKET_PUB_GUILD_STAFF
+	val isStaff = memberFor(event)?.asMemberOrNull().isStaff()
+	
+	failIf("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.") {
+		guild == null || !inStaffGuild || isStaff
 	}
 }
 

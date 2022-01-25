@@ -80,6 +80,10 @@ class Sanctions : Extension() {
 		val reason by defaultingCoalescingString("raison", "La raison du mute.", "Aucune raison donnée.")
 	}
 	
+	class UnMuteArguments : Arguments() {
+		val member by member("membre", "Le membre à unmute.")
+	}
+	
 	class WarnArguments : Arguments() {
 		val member by member("membre", "L'utilisateur à qui avertir.")
 		val reason by coalescedString("raison", "Raison de l'avertissement.")
@@ -201,13 +205,19 @@ class Sanctions : Extension() {
 		
 		publicSlashCommand(::MuteArguments) {
 			name = "mute"
-			description = "Mute une personne en utilisant les timeout (ejections) discord."
+			description = "Mute une personne en utilisant les timeout (éjections) discord."
 			
 			check { isStaff() }
 			
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
-				if (arguments.member.timeoutUntil != null) throw DiscordRelayedException("La personne est déjà mute et sera unmute ${arguments.member.timeoutUntil!!.toMessageFormat(DiscordTimestampStyle.RelativeTime)}.")
+				if (arguments.member.timeoutUntil != null) throw DiscordRelayedException(
+					"La personne est déjà mute et sera unmute ${
+						arguments.member.timeoutUntil!!.toMessageFormat(
+							DiscordTimestampStyle.RelativeTime
+						)
+					}."
+				)
 				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
 				if (duration > 28.days) throw DiscordRelayedException("La durée doit être de moins de 28 jours.")
 				
@@ -217,11 +227,31 @@ class Sanctions : Extension() {
 						throw DiscordRelayedException("Je ne peux pas mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
 					}
 					
-					arguments.member.edit { communicationDisabledUntil = Clock.System.now() + duration }
+					arguments.member.edit { timeoutUntil = Clock.System.now() + duration }
 					respond {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}
+			}
+		}
+		
+		publicSlashCommand(::UnMuteArguments) {
+			name = "unmute"
+			description = "Permet de retirer le mute d'une personne (garde quand même la sanction)."
+			
+			check { isStaff() }
+			
+			action {
+				if (!guild!!.selfMember().canInteract(arguments.member)) {
+					throw DiscordRelayedException("Je ne peux pas retirer le mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
+				}
+				arguments.member.timeoutUntil?.let {
+					arguments.member.edit {
+						timeoutUntil = null
+					}.also {
+						respond("Le membre a bien été un-mute.")
+					}
+				} ?: throw DiscordRelayedException("Cette personne n'est pas mute, je ne peux pas l'un-mute voyons...")
 			}
 		}
 		
