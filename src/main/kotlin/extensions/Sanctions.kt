@@ -17,10 +17,12 @@ import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
+import com.kotlindiscord.kord.extensions.utils.timeoutUntil
+import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.annotation.KordPreview
+import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import storage.Sanction
@@ -31,6 +33,7 @@ import storage.removeSanction
 import storage.removeSanctions
 import utils.completeEmbed
 import utils.sanctionEmbed
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -147,7 +150,6 @@ class Sanctions : Extension() {
 							}
 						}
 					}.send()
-					
 				}
 			}
 			
@@ -181,13 +183,11 @@ class Sanctions : Extension() {
 							content = "Cet utilisateur n'a déjà aucune sanction."
 						} else {
 							removeSanctions(arguments.user.id, arguments.type?.toString())
-							embed {
-								completeEmbed(
-									this@publicSubCommand.kord,
-									"${sanctions.size} Sanctions supprimées",
-									"Les sanctions de ${arguments.user.mention} ont bien été supprimées avec succès."
-								)
-								
+							completeEmbed(
+								this@publicSubCommand.kord,
+								"${sanctions.size} Sanctions supprimées",
+								"Les sanctions de ${arguments.user.mention} ont bien été supprimées avec succès."
+							) {
 								field {
 									name = "Types"
 									value = sanctions.groupBy { it.type }.map { "${it.key.translation + "s"} : **${it.value.size}**" }.joinToString("\n")
@@ -207,7 +207,9 @@ class Sanctions : Extension() {
 			
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
+				if (arguments.member.timeoutUntil != null) throw DiscordRelayedException("La personne est déjà mute et sera unmute ${arguments.member.timeoutUntil!!.toMessageFormat(DiscordTimestampStyle.RelativeTime)}.")
 				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
+				if (duration > 28.days) throw DiscordRelayedException("La durée doit être de moins de 28 jours.")
 				
 				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = duration.inWholeMilliseconds, appliedBy = user.id).apply {
 					save()

@@ -48,11 +48,12 @@ suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	}
 }
 
-suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String = "") {
+suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String = "", block: EmbedBuilder.() -> Unit = {}) {
 	basicEmbed(client)
 	
 	this.title = title
 	if (description.isNotBlank()) this.description = description
+	apply(block)
 }
 
 fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
@@ -148,7 +149,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 			field {
 				name = "Invitation :"
 				value = """
-				Serveur: ${invite?.partialGuild?.name ?: "Non trouvé."}
+				Serveur : ${invite?.partialGuild?.name ?: "Non trouvé."}
 				ID du serveur : ${invite?.partialGuild?.id?.toString() ?: "Non trouvé."}
 				Nombre de membres : ${guild?.memberCount ?: invite?.approximateMemberCount ?: "Non trouvé."}
 				Owner : ${
@@ -174,7 +175,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 	}
 }
 
-suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String) = embed { completeEmbed(client, title, description) }
+suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) = embed { completeEmbed(client, title, description) }
 
 suspend fun FollowupMessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
 
@@ -192,8 +193,8 @@ suspend fun FollowupMessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: San
 		
 		completeEmbed(
 			kord,
-			"${sanction.type.emote}${sanction.type.translation} de ${user.tag} (${user.id})",
-			"Nouvelle sanction appliquée à ${user.tag} (`${user.id}`)."
+			"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
+			"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
 		)
 		
 		field {
