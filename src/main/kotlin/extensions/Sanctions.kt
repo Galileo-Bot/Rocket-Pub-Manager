@@ -7,12 +7,13 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.i
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingCoalescingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalInt
 import com.kotlindiscord.kord.extensions.commands.converters.impl.user
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import com.kotlindiscord.kord.extensions.utils.canInteract
@@ -21,6 +22,7 @@ import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.toMessageFormat
+import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
 import kotlinx.coroutines.runBlocking
@@ -60,6 +62,19 @@ enum class DurationUnits(translation: String, val durationUnit: DurationUnit) : 
 class Sanctions : Extension() {
 	override val name = "Sanctions"
 	
+	class BanArguments : Arguments() {
+		val member by member("membre", "Le membre à expulser.")
+		val reason by coalescedString("raison", "La raison de du ban.")
+		val duration by optionalInt("durée", "La durée du ban.")
+		val deleteDays by optionalInt("suppression", "Le nombre de jours auquel supprimer les messages.") { _, value ->
+			if (value != null) {
+				if (value < 0) throw DiscordRelayedException("La durée de suppression doit être supérieure à 0.")
+				else if (value > 7) throw DiscordRelayedException("La durée de suppression ne peut pas être supérieure à 7 jours.")
+			}
+		}
+		val unit by optionalEnumChoice<DurationUnits>("unité", "L'unité de la durée du ban.", "unité")
+	}
+	
 	class DeleteSanctionArguments : Arguments() {
 		val id by int("cas", "Le numéro de la sanction à supprimer.")
 	}
@@ -74,15 +89,15 @@ class Sanctions : Extension() {
 	}
 	
 	class KickArguments : Arguments() {
-		val member by member("membre", "L'utilisateur à qui expulser.")
-		val reason by defaultingCoalescingString("raison", "La raison de l'expulsion.", "Non spécifiée.")
+		val member by member("membre", "Le membre à expulser.")
+		val reason by coalescedString("raison", "La raison de l'expulsion.")
 	}
 	
 	class MuteArguments : Arguments() {
 		val member by member("membre", "Le membre à mute.")
 		val duration by int("durée", "La durée du mute.")
 		val unit by enumChoice<DurationUnits>("unité", "L'unité de la durée du mute.", "unité")
-		val reason by defaultingCoalescingString("raison", "La raison du mute.", "Aucune raison donnée.")
+		val reason by coalescedString("raison", "La raison du mute.")
 	}
 	
 	class UnMuteArguments : Arguments() {
@@ -208,6 +223,39 @@ class Sanctions : Extension() {
 			}
 		}
 		
+		publicSlashCommand(::BanArguments) {
+			name = "ban"
+			description = "Permet de bannir un membre, temporairement ou définitivement."
+			
+			check { isStaff() }
+			
+			action {
+				val duration = arguments.unit?.durationUnit?.let { arguments.duration?.toDuration(it) }
+				guild!!.getBanOrNull(arguments.member.id)?.let {
+					val sanctions = getSanctions(arguments.member.id)
+					sanctions.find { it.type == SanctionType.BAN && it.isActive }?.let {
+						throw DiscordRelayedException("La personne est déjà bannie jusqu'à ${it.toDiscordTimestamp(TimestampType.RelativeTime)}")
+					}
+					throw DiscordRelayedException("La personne est déjà bannie.")
+				}
+				
+				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()?.canInteract(arguments.member) != true) {
+					throw DiscordRelayedException("Je ne peux pas bannir avec ce membre, il doit avoir un rôle inférieur au mien.")
+				}
+				
+				Sanction(SanctionType.BAN, arguments.reason, arguments.member.id, durationMS = duration?.inWholeMilliseconds ?: 0, appliedBy = user.id).apply {
+					save()
+					arguments.member.ban {
+						this.reason = reason
+						deleteMessagesDays = arguments.deleteDays
+					}
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
+					}
+				}
+			}
+		}
+		
 		publicSlashCommand(::KickArguments) {
 			name = "kick"
 			description = "Éjecte un utilisateur du serveur."
@@ -216,7 +264,7 @@ class Sanctions : Extension() {
 			
 			action {
 				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()?.canInteract(arguments.member) != true) {
-					throw DiscordRelayedException("Je ne peux pas interagir avec ce membre, merci d'avertir un administrateur pour qu'il corrige les permissions.")
+					throw DiscordRelayedException("Je ne peux pas éjecter avec ce membre, il doit avoir un rôle inférieur au mien.")
 				}
 				
 				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
@@ -247,12 +295,12 @@ class Sanctions : Extension() {
 				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
 				if (duration > 28.days) throw DiscordRelayedException("La durée doit être de moins de 28 jours.")
 				
+				if (!guild!!.selfMember().canInteract(arguments.member)) {
+					throw DiscordRelayedException("Je ne peux pas mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
+				}
+				
 				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = duration.inWholeMilliseconds, appliedBy = user.id).apply {
 					save()
-					if (!guild!!.selfMember().canInteract(arguments.member)) {
-						throw DiscordRelayedException("Je ne peux pas mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
-					}
-					
 					arguments.member.edit { timeoutUntil = Clock.System.now() + duration }
 					respond {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)

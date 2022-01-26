@@ -5,6 +5,7 @@ import connection
 import dev.kord.common.entity.Snowflake
 import extensions.ModifySanctionValues
 import extensions.SanctionType
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import utils.enquote
 import java.sql.ResultSet
@@ -30,6 +31,10 @@ data class Sanction(
 		get() = durationMS.toDuration(DurationUnit.MILLISECONDS)
 	
 	fun toDiscordTimestamp(type: TimestampType) = type.format(durationMS)
+	
+	val isActive get() = activeUntil > Clock.System.now()
+	
+	val activeUntil get() = Clock.System.now() + duration
 	
 	@OptIn(ExperimentalTime::class)
 	val formattedDuration: String
