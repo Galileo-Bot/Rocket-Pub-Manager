@@ -57,7 +57,7 @@ suspend fun <T : Event> CheckContext<T>.isStaff() {
 	val isStaff = memberFor(event)?.asMemberOrNull().isStaff()
 	
 	failIf("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.") {
-		guild == null || !inStaffGuild || isStaff
+		guild == null || !inStaffGuild || !isStaff
 	}
 }
 

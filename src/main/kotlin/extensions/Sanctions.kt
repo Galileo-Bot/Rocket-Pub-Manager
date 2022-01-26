@@ -65,12 +65,17 @@ class Sanctions : Extension() {
 	}
 	
 	class DeleteAllSanctionsArguments : Arguments() {
-		val user by user("user", "L'utilisateur à qui supprimer toutes les sanctions.")
+		val user by user("utilisateur", "L'utilisateur à qui supprimer toutes les sanctions.")
 		val type by optionalEnumChoice<SanctionType>("type", "Le type de sanctions à supprimer.", "type")
 	}
 	
 	class ListSanctionsArguments : Arguments() {
-		val user by user("user", "L'utilisateur à qui afficher les sanctions.")
+		val user by user("utilisateur", "L'utilisateur à qui afficher les sanctions.")
+	}
+	
+	class KickArguments : Arguments() {
+		val member by member("membre", "L'utilisateur à qui expulser.")
+		val reason by defaultingCoalescingString("raison", "La raison de l'expulsion.", "Non spécifiée.")
 	}
 	
 	class MuteArguments : Arguments() {
@@ -198,6 +203,27 @@ class Sanctions : Extension() {
 								}
 							}
 						}
+					}
+				}
+			}
+		}
+		
+		publicSlashCommand(::KickArguments) {
+			name = "kick"
+			description = "Éjecte un utilisateur du serveur."
+			
+			check { isStaff() }
+			
+			action {
+				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()?.canInteract(arguments.member) != true) {
+					throw DiscordRelayedException("Je ne peux pas interagir avec ce membre, merci d'avertir un administrateur pour qu'il corrige les permissions.")
+				}
+				
+				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
+					save()
+					arguments.member.kick(arguments.reason)
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}
 			}
