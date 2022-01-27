@@ -99,9 +99,9 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
 }
 
-suspend fun EmbedBuilder.sanctionEmbed(event: MessageCreateEvent, sanction: Sanction) = sanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))
+suspend fun EmbedBuilder.autoSanctionEmbed(event: MessageCreateEvent, sanction: Sanction) = autoSanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))
 
-suspend fun EmbedBuilder.sanctionEmbed(
+suspend fun EmbedBuilder.autoSanctionEmbed(
 	event: MessageCreateEvent,
 	sanction: Sanction,
 	channels: List<Channel>

@@ -1,6 +1,7 @@
 package storage
 
 import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import connection
 import dev.kord.common.entity.Snowflake
@@ -9,7 +10,6 @@ import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
 import extensions.ModifySanctionValues
-import extensions.SanctionType
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import utils.ROCKET_PUB_GUILD
@@ -24,6 +24,16 @@ import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
+
+enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
+	BAN("Bannissement", "<:ban:498482002601705482>"),
+	KICK("Expulsion", "<:kick:933505066273501184>\n"),
+	MUTE("Exclusion (mute)", "<:mute:933505777354834021>\n"),
+	WARN("Avertissement", "⚠️"),
+	LIGHT_WARN("Avertissement léger", "❕");
+	
+	override val readableName = translation
+}
 
 @Serializable
 data class Sanction(
@@ -66,7 +76,6 @@ data class Sanction(
 	}
 	
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
-	
 	fun toString(prefix: String) = "$prefix${type.name.lowercase()} <@$member> $reason$formattedDuration"
 }
 

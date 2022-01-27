@@ -16,6 +16,7 @@ import com.kotlindiscord.kord.extensions.utils.delete
 import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.Permission
+import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.edit
@@ -35,6 +36,7 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.flow.firstOrNull
 import storage.Sanction
+import storage.SanctionType
 import utils.*
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -55,11 +57,7 @@ class CheckAds : Extension() {
 	class AddChannelArguments : Arguments() {
 		val type by enumChoice<ChannelAdType>("type", "Le type de salon à ajouter.", "type")
 		
-		val channel by channel(
-			displayName = "salon",
-			description = "Salon à ajouter à la liste des salons à vérifier.",
-			requiredGuild = { ROCKET_PUB_GUILD }
-		) { _, channel ->
+		val channel by channel(displayName = "salon", description = "Salon à ajouter à la liste des salons à vérifier.", requiredGuild = { ROCKET_PUB_GUILD }) { _, channel ->
 			when (channel) {
 				is VoiceChannel, is StageChannel -> throw DiscordRelayedException("Ce salon est un salon vocal, il ne peut pas être utilisé pour la liste des salons à vérifier.")
 				is ThreadChannel -> throw DiscordRelayedException("Ce salon est un thread, il ne peut pas être utilisé pour la liste des salons à vérifier.")
@@ -93,8 +91,8 @@ class CheckAds : Extension() {
 						}
 						respond(
 							"""${addedChannels.size} salons de publicités ont été ajoutés à la ${type.sentence} à vérifier :
-										${addedChannels.sorted().joinToString("\n")}
-										""".trimIndent()
+							${addedChannels.sorted().joinToString("\n")}
+							""".trimIndent()
 						)
 					}
 					is TextChannel -> {
@@ -116,9 +114,7 @@ class CheckAds : Extension() {
 			check { adsCheck() }
 			
 			action {
-				if (event.message == null) return@action
-				
-				getReasonForMessage(event.message!!)?.let { reason ->
+				getReasonForMessage(event.message ?: return@action)?.let { reason ->
 					sanctionMessages.find {
 						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
 					}?.let {
@@ -152,13 +148,10 @@ class CheckAds : Extension() {
 	}
 	
 	suspend fun EventContext<MessageCreateEvent>.createSanction(type: SanctionType, reason: String?) {
-		if (reason == null) return
-		val sanction = Sanction(type, reason, event.member!!.id)
+		val sanction = Sanction(type, reason ?: return, event.member!!.id)
 		
 		val old = sanctionMessages.find {
-			it.sanction.member == sanction.member
-					&& it.sanction.reason == sanction.reason
-					&& it.sanction.type == sanction.type
+			it.sanction.member == sanction.member && it.sanction.reason == sanction.reason && it.sanction.type == sanction.type
 		}
 		
 		if (old != null) {
@@ -179,11 +172,11 @@ class CheckAds : Extension() {
 			}
 			
 			sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
-				embed { sanctionEmbed(event, sanction, channels.toList()) }
+				embed { autoSanctionEmbed(event, sanction, channels.toList()) }
 			}
 		} else {
-			val message = getLogChannel().createMessage {
-				embed { sanctionEmbed(event, sanction) }
+			val message = getLogChannel().createEmbed {
+				autoSanctionEmbed(event, sanction)
 			}
 			
 			val liveMessage = message.live()
@@ -228,8 +221,7 @@ class CheckAds : Extension() {
 			channels.forEach { channel ->
 				channel.messages.firstOrNull { findMessage ->
 					val reason = getReasonForMessage(findMessage)
-					(if (reason != null) message.embeds[0].description!!.contains(reason) else false) &&
-							message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
+					(if (reason != null) message.embeds[0].description!!.contains(reason) else false) && message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
 				}?.delete()
 			}
 		}

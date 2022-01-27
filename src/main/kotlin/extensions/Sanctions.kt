@@ -29,6 +29,7 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import storage.Sanction
+import storage.SanctionType
 import storage.containsSanction
 import storage.getSanctionCount
 import storage.getSanctions
@@ -41,15 +42,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-
-enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
-	BAN("Bannissement", "<:ban:498482002601705482>"),
-	KICK("Expulsion", "<:kick:933505066273501184>\n"),
-	MUTE("Exclusion (mute)", "<:mute:933505777354834021>\n"),
-	WARN("Avertissement", "⚠️");
-	
-	override val readableName = translation
-}
 
 enum class DurationUnits(translation: String, val durationUnit: DurationUnit) : ChoiceEnum {
 	DAYS("jours", DurationUnit.DAYS),

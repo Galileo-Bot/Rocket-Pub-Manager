@@ -10,6 +10,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import storage.SanctionType
 import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
 

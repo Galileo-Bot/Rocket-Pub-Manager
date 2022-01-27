@@ -30,10 +30,10 @@ import utils.ROCKET_PUB_GUILD_STAFF
 import utils.SANCTION_LOGGER_CHANNEL
 import utils.STAFF_ROLE
 import utils.VALID_EMOJI
+import utils.autoSanctionEmbed
 import utils.fromEmbedUnlessChannelField
 import utils.hasRole
 import utils.isAdChannel
-import utils.sanctionEmbed
 
 suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	if (!passed) return
@@ -87,7 +87,7 @@ suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): M
 suspend fun EventContext<MessageCreateEvent>.setSanctionedBy(message: Message, sanction: Sanction) {
 	message.edit {
 		embed {
-			sanctionEmbed(event, sanction)
+			autoSanctionEmbed(event, sanction)
 			field {
 				name = "Sanctionnée par :"
 				value = event.message.author!!.mention
