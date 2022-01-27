@@ -250,6 +250,7 @@ class Sanctions : Extension() {
 				}
 				
 				Sanction(SanctionType.BAN, arguments.reason, arguments.member.id, durationMS = duration?.inWholeMilliseconds ?: 0, appliedBy = user.id).apply {
+					sendLog()
 					save()
 					arguments.member.ban {
 						this.reason = reason
@@ -274,6 +275,7 @@ class Sanctions : Extension() {
 				}
 				
 				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
+					sendLog()
 					save()
 					arguments.member.kick(arguments.reason)
 					respond {
@@ -306,6 +308,7 @@ class Sanctions : Extension() {
 				}
 				
 				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = duration.inWholeMilliseconds, appliedBy = user.id).apply {
+					sendLog()
 					save()
 					arguments.member.edit { timeoutUntil = Clock.System.now() + duration }
 					respond {
@@ -357,6 +360,7 @@ class Sanctions : Extension() {
 			
 			action {
 				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
+					sendLog()
 					save()
 					respond {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)

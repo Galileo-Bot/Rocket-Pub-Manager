@@ -129,6 +129,34 @@ suspend fun EmbedBuilder.sanctionEmbed(
 	}
 }
 
+suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
+	val user = kord.getUser(sanction.member)!!
+	
+	completeEmbed(
+		kord,
+		"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
+		"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
+	)
+	field {
+		name = "\uD83D\uDCC4 Raison :"
+		value = sanction.reason
+	}
+	
+	if (sanction.appliedBy != null) {
+		field {
+			name = "<:moderator:933507900092072046> Par :"
+			value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
+		}
+	}
+	
+	if (sanction.durationMS != 0L) {
+		field {
+			name = ":clock1: Durée :"
+			value = sanction.formattedDuration
+		}
+	}
+}
+
 suspend fun EmbedBuilder.verificationEmbed(
 	event: MessageCreateEvent,
 	channels: MutableSet<TextChannel>

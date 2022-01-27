@@ -1,13 +1,21 @@
 package storage
 
+import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import connection
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.createEmbed
+import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.supplier.EntitySupplyStrategy
 import extensions.ModifySanctionValues
 import extensions.SanctionType
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
+import utils.ROCKET_PUB_GUILD
+import utils.SANCTION_LOGGER_CHANNEL
 import utils.enquote
+import utils.sanctionEmbed
 import java.sql.ResultSet
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -46,6 +54,16 @@ data class Sanction(
 				else -> " ${duration.toDouble(DurationUnit.HOURS).roundToInt()}h"
 			}
 		}
+	
+	suspend fun PublicSlashCommandContext<*>.sendLog() {
+		channel.kord
+			.getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)
+			?.getChannelOrNull(SANCTION_LOGGER_CHANNEL)
+			?.asChannelOfOrNull<TextChannel>()
+			?.createEmbed {
+				sanctionEmbed(this@sendLog.channel.kord, this@Sanction)
+			}
+	}
 	
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
 	
