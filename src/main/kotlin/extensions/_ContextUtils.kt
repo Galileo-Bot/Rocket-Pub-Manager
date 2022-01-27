@@ -7,33 +7,32 @@ import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.checks.memberFor
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
-import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import debug
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.UserBehavior
+import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.Event
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.ReactionAddEvent
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.modify.embed
 import storage.Sanction
 import storage.saveVerification
 import storage.searchVerificationMessage
 import utils.ROCKET_PUB_GUILD
 import utils.ROCKET_PUB_GUILD_STAFF
-import utils.SANCTION_LOGGER_CHANNEL
 import utils.STAFF_ROLE
 import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
 import utils.fromEmbedUnlessChannelField
 import utils.hasRole
 import utils.isAdChannel
+import utils.toMention
 
 suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	if (!passed) return
@@ -61,43 +60,43 @@ suspend fun <T : Event> CheckContext<T>.isStaff() {
 	}
 }
 
-fun EventContext<MessageDeleteEvent>.updateDeletedMessagesInChannelList(message: Message): List<String>? {
-	val oldEmbed = message.embeds[0]
-	val channels = oldEmbed.fields.find { it.name == "Salons :" }!!.value.split(Regex("\n")).toMutableList()
-	val find = channels.find { it == event.channel.mention } ?: return null
-	
-	channels -= find
-	return channels + "$find supprimé"
+fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel: ChannelBehavior): List<String>? {
+	val oldEmbed = sanctionMessage.embeds[0]
+	val channels = oldEmbed.fields.find { it.name.endsWith("Salons :") }!!.value.split(Regex("\n")).toMutableList()
+	val founds = channels.intersect(channel.map { it.mention }.toSet())
+	channels.removeAll(founds)
+	channels.addAll(founds.map { "$it supprimé" })
+	return channels
 }
 
-suspend fun EventContext<MessageDeleteEvent>.updateChannels(message: Message): Message? {
-	val channels = updateDeletedMessagesInChannelList(message) ?: return null
+suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBehavior): Message? {
+	val channels = updateDeletedMessagesInChannelList(sanctionMessage, *channel) ?: return null
 	
-	return message.edit {
+	return sanctionMessage.edit {
 		embed {
-			fromEmbedUnlessChannelField(message.embeds[0])
+			fromEmbedUnlessChannelField(sanctionMessage.embeds[0])
 			field {
-				name = "Salons :"
+				name = "<:textuel:658085848092508220> Salons :"
 				value = channels.joinToString("\n")
 			}
 		}
 	}
 }
 
-suspend fun EventContext<MessageCreateEvent>.setSanctionedBy(message: Message, sanction: Sanction) {
+suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 	message.edit {
 		embed {
-			autoSanctionEmbed(event, sanction)
+			autoSanctionEmbed(message, sanction)
 			field {
 				name = "Sanctionnée par :"
-				value = event.message.author!!.mention
+				value = sanction.member.toMention<UserBehavior>()
 			}
 		}
 	}
-	addValidReaction(message)
+	message.addValidReaction()
 }
 
-suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reactionEvent: ReactionAddEvent) {
+suspend fun validate(message: Message, reactionEvent: ReactionAddEvent) {
 	message.edit {
 		embed {
 			fromEmbedUnlessChannelField(message.embeds[0])
@@ -108,12 +107,12 @@ suspend fun EventContext<MessageCreateEvent>.validate(message: Message, reaction
 			}
 		}
 	}
-	
-	addValidReaction(message)
+	message.addValidReaction()
 	if (searchVerificationMessage(message.id) == null) saveVerification(reactionEvent.userId, message.id)
 }
 
-suspend fun EventContext<MessageCreateEvent>.addValidReaction(message: Message) = message.addReaction(event.getGuild()!!.getEmoji(VALID_EMOJI))
+suspend fun Message.addValidReaction() {
+	addReaction(kord.getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)?.getEmoji(VALID_EMOJI) ?: return)
+}
 
-suspend fun EventContext<MessageDeleteEvent>.getLoggerChannel() = event.guild!!.getChannel(SANCTION_LOGGER_CHANNEL) as TextChannel
 suspend fun PublicSlashCommandContext<*>.respond(reply: String) = respond { content = reply }

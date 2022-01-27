@@ -10,6 +10,8 @@ import logger
 import storage.Sanction
 import storage.searchBannedGuild
 
+data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
+
 suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot): MutableSet<TextChannel> {
 	val embed = message.embeds[0]
 	val field = embed.fields.find { it.name.contains("Salons :") }
@@ -18,8 +20,6 @@ suspend fun getChannelsFromSanctionMessage(message: Message, bot: ExtensibleBot)
 		bot.getKoin().get<Kord>().getChannel(id) as TextChannel?
 	}.toMutableSet()
 }
-
-data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
 
 suspend fun getReasonForMessage(message: Message): String? {
 	val mention = Regex("@(everyone|here)").find(message.content)
@@ -35,7 +35,7 @@ suspend fun getReasonForMessage(message: Message): String? {
 		message.content == "test" -> "Test."
 		isBannedGuild -> "Publicité pour un serveur interdit."
 		else -> null
-	}.also {
-		if (debug && it != null) logger.debug("Found reason in channel ${message.channelId.enquote} for message ${message.id.enquote} by ${message.author?.id.enquote} : $it")
+	}?.also {
+		if (debug) logger.debug("Found reason in channel ${message.channelId.enquote} for message ${message.id.enquote} by ${message.author?.id.enquote} : $it")
 	}
 }

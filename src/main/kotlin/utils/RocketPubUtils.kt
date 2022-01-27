@@ -2,14 +2,14 @@ package utils
 
 import com.kotlindiscord.kord.extensions.checks.channelFor
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import com.kotlindiscord.kord.extensions.events.EventContext
 import configuration
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.ChannelBehavior
+import dev.kord.core.behavior.getChannelOf
+import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.Event
-import dev.kord.core.event.message.MessageCreateEvent
-import kotlinx.coroutines.flow.first
+import dev.kord.core.supplier.EntitySupplyStrategy
 
 const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z0-9-]+)"
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
@@ -35,4 +35,6 @@ suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	failIfNot("Channel isn't an ad category channel.") { channel.fetchChannel().isCategoryChannel() }
 }
 
-suspend fun EventContext<MessageCreateEvent>.getLogChannel() = event.getGuild()!!.channels.first { it.id == SANCTION_LOGGER_CHANNEL } as TextChannel
+suspend fun Message.getLogChannel() = kord
+	.getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+	.getChannelOf<TextChannel>(SANCTION_LOGGER_CHANNEL)

@@ -1,23 +1,25 @@
 package extensions
 
+import bot
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
-import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.delete
 import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.Permission
+import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
-import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
@@ -49,10 +51,11 @@ enum class ChannelAdType(val translation: String, val sentence: String, val emot
 	override val readableName get() = translation
 }
 
+val sanctionMessages = mutableListOf<SanctionMessage>()
+
 @OptIn(ExperimentalTime::class, KordPreview::class)
 class CheckAds : Extension() {
 	override val name = "CheckAds"
-	val sanctionMessages = mutableListOf<SanctionMessage>()
 	
 	class AddChannelArguments : Arguments() {
 		val type by enumChoice<ChannelAdType>("type", "Le type de salon à ajouter.", "type")
@@ -118,11 +121,11 @@ class CheckAds : Extension() {
 					sanctionMessages.find {
 						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
 					}?.let {
-						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage) ?: return@action
+						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage, event.channel) ?: return@action
 					}
 				}
 				
-				getOldVerificationMessage(getLoggerChannel(), event.message)?.let { updateChannels(it) }
+				getOldVerificationMessage(event.message!!.getLogChannel(), event.message)?.let { updateChannels(it, event.channel) }
 			}
 		}
 		
@@ -141,96 +144,137 @@ class CheckAds : Extension() {
 				}
 				
 				getReasonForMessage(event.message)?.let {
-					createSanction(SanctionType.WARN, it)
-				} ?: verificationMessage()
+					autoSanctionMessage(event.message, SanctionType.WARN, it)
+				} ?: verificationMessage(event.message)
 			}
 		}
+	}
+}
+
+@OptIn(KordPreview::class)
+suspend fun PublicSlashCommandContext<*>.autoSanctionMessage(message: Message, type: SanctionType, reason: String?) {
+	val sanction = Sanction(type, reason ?: return, message.author!!.id)
+	val sanctionMessage = respond {
+		embed {
+			autoSanctionEmbed(message, sanction)
+		}
+	}.message
+	
+	val liveMessage = sanctionMessage.live()
+	setBinReactionDeleteAllSimilarAds(liveMessage, sanctionMessage)
+	sanctionMessages.add(SanctionMessage(sanctionMessage.getAuthorAsMember()!!, sanctionMessage, sanction))
+	
+	message.delete(5.minutes.inWholeMilliseconds)
+}
+
+@OptIn(KordPreview::class)
+suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?, channel: TextChannel? = null) {
+	val sanction = Sanction(type, reason ?: return, message.author!!.id)
+	val channelToSend = channel ?: message.getLogChannel()
+	
+	val old = sanctionMessages.find {
+		it.sanction.member == sanction.member && it.sanction.reason == sanction.reason && it.sanction.type == sanction.type
 	}
 	
-	suspend fun EventContext<MessageCreateEvent>.createSanction(type: SanctionType, reason: String?) {
-		val sanction = Sanction(type, reason ?: return, event.member!!.id)
+	if (old != null && channel != null) {
+		val channels = getChannelsFromSanctionMessage(old.sanctionMessage, bot)
+		channels.add(message.channel.asChannelOf())
 		
-		val old = sanctionMessages.find {
-			it.sanction.member == sanction.member && it.sanction.reason == sanction.reason && it.sanction.type == sanction.type
+		when (channels.size) {
+			1 -> return
+			in 5..9 -> {
+				sanction.type = SanctionType.MUTE
+				sanction.durationMS = channels.size.div(2).days.inWholeMilliseconds
+			}
+			in 10..Int.MAX_VALUE -> {
+				sanction.type = SanctionType.MUTE
+				sanction.durationMS = channels.size.days.inWholeMilliseconds
+				sanction.reason = "Publicité dans toutes les catégories."
+			}
 		}
 		
-		if (old != null) {
-			val channels = getChannelsFromSanctionMessage(old.sanctionMessage, bot)
-			channels.add(event.message.channel.asChannel() as TextChannel)
-			
-			when (channels.size) {
-				1 -> return
-				in 5..9 -> {
-					sanction.type = SanctionType.MUTE
-					sanction.durationMS = channels.size.div(2).days.inWholeMilliseconds
-				}
-				in 10..Int.MAX_VALUE -> {
-					sanction.type = SanctionType.MUTE
-					sanction.durationMS = channels.size.days.inWholeMilliseconds
-					sanction.reason = "Publicité dans toutes les catégories."
-				}
-			}
-			
-			sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
-				embed { autoSanctionEmbed(event, sanction, channels.toList()) }
-			}
-		} else {
-			val message = getLogChannel().createEmbed {
-				autoSanctionEmbed(event, sanction)
-			}
-			
-			val liveMessage = message.live()
-			setBinReactionDeleteAllSimilarAds(liveMessage, message)
-			
-			sanctionMessages.add(SanctionMessage(event.member!!, message, sanction))
+		sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
+			embed { autoSanctionEmbed(message, sanction, channels.toList()) }
+		}
+	} else {
+		val sanctionMessage = channelToSend.createEmbed {
+			autoSanctionEmbed(message, sanction)
 		}
 		
-		event.message.delete(5.minutes.inWholeMilliseconds)
+		val liveMessage = sanctionMessage.live()
+		setBinReactionDeleteAllSimilarAds(liveMessage, sanctionMessage)
+		
+		sanctionMessages.add(SanctionMessage(sanctionMessage.getAuthorAsMember()!!, sanctionMessage, sanction))
 	}
 	
-	suspend fun EventContext<MessageCreateEvent>.verificationMessage() {
-		val old = getOldVerificationMessage(getLogChannel(), event.message)
-		if (old != null) {
-			val channels = getChannelsFromSanctionMessage(old, bot)
-			channels.add(event.message.channel.asChannel() as TextChannel)
-			
-			old.edit {
-				embed { verificationEmbed(event, channels) }
-			}
-		} else {
-			val message = getLogChannel().createMessage {
-				embed { verificationEmbed(event, mutableSetOf(event.message.channel.asChannel() as TextChannel)) }
-			}
-			addValidReaction(message)
-			
-			val liveMessage = message.live()
-			setBinReactionDeleteAllSimilarAds(liveMessage, message)
-			liveMessage.onReactionAdd {
-				if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
-				validate(message, it)
-			}
+	message.delete(5.minutes.inWholeMilliseconds)
+}
+
+@OptIn(KordPreview::class)
+suspend fun PublicSlashCommandContext<*>.verificationMessage(message: Message) {
+	val verificationMessage = respond {
+		embed {
+			verificationEmbed(message, message.channel.asChannelOf())
 		}
-	}
+	}.message
 	
-	suspend fun setBinReactionDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
-		message.addReaction("\uD83D\uDDD1️")
-		liveMessage.onReactionAdd { reactionEvent ->
-			if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
-			
-			val channels = getChannelsFromSanctionMessage(message, bot)
-			channels.forEach { channel ->
-				channel.messages.firstOrNull { findMessage ->
-					val reason = getReasonForMessage(findMessage)
-					(if (reason != null) message.embeds[0].description!!.contains(reason) else false) && message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
-				}?.delete()
-			}
-		}
-	}
+	verificationMessage.addValidReaction()
 	
-	suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) = channel.messages.firstOrNull {
-		if (it.embeds.isEmpty()) return@firstOrNull false
+	val liveMessage = verificationMessage.live()
+	setBinReactionDeleteAllSimilarAds(liveMessage, verificationMessage)
+	liveMessage.onReactionAdd {
+		if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
+		validate(verificationMessage, it)
+	}
+}
+
+@OptIn(KordPreview::class)
+suspend fun verificationMessage(message: Message, channel: TextChannel? = null) {
+	val channelToSend = channel ?: message.getLogChannel()
+	val old = getOldVerificationMessage(channelToSend, message)
+	if (old != null && channel == null) {
+		val channels = getChannelsFromSanctionMessage(old, bot)
+		channels.add(message.channel.asChannelOf())
 		
-		val firstEmbed = it.embeds[0]
-		firstEmbed.description == message?.content && firstEmbed.fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.toString()) == true
+		old.edit {
+			embed { verificationEmbed(message, *channels.toTypedArray()) }
+		}
+	} else {
+		val verificationMessage = channelToSend.createEmbed {
+			verificationEmbed(message, message.channel.asChannelOf())
+		}
+		verificationMessage.addValidReaction()
+		
+		val liveMessage = verificationMessage.live()
+		setBinReactionDeleteAllSimilarAds(liveMessage, verificationMessage)
+		liveMessage.onReactionAdd {
+			if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
+			validate(verificationMessage, it)
+		}
 	}
+}
+
+
+@OptIn(KordPreview::class)
+suspend fun setBinReactionDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
+	message.addReaction("\uD83D\uDDD1️")
+	liveMessage.onReactionAdd { reactionEvent ->
+		if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
+		
+		val channels = getChannelsFromSanctionMessage(message, bot)
+		channels.forEach { channel ->
+			channel.messages.firstOrNull { findMessage ->
+				val reason = getReasonForMessage(findMessage)
+				(if (reason != null) message.embeds[0].description!!.contains(reason) else false) && message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
+			}?.delete()
+		}
+	}
+}
+
+
+suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) = channel.messages.firstOrNull {
+	if (it.embeds.isEmpty()) return@firstOrNull false
+	
+	val firstEmbed = it.embeds[0]
+	firstEmbed.description == message?.content && firstEmbed.fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.toString()) == true
 }

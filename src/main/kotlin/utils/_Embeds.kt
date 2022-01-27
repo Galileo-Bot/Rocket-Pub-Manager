@@ -5,10 +5,10 @@ import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import configuration
 import dev.kord.core.Kord
+import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.Embed
-import dev.kord.core.entity.channel.Channel
+import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
-import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
@@ -58,7 +58,7 @@ suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description:
 
 fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
 	oldEmbed.fields.forEach {
-		if (it.name == "Salons :") return@forEach
+		if (it.name.endsWith("Salons :")) return@forEach
 		field {
 			name = it.name
 			value = it.value
@@ -99,20 +99,18 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
 }
 
-suspend fun EmbedBuilder.autoSanctionEmbed(event: MessageCreateEvent, sanction: Sanction) = autoSanctionEmbed(event, sanction, listOf(event.message.channel.asChannel()))
-
 suspend fun EmbedBuilder.autoSanctionEmbed(
-	event: MessageCreateEvent,
+	message: Message,
 	sanction: Sanction,
-	channels: List<Channel>
+	channels: List<ChannelBehavior> = listOf(message.channel)
 ) {
 	completeEmbed(
-		event.kord,
+		message.kord,
 		sanction.reason,
 		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
 	)
 	
-	url = event.message.getJumpUrl()
+	url = message.getJumpUrl()
 	
 	footer {
 		text = "Cliquez sur le titre de l'embed pour aller sur le message."
@@ -120,12 +118,12 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 	
 	field {
 		name = "<:moderator:933507900092072046> Par :"
-		value = "${event.member!!.tag} (`${sanction.member}`)"
+		value = "${message.author!!.tag} (`${sanction.member}`)"
 	}
 	
 	field {
 		name = "<:textuel:658085848092508220> Salons :"
-		value = channels.joinToString("\n", transform = Channel::mention)
+		value = channels.joinToString("\n", transform = ChannelBehavior::mention)
 	}
 }
 
@@ -158,20 +156,20 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 }
 
 suspend fun EmbedBuilder.verificationEmbed(
-	event: MessageCreateEvent,
-	channels: MutableSet<TextChannel>
+	message: Message,
+	vararg channels: TextChannel,
 ) {
-	completeEmbed(event.kord, "Nouvelle publicité à vérifier.", event.message.content)
-	val link = findInviteCode(event.message.content)
+	completeEmbed(message.kord, "Nouvelle publicité à vérifier.", message.content)
+	val link = findInviteCode(message.content)
 	
 	field {
 		name = "<:textuel:658085848092508220> Salons :"
-		value = channels.joinToString("\n", transform = TextChannel::mention)
+		value = channels.distinctBy { it.id.value }.joinToString("\n", transform = TextChannel::mention)
 	}
 	
 	if (link != null) {
 		try {
-			val invite = getInvite(event.kord, link)
+			val invite = getInvite(message.kord, link)
 			val guild = invite?.partialGuild?.getGuild()
 			
 			field {
@@ -182,7 +180,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 				Nombre de membres : ${guild?.memberCount ?: invite?.approximateMemberCount ?: "Non trouvé."}
 				Owner : ${
 					when {
-						invite?.partialGuild?.owner == true -> "${event.member?.mention} (`${event.member?.id}`)"
+						invite?.partialGuild?.owner == true -> "${message.author?.mention} (`${message.author?.id}`)"
 						guild?.owner != null -> "${guild.owner.mention} (`${guild.ownerId}`)"
 						else -> "Non trouvé."
 					}
@@ -192,14 +190,15 @@ suspend fun EmbedBuilder.verificationEmbed(
 		} catch (_: Exception) {
 			field {
 				name = "Invitation :"
-				value = findInviteLink(event.message.content)!!
+				value = findInviteLink(message.content)!!
 			}
 		}
 	}
 	
 	field {
+		val user = message.author?.fetchUserOrNull() ?: message.kord.getSelf(EntitySupplyStrategy.cacheWithCachingRestFallback)
 		name = "<:user:933508955722899477> Par :"
-		value = "${event.message.author!!.mention} (`${event.message.author!!.id}`)"
+		value = "${user.mention} (`${user.id}`)"
 	}
 }
 
