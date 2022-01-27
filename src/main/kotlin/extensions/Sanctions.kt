@@ -7,6 +7,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.i
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingCoalescingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalInt
@@ -98,6 +99,11 @@ class Sanctions : Extension() {
 		val duration by int("durée", "La durée du mute.")
 		val unit by enumChoice<DurationUnits>("unité", "L'unité de la durée du mute.", "unité")
 		val reason by coalescedString("raison", "La raison du mute.")
+	}
+	
+	class UnBanArguments : Arguments() {
+		val user by user("utilisateur", "L'utilisateur à dé-bannir.")
+		val reason by defaultingCoalescingString("raison", "La raison de la dé-bannissement.", "Pas de raison définie.")
 	}
 	
 	class UnMuteArguments : Arguments() {
@@ -306,6 +312,20 @@ class Sanctions : Extension() {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}
+			}
+		}
+		
+		publicSlashCommand(::UnBanArguments) {
+			name = "unban"
+			description = "Permet de dé-bannir quelqu'un."
+			
+			check { isStaff() }
+			
+			action {
+				guild!!.getBanOrNull(arguments.user.id)?.let {
+					guild!!.unban(arguments.user.id, arguments.reason)
+					respond("Le membre **${arguments.user.tag}** (`${arguments.user.id}`) a bien été dé-banni.")
+				} ?: throw DiscordRelayedException("Le membre **${arguments.user.tag}** n'a pas été trouvé dans la liste des bans.")
 			}
 		}
 		
