@@ -4,6 +4,7 @@ import com.kotlindiscord.kord.extensions.checks.channelFor
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import configuration
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.entity.Message
@@ -35,6 +36,7 @@ suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	failIfNot("Channel isn't an ad category channel.") { channel.fetchChannel().isCategoryChannel() }
 }
 
-suspend fun Message.getLogChannel() = kord
-	.getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+suspend fun Kord.getLogChannel() = getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 	.getChannelOf<TextChannel>(SANCTION_LOGGER_CHANNEL)
+
+suspend fun Message.getLogChannel() = kord.getLogChannel()

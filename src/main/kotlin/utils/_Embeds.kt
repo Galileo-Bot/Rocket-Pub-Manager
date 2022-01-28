@@ -5,6 +5,7 @@ import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import configuration
 import dev.kord.core.Kord
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.Embed
 import dev.kord.core.entity.Message
@@ -18,6 +19,34 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import storage.BannedGuild
 import storage.Sanction
+
+suspend fun EmbedBuilder.autoSanctionEmbed(
+	message: Message,
+	sanction: Sanction,
+	channels: List<ChannelBehavior> = listOf(message.channel)
+) {
+	completeEmbed(
+		message.kord,
+		sanction.reason,
+		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
+	)
+	
+	url = message.getJumpUrl()
+	
+	footer {
+		text = "Cliquez sur le titre de l'embed pour aller sur le message."
+	}
+	
+	field {
+		name = "<:moderator:933507900092072046> Par :"
+		value = "${message.author!!.tag} (`${sanction.member}`)"
+	}
+	
+	field {
+		name = "<:textuel:658085848092508220> Salons :"
+		value = channels.joinToString("\n", transform = ChannelBehavior::mention)
+	}
+}
 
 suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	val user = client.getSelf(EntitySupplyStrategy.cacheWithRestFallback)
@@ -99,34 +128,6 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
 }
 
-suspend fun EmbedBuilder.autoSanctionEmbed(
-	message: Message,
-	sanction: Sanction,
-	channels: List<ChannelBehavior> = listOf(message.channel)
-) {
-	completeEmbed(
-		message.kord,
-		sanction.reason,
-		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
-	)
-	
-	url = message.getJumpUrl()
-	
-	footer {
-		text = "Cliquez sur le titre de l'embed pour aller sur le message."
-	}
-	
-	field {
-		name = "<:moderator:933507900092072046> Par :"
-		value = "${message.author!!.tag} (`${sanction.member}`)"
-	}
-	
-	field {
-		name = "<:textuel:658085848092508220> Salons :"
-		value = channels.joinToString("\n", transform = ChannelBehavior::mention)
-	}
-}
-
 suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	val user = kord.getUser(sanction.member)!!
 	
@@ -143,7 +144,8 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	if (sanction.appliedBy != null) {
 		field {
 			name = "<:moderator:933507900092072046> Par :"
-			value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
+			value = if (sanction.appliedBy == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+			else "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
 		}
 	}
 	
@@ -199,6 +201,39 @@ suspend fun EmbedBuilder.verificationEmbed(
 		val user = message.author?.fetchUserOrNull() ?: message.kord.getSelf(EntitySupplyStrategy.cacheWithCachingRestFallback)
 		name = "<:user:933508955722899477> Par :"
 		value = "${user.mention} (`${user.id}`)"
+	}
+}
+
+suspend fun EmbedBuilder.unBanEmbed(kord: Kord, user: UserBehavior, unBannedBy: UserBehavior? = null) {
+	completeEmbed(
+		kord,
+		"Dé-banissement de ${user.id}"
+	)
+	
+	if (unBannedBy != null) {
+		field {
+			val moderator = unBannedBy.fetchUserOrNull() ?: return@field
+			name = "<:moderator:933507900092072046> Par :"
+			value = if (unBannedBy.id == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+			else "${moderator.tag} (`${moderator.id}`)"
+		}
+	}
+}
+
+suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: UserBehavior? = null) {
+	completeEmbed(
+		kord,
+		"Dé-mute de ${user.id}",
+		"Le membre ${user.mention} (`${user.id}`) a bien été dé-mute."
+	)
+	
+	if (unMutedBy != null) {
+		field {
+			val moderator = unMutedBy.fetchUserOrNull() ?: return@field
+			name = "<:moderator:933507900092072046> Par :"
+			value = if (unMutedBy.id == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+			else "${moderator.tag} (`${moderator.id}`)"
+		}
 	}
 }
 

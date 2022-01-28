@@ -125,7 +125,7 @@ class CheckAds : Extension() {
 					}
 				}
 				
-				getOldVerificationMessage(event.message!!.getLogChannel(), event.message)?.let { updateChannels(it, event.channel) }
+				getOldVerificationMessage(kord.getLogChannel(), event.message)?.let { updateChannels(it, event.channel) }
 			}
 		}
 		

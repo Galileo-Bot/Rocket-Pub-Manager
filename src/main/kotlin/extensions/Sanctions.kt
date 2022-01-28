@@ -26,6 +26,7 @@ import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import storage.Sanction
@@ -37,6 +38,8 @@ import storage.removeSanction
 import storage.removeSanctions
 import utils.completeEmbed
 import utils.sanctionEmbed
+import utils.unBanEmbed
+import utils.unMuteEmbed
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
@@ -319,7 +322,11 @@ class Sanctions : Extension() {
 			action {
 				guild!!.getBanOrNull(arguments.user.id)?.let {
 					guild!!.unban(arguments.user.id, arguments.reason)
-					respond("Le membre **${arguments.user.tag}** (`${arguments.user.id}`) a bien été dé-banni.")
+					respond {
+						embed {
+							unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
+						}
+					}
 				} ?: throw DiscordRelayedException("Le membre **${arguments.user.tag}** n'a pas été trouvé dans la liste des bans.")
 			}
 		}
@@ -338,7 +345,11 @@ class Sanctions : Extension() {
 					arguments.member.edit {
 						timeoutUntil = null
 					}.also {
-						respond("Le membre a bien été un-mute.")
+						respond {
+							embed {
+								unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
+							}
+						}
 					}
 				} ?: throw DiscordRelayedException("Cette personne n'est pas mute, je ne peux pas l'un-mute voyons...")
 			}

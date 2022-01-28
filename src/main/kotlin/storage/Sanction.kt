@@ -4,17 +4,16 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashC
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import connection
+import debug
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.createEmbed
-import dev.kord.core.entity.channel.TextChannel
-import dev.kord.core.supplier.EntitySupplyStrategy
 import extensions.ModifySanctionValues
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
-import utils.ROCKET_PUB_GUILD
-import utils.SANCTION_LOGGER_CHANNEL
+import logger
 import utils.enquote
+import utils.getLogChannel
 import utils.sanctionEmbed
 import java.sql.ResultSet
 import java.text.SimpleDateFormat
@@ -38,19 +37,23 @@ enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum
 @Serializable
 data class Sanction(
 	var type: SanctionType,
-	var reason: String = "Pas de raison définie.",
+	var reason: String = DEFAULT_REASON,
 	val member: Snowflake,
 	val id: Int = 0,
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
 ) {
+	constructor(type: SanctionType, reason: String? = null, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long = 0) : this(
+		type, reason ?: DEFAULT_REASON, member, appliedBy = appliedBy, durationMS = durationMS
+	)
+	
 	@OptIn(ExperimentalTime::class)
 	val duration
 		get() = durationMS.toDuration(DurationUnit.MILLISECONDS)
 	
 	fun toDiscordTimestamp(type: TimestampType) = type.format(durationMS)
 	
-	val isActive get() = activeUntil > Clock.System.now()
+	val isActive get() = durationMS > 0 && activeUntil > Clock.System.now()
 	
 	val activeUntil get() = Clock.System.now() + duration
 	
@@ -65,18 +68,22 @@ data class Sanction(
 			}
 		}
 	
-	suspend fun PublicSlashCommandContext<*>.sendLog() {
-		channel.kord
-			.getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)
-			?.getChannelOrNull(SANCTION_LOGGER_CHANNEL)
-			?.asChannelOfOrNull<TextChannel>()
-			?.createEmbed {
-				sanctionEmbed(this@sendLog.channel.kord, this@Sanction)
-			}
+	suspend fun sendLog(kord: Kord) {
+		kord.getLogChannel().createEmbed {
+			sanctionEmbed(kord, this@Sanction)
+		}
+		
+		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")
 	}
+	
+	suspend fun PublicSlashCommandContext<*>.sendLog() = sendLog(this@sendLog.channel.kord)
 	
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
 	fun toString(prefix: String) = "$prefix${type.name.lowercase()} <@$member> $reason$formattedDuration"
+	
+	companion object {
+		const val DEFAULT_REASON = "Pas de raison définie."
+	}
 }
 
 fun containsSanction(id: Int) = connection.createStatement().executeQuery(
@@ -149,13 +156,11 @@ fun removeSanction(id: Int) = connection.createStatement().executeUpdate(
 	""".trimIndent()
 )
 
-fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate(
-	"""
+fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate("""
 	DELETE FROM sanctions
 	WHERE memberID = ${user.enquote}
 	${type?.let { "AND type = ${it.lowercase().enquote}" } ?: ""}
-	""".trimIndent()
-)
+	""".trimIndent())
 
 fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long? = null): Int {
 	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote

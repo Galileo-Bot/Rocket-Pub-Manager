@@ -5,6 +5,7 @@ import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
+import extensions.AutoSanctions
 import extensions.BannedGuilds
 import extensions.CheckAds
 import extensions.RemoveAds
@@ -44,6 +45,7 @@ suspend fun main() {
 		extensions {
 			sentry { enable = false }
 			
+			add(::AutoSanctions)
 			add(::BannedGuilds)
 			add(::CheckAds)
 			add(::RemoveAds)
