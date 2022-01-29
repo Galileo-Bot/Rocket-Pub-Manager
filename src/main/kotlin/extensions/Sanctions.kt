@@ -82,6 +82,7 @@ class Sanctions : Extension() {
 	
 	class ListSanctionsArguments : Arguments() {
 		val user by user("utilisateur", "L'utilisateur à qui afficher les sanctions.")
+		val type by optionalEnumChoice<SanctionType>("type", "Le type de sanctions à afficher.", "type")
 	}
 	
 	class KickArguments : Arguments() {
@@ -142,7 +143,10 @@ class Sanctions : Extension() {
 				
 				action {
 					val user = arguments.user
-					val sanctions = getSanctions(user.id)
+					val sanctions = getSanctions(user.id).let {
+						if (arguments.type != null) it.filter { it.type == arguments.type }
+						else it
+					}
 					if (sanctions.isEmpty()) throw DiscordRelayedException("Aucune sanction n'a été appliquée à cet utilisateur.")
 					
 					respondingPaginator {
@@ -150,9 +154,8 @@ class Sanctions : Extension() {
 							page {
 								completeEmbed(
 									client = bot.getKoin().get(),
-									title = "Liste des sanctions appliquées à ${user.tag} (${user.id}).",
+									title = "Liste des sanctions ${arguments.type?.let { "du type **${it.translation}**" } ?: ""} appliquées à ${user.tag} (${user.id}).",
 									description = it.joinToString("\n\n") {
-										val duration = if (it.durationMS > 0) "\n**Duration** : ${it.formattedDuration}" else ""
 										val appliedBy = it.appliedBy?.let { appliedById ->
 											val getUserTag = runBlocking {
 												this@publicSlashCommand.kord.getUser(
@@ -164,12 +167,15 @@ class Sanctions : Extension() {
 											"$getUserTag (`$appliedById`)"
 										} ?: "Automatique ou non trouvé"
 										
+										val duration = if (it.durationMS > 0) "**Durée** : ${it.formattedDuration}" else ""
 										"""
 											> **Cas numéro ${it.id}** ${it.type.emote}
-											**Type** : ${it.type.translation} $duration
-											**Raison** : ${it.reason}
 											**Appliquée par** : $appliedBy
-										""".trimIndent()
+											**Date** : ${it.sanctionedAt.toMessageFormat(DiscordTimestampStyle.LongDateTime)}
+											$duration
+											**Raison** : ${it.reason}
+											**Type** : ${it.type.translation}
+										""".trimIndent().replace("\n\n", "\n")
 									}
 								)
 							}

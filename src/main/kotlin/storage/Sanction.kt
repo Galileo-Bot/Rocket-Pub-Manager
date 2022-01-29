@@ -10,14 +10,17 @@ import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.createEmbed
 import extensions.ModifySanctionValues
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
 import utils.enquote
 import utils.getLogChannel
 import utils.sanctionEmbed
 import java.sql.ResultSet
-import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
@@ -42,6 +45,7 @@ data class Sanction(
 	val id: Int = 0,
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
+	val sanctionedAt: kotlinx.datetime.Instant = Clock.System.now(),
 ) {
 	constructor(type: SanctionType, reason: String? = null, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long = 0) : this(
 		type, reason ?: DEFAULT_REASON, member, appliedBy = appliedBy, durationMS = durationMS
@@ -86,6 +90,9 @@ data class Sanction(
 	}
 }
 
+val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
+val offset: ZoneOffset = ZoneOffset.ofHours(1)
+
 fun containsSanction(id: Int) = connection.createStatement().executeQuery(
 	"SELECT * FROM sanctions WHERE id = $id"
 ).use(ResultSet::next)
@@ -100,7 +107,8 @@ fun getSanction(id: Int): Sanction? {
 		val member = Snowflake(it.getString("member"))
 		val durationMS = it.getLong("duration")
 		val appliedBy = Snowflake(it.getString("appliedBy"))
-		Sanction(type, reason, member, id, appliedBy, durationMS)
+		val sanctionedAt = Instant.parse(result.getString("sanctionedAt"))
+		Sanction(type, reason, member, id, appliedBy, durationMS, sanctionedAt.toKotlinInstant())
 	}
 }
 
@@ -119,7 +127,8 @@ fun getSanctions(user: Snowflake): List<Sanction> {
 		val id = result.getInt("id")
 		val appliedBy = Snowflake(result.getString("appliedByID"))
 		val durationMS = result.getLong("durationMS")
-		sanctions += Sanction(type, reason, member, id, appliedBy, durationMS)
+		val sanctionedAt = LocalDateTime.parse(result.getString("sanctionedAt"), formatter)
+		sanctions += Sanction(type, reason, member, id, appliedBy, durationMS, sanctionedAt.toInstant(offset).toKotlinInstant())
 	}
 	return sanctions
 }
@@ -163,7 +172,7 @@ fun removeSanctions(user: Snowflake, type: String? = null) = connection.createSt
 	""".trimIndent())
 
 fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long? = null): Int {
-	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
+	val dateTime = formatter.format(Instant.now()).enquote
 	return connection.createStatement().executeUpdate(
 		"""
 		INSERT INTO sanctions (reason, memberID, appliedByID, durationMS, type, sanctionedAt)
