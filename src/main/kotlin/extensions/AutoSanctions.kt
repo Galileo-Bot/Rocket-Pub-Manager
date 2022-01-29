@@ -5,7 +5,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
-import dev.kord.common.entity.AuditLogChange
 import dev.kord.common.entity.AuditLogEvent
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
@@ -89,7 +88,6 @@ class AutoSanctions : Extension() {
 					val log = event.guild.getAuditLogEntries {
 						action = AuditLogEvent.MemberUpdate
 					}.firstOrNull {
-						print(it.changes.map(AuditLogChange<*>::key))
 						it.id.timeMark.elapsedNow() < 10.seconds && it.changes.any { it.key.name == "communication_disabled_until" }
 					} ?: return@let
 					

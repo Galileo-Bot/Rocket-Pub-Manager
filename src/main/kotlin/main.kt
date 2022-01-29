@@ -8,6 +8,7 @@ import dev.kord.gateway.PrivilegedIntent
 import extensions.AutoSanctions
 import extensions.BannedGuilds
 import extensions.CheckAds
+import extensions.EndMessage
 import extensions.RemoveAds
 import extensions.Sanctions
 import extensions.Verifications
@@ -21,7 +22,11 @@ import java.util.*
 
 val logger = KotlinLogging.logger("main")
 val configuration = dotenv()
+
 val debug get() = configuration["AYFRI_ROCKETMANAGER_ENVIRONMENT"] == "development"
+val adsAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS"].toBooleanStrict()
+val endMessageAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE"].toBooleanStrict()
+
 lateinit var bot: ExtensibleBot
 lateinit var connection: Connection
 
@@ -48,6 +53,7 @@ suspend fun main() {
 			add(::AutoSanctions)
 			add(::BannedGuilds)
 			add(::CheckAds)
+			add(::EndMessage)
 			add(::RemoveAds)
 			add(::Sanctions)
 			add(::Verifications)

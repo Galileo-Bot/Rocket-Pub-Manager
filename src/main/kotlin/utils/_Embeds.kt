@@ -11,6 +11,7 @@ import dev.kord.core.entity.Embed
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.rest.Image
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.embed
@@ -114,6 +115,22 @@ fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
 			icon = oldEmbed.footer!!.iconUrl
 		}
 	}
+}
+
+suspend fun EmbedBuilder.endAdChannelEmbed(client: Kord, channel: TextChannel) {
+	basicEmbed(client)
+	
+	author {
+		name = channel.getGuild().name
+		icon = channel.getGuild().getIconUrl(Image.Format.GIF)
+	}
+	
+	description = """
+			📌 Votre publicité doit respecter les ToS de Discord.
+			<:textuel:658085848092508220> Slowmode de 1h maximum !!
+			<a:girorouge:525406076057944096> Si vous quittez le serveur vos publicités seront supprimée automatiquement !
+		""".trimIndent()
+	
 }
 
 suspend fun EmbedBuilder.modifiedGuildEmbed(
@@ -237,7 +254,8 @@ suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: 
 	}
 }
 
-suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) = embed { completeEmbed(client, title, description) }
+suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
+	embed { completeEmbed(client, title, description, block) }
 
 suspend fun FollowupMessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
 
