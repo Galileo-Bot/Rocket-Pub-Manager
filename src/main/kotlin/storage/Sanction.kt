@@ -14,7 +14,7 @@ import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
 import utils.enquote
-import utils.getLogChannel
+import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
 import java.sql.ResultSet
 import java.time.Instant
@@ -73,7 +73,7 @@ data class Sanction(
 		}
 	
 	suspend fun sendLog(kord: Kord) {
-		kord.getLogChannel().createEmbed {
+		kord.getLogSanctionsChannel().createEmbed {
 			sanctionEmbed(kord, this@Sanction)
 		}
 		

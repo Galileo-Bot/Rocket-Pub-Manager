@@ -38,7 +38,7 @@ class ModifySanctions : Extension() {
 	}
 	
 	class ModifyDurationArguments : ModifySanction() {
-		val duration by duration("duree", "Durée de la sanction.")
+		val duration by duration("durée", "Durée de la sanction.")
 	}
 	
 	class ModifyReasonArguments : ModifySanction() {

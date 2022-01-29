@@ -125,7 +125,7 @@ class CheckAds : Extension() {
 					}
 				}
 				
-				getOldVerificationMessage(kord.getLogChannel(), event.message)?.let { updateChannels(it, event.channel) }
+				getOldVerificationMessage(kord.getVerifChannel(), event.message)?.let { updateChannels(it, event.channel) }
 			}
 		}
 		
@@ -170,7 +170,7 @@ suspend fun PublicSlashCommandContext<*>.autoSanctionMessage(message: Message, t
 @OptIn(KordPreview::class)
 suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?, channel: TextChannel? = null) {
 	val sanction = Sanction(type, reason ?: return, message.author!!.id)
-	val channelToSend = channel ?: message.getLogChannel()
+	val channelToSend = channel ?: message.kord.getVerifChannel()
 	
 	val old = sanctionMessages.find {
 		it.sanction.member == sanction.member && it.sanction.reason == sanction.reason && it.sanction.type == sanction.type
@@ -230,7 +230,7 @@ suspend fun PublicSlashCommandContext<*>.verificationMessage(message: Message) {
 
 @OptIn(KordPreview::class)
 suspend fun verificationMessage(message: Message, channel: TextChannel? = null) {
-	val channelToSend = channel ?: message.getLogChannel()
+	val channelToSend = channel ?: message.kord.getVerifChannel()
 	val old = getOldVerificationMessage(channelToSend, message)
 	if (old != null && channel == null) {
 		val channels = getChannelsFromSanctionMessage(old, bot)

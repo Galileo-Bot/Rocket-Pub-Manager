@@ -21,7 +21,7 @@ import storage.SanctionType
 import storage.getSanctions
 import utils.ROCKET_PUB_GUILD
 import utils.SANCTION_LOGGER_CHANNEL
-import utils.getLogChannel
+import utils.getLogSanctionsChannel
 import utils.unBanEmbed
 import utils.unMuteEmbed
 import kotlin.time.Duration.Companion.seconds
@@ -98,7 +98,7 @@ class AutoSanctions : Extension() {
 					}
 					
 					scheduler.schedule(duration, name = "Un-mute Scheduler") {
-						kord.getLogChannel().createEmbed {
+						kord.getLogSanctionsChannel().createEmbed {
 							unMuteEmbed(kord, new, kord.getUser(log.userId))
 						}
 					}

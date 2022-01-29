@@ -27,7 +27,6 @@ class Verifications : Extension() {
 			
 			check { isStaff() }
 			
-			
 			publicSubCommand {
 				name = "list"
 				description = "Permet de voir les vérifications du staff."
@@ -35,7 +34,6 @@ class Verifications : Extension() {
 				action {
 					val verificationCount = getVerificationCount()
 					val verifications = verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
-					
 					
 					respond {
 						completeEmbed(
