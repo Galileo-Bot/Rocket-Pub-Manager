@@ -9,12 +9,17 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashC
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
+import com.kotlindiscord.kord.extensions.components.components
+import com.kotlindiscord.kord.extensions.components.publicButton
+import com.kotlindiscord.kord.extensions.components.publicSelectMenu
+import com.kotlindiscord.kord.extensions.components.types.emoji
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.delete
+import com.kotlindiscord.kord.extensions.utils.emoji
 import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.Permission
@@ -212,19 +217,28 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 
 @OptIn(KordPreview::class)
 suspend fun PublicSlashCommandContext<*>.verificationMessage(message: Message) {
-	val verificationMessage = respond {
+	respond {
 		embed {
 			verificationEmbed(message, message.channel.asChannelOf())
 		}
-	}.message
-	
-	verificationMessage.addValidReaction()
-	
-	val liveMessage = verificationMessage.live()
-	setBinReactionDeleteAllSimilarAds(liveMessage, verificationMessage)
-	liveMessage.onReactionAdd {
-		if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
-		validate(verificationMessage, it)
+		
+		components {
+			publicButton {
+				emoji(message.kord.getGuild(ROCKET_PUB_GUILD)!!.getEmoji(VALID_EMOJI))
+				label = "Valider"
+				action { validate(message, user) }
+			}
+			
+			publicSelectMenu {
+				id = "sanction_type"
+				option("interdit", "banned-ad") {
+					emoji(SanctionType.BAN.emote)
+					label = "Publicité interdite"
+					
+					action { deleteAllSimilarAds(message) }
+				}
+			}
+		}
 	}
 }
 
@@ -249,7 +263,7 @@ suspend fun verificationMessage(message: Message, channel: TextChannel? = null) 
 		setBinReactionDeleteAllSimilarAds(liveMessage, verificationMessage)
 		liveMessage.onReactionAdd {
 			if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
-			validate(verificationMessage, it)
+			validate(verificationMessage, it.user)
 		}
 	}
 }
@@ -260,17 +274,20 @@ suspend fun setBinReactionDeleteAllSimilarAds(liveMessage: LiveMessage, message:
 	message.addReaction("\uD83D\uDDD1️")
 	liveMessage.onReactionAdd { reactionEvent ->
 		if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
-		
-		val channels = getChannelsFromSanctionMessage(message, bot)
-		channels.forEach { channel ->
-			channel.messages.firstOrNull { findMessage ->
-				val reason = getReasonForMessage(findMessage)
-				(if (reason != null) message.embeds[0].description!!.contains(reason) else false) && message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
-			}?.delete()
-		}
+		deleteAllSimilarAds(message)
 	}
 }
 
+
+suspend fun deleteAllSimilarAds(message: Message) {
+	val channels = getChannelsFromSanctionMessage(message, bot)
+	channels.forEach { channel ->
+		channel.messages.firstOrNull { findMessage ->
+			val reason = getReasonForMessage(findMessage)
+			(if (reason != null) message.embeds[0].description!!.contains(reason) else false) && message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
+		}?.delete()
+	}
+}
 
 suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) = channel.messages.firstOrNull {
 	if (it.embeds.isEmpty()) return@firstOrNull false

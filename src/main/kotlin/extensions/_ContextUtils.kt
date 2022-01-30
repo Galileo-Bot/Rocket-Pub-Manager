@@ -18,7 +18,6 @@ import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
-import dev.kord.core.event.message.ReactionAddEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.modify.embed
 import storage.Sanction
@@ -95,19 +94,19 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 	message.addValidReaction()
 }
 
-suspend fun validate(message: Message, reactionEvent: ReactionAddEvent) {
+suspend fun validate(message: Message, user: UserBehavior) {
 	message.edit {
 		embed {
 			fromEmbedUnlessChannelField(message.embeds[0])
 			title = "Publicité validée."
 			field {
 				name = "Validée par :"
-				value = reactionEvent.user.mention
+				value = user.mention
 			}
 		}
 	}
 	message.addValidReaction()
-	if (searchVerificationMessage(message.id) == null) saveVerification(reactionEvent.userId, message.id)
+	if (searchVerificationMessage(message.id) == null) saveVerification(user.id, message.id)
 }
 
 suspend fun Message.addValidReaction() {
