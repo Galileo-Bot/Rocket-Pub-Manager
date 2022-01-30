@@ -42,22 +42,44 @@ class BannedGuilds : Extension() {
 		/**
 		 * Could be name or Snowflake.
 		 */
-		val guild by string("serveur", "Le serveur à bannir.")
-		val reason by string("raison", "La raison de pourquoi ce serveur est à bannir.")
+		val guild by string {
+			name = "serveur"
+			description = "Le serveur à bannir."
+		}
+		val reason by string {
+			name = "raison"
+			description = "La raison de pourquoi ce serveur est à bannir."
+		}
 	}
 	
 	class GetBannedGuildArguments : Arguments() {
-		val guild by string("serveur", "Le serveur à récupérer.")
+		val guild by string {
+			name = "serveur"
+			description = "Le serveur à récupérer."
+		}
 	}
 	
 	class RemoveBannedGuildArguments : Arguments() {
-		val guild by string("serveur", "Le serveur à dé-bannir.")
+		val guild by string {
+			name = "serveur"
+			description = "Le serveur à dé-bannir."
+		}
 	}
 	
 	class ModifyBannedGuildArguments : Arguments() {
-		val guild by string("serveur", "Le serveur à modifier.")
-		val value by enumChoice<ModifyGuildValues>("propriété", "La propriété à modifier.", "nom/raison/id")
-		val newValue by string("valeur", "La nouvelle valeur à utiliser.")
+		val guild by string {
+			name = "serveur"
+			description = "Le serveur à modifier."
+		}
+		val value by enumChoice<ModifyGuildValues> {
+			name = "propriété"
+			description = "La propriété à modifier."
+			typeName = "Nom/Id/Raison"
+		}
+		val newValue by string {
+			name = "valeur"
+			description = "La nouvelle valeur à utiliser."
+		}
 	}
 	
 	override suspend fun setup() {

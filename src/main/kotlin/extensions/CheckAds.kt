@@ -1,30 +1,22 @@
 package extensions
 
-import bot
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
 import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.publicButton
-import com.kotlindiscord.kord.extensions.components.publicSelectMenu
-import com.kotlindiscord.kord.extensions.components.types.emoji
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.addReaction
-import com.kotlindiscord.kord.extensions.utils.delete
-import com.kotlindiscord.kord.extensions.utils.emoji
+import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import configuration
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.behavior.channel.createEmbed
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
@@ -35,9 +27,6 @@ import dev.kord.core.entity.channel.VoiceChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
-import dev.kord.core.live.LiveMessage
-import dev.kord.core.live.live
-import dev.kord.core.live.onReactionAdd
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
@@ -46,10 +35,9 @@ import storage.Sanction
 import storage.SanctionType
 import utils.*
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 
-enum class ChannelAdType(val translation: String, val sentence: String, val emote: String) : ChoiceEnum {
+enum class ChannelAdType(private val translation: String, val sentence: String, val emote: String) : ChoiceEnum {
 	CHANNEL("salon", "liste des salons de publicités", AD_CHANNEL_EMOTE),
 	CATEGORY("catégorie", "liste des catégories de salons de publicités", AD_CATEGORY_CHANNEL_EMOTE);
 	
@@ -63,12 +51,21 @@ class CheckAds : Extension() {
 	override val name = "CheckAds"
 	
 	class AddChannelArguments : Arguments() {
-		val type by enumChoice<ChannelAdType>("type", "Le type de salon à ajouter.", "type")
+		val type by enumChoice<ChannelAdType> {
+			name = "type"
+			description = "Le type de salon à ajouter."
+			typeName = "type"
+		}
 		
-		val channel by channel(displayName = "salon", description = "Salon à ajouter à la liste des salons à vérifier.", requiredGuild = { ROCKET_PUB_GUILD }) { _, channel ->
-			when (channel) {
-				is VoiceChannel, is StageChannel -> throw DiscordRelayedException("Ce salon est un salon vocal, il ne peut pas être utilisé pour la liste des salons à vérifier.")
-				is ThreadChannel -> throw DiscordRelayedException("Ce salon est un thread, il ne peut pas être utilisé pour la liste des salons à vérifier.")
+		val channel by channel {
+			name = "salon"
+			description = "Salon à ajouter à la liste des salons à vérifier."
+			requiredGuild = { ROCKET_PUB_GUILD }
+			validate {
+				when (value) {
+					is VoiceChannel, is StageChannel -> throw DiscordRelayedException("Ce salon est un salon vocal, il ne peut pas être utilisé pour la liste des salons à vérifier.")
+					is ThreadChannel -> throw DiscordRelayedException("Ce salon est un thread, il ne peut pas être utilisé pour la liste des salons à vérifier.")
+				}
 			}
 		}
 	}
@@ -156,23 +153,6 @@ class CheckAds : Extension() {
 	}
 }
 
-@OptIn(KordPreview::class)
-suspend fun PublicSlashCommandContext<*>.autoSanctionMessage(message: Message, type: SanctionType, reason: String?) {
-	val sanction = Sanction(type, reason ?: return, message.author!!.id)
-	val sanctionMessage = respond {
-		embed {
-			autoSanctionEmbed(message, sanction)
-		}
-	}.message
-	
-	val liveMessage = sanctionMessage.live()
-	setBinReactionDeleteAllSimilarAds(liveMessage, sanctionMessage)
-	sanctionMessages.add(SanctionMessage(sanctionMessage.getAuthorAsMember()!!, sanctionMessage, sanction))
-	
-	message.delete(5.minutes.inWholeMilliseconds)
-}
-
-@OptIn(KordPreview::class)
 suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?, channel: TextChannel? = null) {
 	val sanction = Sanction(type, reason ?: return, message.author!!.id)
 	val channelToSend = channel ?: message.kord.getVerifChannel()
@@ -182,7 +162,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 	}
 	
 	if (old != null && channel != null) {
-		val channels = getChannelsFromSanctionMessage(old.sanctionMessage, bot)
+		val channels = getChannelsFromSanctionMessage(old.sanctionMessage)
 		channels.add(message.channel.asChannelOf())
 		
 		when (channels.size) {
@@ -202,90 +182,54 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			embed { autoSanctionEmbed(message, sanction, channels.toList()) }
 		}
 	} else {
-		val sanctionMessage = channelToSend.createEmbed {
-			autoSanctionEmbed(message, sanction)
-		}
-		
-		val liveMessage = sanctionMessage.live()
-		setBinReactionDeleteAllSimilarAds(liveMessage, sanctionMessage)
-		
-		sanctionMessages.add(SanctionMessage(sanctionMessage.getAuthorAsMember()!!, sanctionMessage, sanction))
-	}
-	
-	message.delete(5.minutes.inWholeMilliseconds)
-}
-
-@OptIn(KordPreview::class)
-suspend fun PublicSlashCommandContext<*>.verificationMessage(message: Message) {
-	respond {
-		embed {
-			verificationEmbed(message, message.channel.asChannelOf())
-		}
-		
-		components {
-			publicButton {
-				emoji(message.kord.getGuild(ROCKET_PUB_GUILD)!!.getEmoji(VALID_EMOJI))
-				label = "Valider"
-				action { validate(message, user) }
+		channelToSend.createMessage {
+			embed {
+				autoSanctionEmbed(message, sanction)
 			}
-			
-			publicSelectMenu {
-				id = "sanction_type"
-				option("interdit", "banned-ad") {
-					emoji(SanctionType.BAN.emote)
-					label = "Publicité interdite"
-					
-					action { deleteAllSimilarAds(message) }
-				}
+			components {
+				addBinButtonDeleteSimilarAds()
 			}
+		}.also {
+			sanctionMessages.add(SanctionMessage(message.getAuthorAsMember()!!, it, sanction))
 		}
 	}
 }
 
-@OptIn(KordPreview::class)
 suspend fun verificationMessage(message: Message, channel: TextChannel? = null) {
 	val channelToSend = channel ?: message.kord.getVerifChannel()
 	val old = getOldVerificationMessage(channelToSend, message)
+	
 	if (old != null && channel == null) {
-		val channels = getChannelsFromSanctionMessage(old, bot)
+		val channels = getChannelsFromSanctionMessage(old)
 		channels.add(message.channel.asChannelOf())
 		
 		old.edit {
 			embed { verificationEmbed(message, *channels.toTypedArray()) }
 		}
 	} else {
-		val verificationMessage = channelToSend.createEmbed {
-			verificationEmbed(message, message.channel.asChannelOf())
-		}
-		verificationMessage.addValidReaction()
-		
-		val liveMessage = verificationMessage.live()
-		setBinReactionDeleteAllSimilarAds(liveMessage, verificationMessage)
-		liveMessage.onReactionAdd {
-			if (it.getUser().isBot || it.emoji.id != VALID_EMOJI.toString()) return@onReactionAdd
-			validate(verificationMessage, it.user)
+		channelToSend.createMessage {
+			embed {
+				verificationEmbed(message, message.channel.asChannelOf())
+			}
+			
+			components {
+				addBinButtonDeleteSimilarAds()
+				addVerificationButton()
+			}
 		}
 	}
 }
-
-
-@OptIn(KordPreview::class)
-suspend fun setBinReactionDeleteAllSimilarAds(liveMessage: LiveMessage, message: Message) {
-	message.addReaction("\uD83D\uDDD1️")
-	liveMessage.onReactionAdd { reactionEvent ->
-		if (reactionEvent.getUser().isBot || reactionEvent.emoji.name != "\uD83D\uDDD1️") return@onReactionAdd
-		deleteAllSimilarAds(message)
-	}
-}
-
 
 suspend fun deleteAllSimilarAds(message: Message) {
-	val channels = getChannelsFromSanctionMessage(message, bot)
+	val channels = getChannelsFromSanctionMessage(message)
 	channels.forEach { channel ->
 		channel.messages.firstOrNull { findMessage ->
 			val reason = getReasonForMessage(findMessage)
-			(if (reason != null) message.embeds[0].description!!.contains(reason) else false) && message.embeds[0].fields.find { it.name == "Par :" }?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
-		}?.delete()
+			val embed = message.embeds[0]
+			(if (reason != null) embed.description!!.contains(reason) else false) && embed.fields.find {
+				it.name.endsWith("Par :")
+			}?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
+		}?.deleteIgnoringNotFound()
 	}
 }
 
@@ -293,5 +237,5 @@ suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) =
 	if (it.embeds.isEmpty()) return@firstOrNull false
 	
 	val firstEmbed = it.embeds[0]
-	firstEmbed.description == message?.content && firstEmbed.fields.find { it.name == "Par :" }?.value?.contains(message?.author!!.id.toString()) == true
+	firstEmbed.description == message?.content && firstEmbed.fields.find { it.name.endsWith("Par :") }?.value?.contains(message?.author!!.id.toString()) == true
 }

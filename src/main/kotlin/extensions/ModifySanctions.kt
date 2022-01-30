@@ -4,7 +4,7 @@ import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
@@ -26,27 +26,45 @@ class ModifySanctions : Extension() {
 	override val name = "Modify-Sanctions"
 	
 	abstract class ModifySanction : Arguments() {
-		val id by int("cas", "Le numéro de la sanction à modifier.")
+		val id by int {
+			name = "cas"
+			description = "Le numéro de la sanction à modifier."
+		}
 	}
 	
 	class ModifyAppliedByArguments : ModifySanction() {
-		val appliedBy by member("modérateur", "Par qui la sanction a été appliquée.", { ROCKET_PUB_GUILD }) { _, member ->
-			if (!member.isStaff()) {
-				throw DiscordRelayedException("La personne n'a pas le rôle staff et n'est donc pas modérateur, impossible de l'utiliser.")
+		val appliedBy by member {
+			name = "modérateur"
+			description = "Par qui la sanction a été appliquée."
+			requiredGuild = { ROCKET_PUB_GUILD }
+			validate {
+				if (!value.isStaff()) {
+					throw DiscordRelayedException("La personne n'a pas le rôle staff et n'est donc pas modérateur, impossible de l'utiliser.")
+				}
 			}
 		}
 	}
 	
 	class ModifyDurationArguments : ModifySanction() {
-		val duration by duration("durée", "Durée de la sanction.")
+		val duration by duration {
+			name = "durée"
+			description = "Durée de la sanction."
+		}
 	}
 	
 	class ModifyReasonArguments : ModifySanction() {
-		val reason by coalescedString("raison", "Raison de la sanction.")
+		val reason by coalescingString {
+			name = "raison"
+			description = "Raison de la sanction."
+		}
 	}
 	
 	class ModifySanctionTypeArguments : ModifySanction() {
-		val type by enumChoice<SanctionType>("type", "Type de la sanction.", "type")
+		val type by enumChoice<SanctionType> {
+			name = "type"
+			description = "Type de la sanction."
+			typeName = "type"
+		}
 	}
 	
 	override suspend fun setup() {

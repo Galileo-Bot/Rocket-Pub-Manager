@@ -6,8 +6,8 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.C
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingCoalescingString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingDefaultingString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalInt
@@ -59,56 +59,126 @@ class Sanctions : Extension() {
 	override val name = "Sanctions"
 	
 	class BanArguments : Arguments() {
-		val member by member("membre", "Le membre à expulser.")
-		val reason by coalescedString("raison", "La raison de du ban.")
-		val duration by optionalInt("durée", "La durée du ban.")
-		val deleteDays by optionalInt("suppression", "Le nombre de jours auquel supprimer les messages.") { _, value ->
-			if (value != null) {
-				if (value < 0) throw DiscordRelayedException("La durée de suppression doit être supérieure à 0.")
-				else if (value > 7) throw DiscordRelayedException("La durée de suppression ne peut pas être supérieure à 7 jours.")
+		val member by member {
+			name = "membre"
+			description = "Le membre à expulser."
+		}
+		val reason by coalescingString {
+			name = "raison"
+			description = "La raison de du ban."
+		}
+		val duration by optionalInt {
+			name = "durée"
+			description = "La durée du ban."
+		}
+		
+		val deleteDays by optionalInt {
+			name = "supression"
+			description = "Le nombre de jours auquel supprimer les messages."
+			validate {
+				if (value != null) {
+					if (value!! < 0) throw DiscordRelayedException("La durée de suppression doit être supérieure à 0.")
+					else if (value!! > 7) throw DiscordRelayedException("La durée de suppression ne peut pas être supérieure à 7 jours.")
+				}
 			}
 		}
-		val unit by optionalEnumChoice<DurationUnits>("unité", "L'unité de la durée du ban.", "unité")
+		val unit by optionalEnumChoice<DurationUnits> {
+			name = "unité"
+			description = "L'unité de la durée du ban."
+			typeName = "unité"
+		}
 	}
 	
 	class DeleteSanctionArguments : Arguments() {
-		val id by int("cas", "Le numéro de la sanction à supprimer.")
+		val id by int {
+			name = "cas"
+			description = "Le numéro de la sanction à supprimer."
+		}
 	}
 	
 	class DeleteAllSanctionsArguments : Arguments() {
-		val user by user("utilisateur", "L'utilisateur à qui supprimer toutes les sanctions.")
-		val type by optionalEnumChoice<SanctionType>("type", "Le type de sanctions à supprimer.", "type")
+		val user by user {
+			name = "utilisateur"
+			description = "L'utilisateur à qui supprimer toutes les sanctions."
+		}
+		val type by optionalEnumChoice<SanctionType> {
+			name = "type"
+			description = "Le type de sanctions à supprimer."
+			typeName = "type"
+		}
 	}
 	
 	class ListSanctionsArguments : Arguments() {
-		val user by user("utilisateur", "L'utilisateur à qui afficher les sanctions.")
-		val type by optionalEnumChoice<SanctionType>("type", "Le type de sanctions à afficher.", "type")
+		val user by user {
+			name = "utilisateur"
+			description = "L'utilisateur à qui afficher les sanctions."
+		}
+		val type by optionalEnumChoice<SanctionType> {
+			name = "type"
+			description = "Le type de sanctions à afficher."
+			typeName = "TEST"
+		}
 	}
 	
 	class KickArguments : Arguments() {
-		val member by member("membre", "Le membre à expulser.")
-		val reason by coalescedString("raison", "La raison de l'expulsion.")
+		val member by member {
+			name = "membre"
+			description = "Le membre à expulser."
+		}
+		val reason by coalescingString {
+			name = "raison"
+			description = "La raison de l'expulsion."
+		}
 	}
 	
 	class MuteArguments : Arguments() {
-		val member by member("membre", "Le membre à mute.")
-		val duration by int("durée", "La durée du mute.")
-		val unit by enumChoice<DurationUnits>("unité", "L'unité de la durée du mute.", "unité")
-		val reason by coalescedString("raison", "La raison du mute.")
+		val member by member {
+			name = "membre"
+			description = "Le membre à mute."
+		}
+		val duration by int {
+			name = "durée"
+			description = "La durée du mute."
+		}
+		val unit by enumChoice<DurationUnits> {
+			name = "unité"
+			description = "L'unité de la durée du mute."
+			typeName = "unité"
+		}
+		val reason by coalescingString {
+			name = "raison"
+			description = "La raison du mute."
+		}
 	}
 	
 	class UnBanArguments : Arguments() {
-		val user by user("utilisateur", "L'utilisateur à dé-bannir.")
-		val reason by defaultingCoalescingString("raison", "La raison de la dé-bannissement.", "Pas de raison définie.")
+		val user by user {
+			name = "utilisateur"
+			description = "L'utilisateur à dé-bannir."
+		}
+		val reason by coalescingDefaultingString {
+			name = "raison"
+			description = "La raison de la dé-bannissement."
+			defaultValue = "Pas de raison définie."
+		}
 	}
 	
 	class UnMuteArguments : Arguments() {
-		val member by member("membre", "Le membre à unmute.")
+		val member by member {
+			name = "membre"
+			description = "Le membre à unmute."
+		}
 	}
 	
 	class WarnArguments : Arguments() {
-		val member by member("membre", "L'utilisateur à qui avertir.")
-		val reason by coalescedString("raison", "Raison de l'avertissement.")
+		val member by member {
+			name = "membre"
+			description = "L'utilisateur à qui avertir."
+		}
+		val reason by coalescingString {
+			name = "raison"
+			description = "Raison de l'avertissement."
+		}
 	}
 	
 	override suspend fun setup() {
