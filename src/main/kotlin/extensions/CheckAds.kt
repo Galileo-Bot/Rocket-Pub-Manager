@@ -213,8 +213,8 @@ suspend fun verificationMessage(message: Message, channel: TextChannel? = null) 
 			}
 			
 			components {
-				addBinButtonDeleteSimilarAds()
 				addVerificationButton()
+				addBinButtonDeleteSimilarAds()
 			}
 		}
 	}
@@ -223,7 +223,7 @@ suspend fun verificationMessage(message: Message, channel: TextChannel? = null) 
 suspend fun deleteAllSimilarAds(message: Message) {
 	val channels = getChannelsFromSanctionMessage(message)
 	channels.forEach { channel ->
-		channel.messages.firstOrNull { findMessage ->
+		channel.getMessagesBefore(channel.lastMessageId!!, 100).firstOrNull { findMessage ->
 			val reason = getReasonForMessage(findMessage)
 			val embed = message.embeds[0]
 			(if (reason != null) embed.description!!.contains(reason) else false) && embed.fields.find {
