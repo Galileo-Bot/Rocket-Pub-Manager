@@ -28,12 +28,11 @@ val debug get() = configuration["AYFRI_ROCKETMANAGER_ENVIRONMENT"] == "developme
 val adsAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS"].toBooleanStrict()
 val endMessageAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE"].toBooleanStrict()
 
-lateinit var bot: ExtensibleBot
 lateinit var connection: Connection
 
 @PrivilegedIntent
 suspend fun main() {
-	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
+	val bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
 		applicationCommands {
 			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
 			

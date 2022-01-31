@@ -110,7 +110,7 @@ class BannedGuilds : Extension() {
 				action {
 					respond {
 						searchBannedGuild(arguments.guild)?.let {
-							bannedGuildEmbed(bot.getKoin().get(), it)
+							bannedGuildEmbed(this@publicSlashCommand.kord, it)
 						} ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also {
 							content = it
 						}

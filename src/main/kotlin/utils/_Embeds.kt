@@ -66,8 +66,14 @@ suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	description = "Voici des informations sur ce serveur interdit."
 	
 	timestamp = Clock.System.now()
+	
 	field {
-		name = "Nom/ID"
+		name = "Raison :"
+		value = guild.reason
+	}
+	
+	field {
+		name = "Nom/ID :"
 		value = if (guild.name == null) "ID: ${guild.id}" else "Nom: ${guild.name}"
 		inline = true
 	}
