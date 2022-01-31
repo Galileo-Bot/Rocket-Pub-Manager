@@ -23,12 +23,10 @@ import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.toMessageFormat
-import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 import storage.Sanction
 import storage.SanctionType
 import storage.containsSanction
@@ -323,11 +321,9 @@ class Sanctions : Extension() {
 				Sanction(SanctionType.BAN, arguments.reason, arguments.member.id, durationMS = duration?.inWholeMilliseconds ?: 0, appliedBy = user.id).apply {
 					sendLog()
 					save()
-					arguments.member.ban {
-						this.reason = reason
-						deleteMessagesDays = arguments.deleteDays
-					}
+					
 					respond {
+						applyToMember(arguments.member, arguments.deleteDays)
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}
@@ -348,8 +344,9 @@ class Sanctions : Extension() {
 				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
 					sendLog()
 					save()
-					arguments.member.kick(arguments.reason)
+					
 					respond {
+						applyToMember(arguments.member)
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}
@@ -381,8 +378,9 @@ class Sanctions : Extension() {
 				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = duration.inWholeMilliseconds, appliedBy = user.id).apply {
 					sendLog()
 					save()
-					arguments.member.edit { timeoutUntil = Clock.System.now() + duration }
+					
 					respond {
+						applyToMember(arguments.member)
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
 				}

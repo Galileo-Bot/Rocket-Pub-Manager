@@ -1,13 +1,20 @@
 package storage
 
+import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.time.TimestampType
+import com.kotlindiscord.kord.extensions.utils.canInteract
+import com.kotlindiscord.kord.extensions.utils.selfMember
+import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import connection
 import debug
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createEmbed
+import dev.kord.core.behavior.edit
 import extensions.ModifySanctionValues
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
@@ -22,6 +29,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -72,6 +80,32 @@ data class Sanction(
 			}
 		}
 	
+	fun equalExceptOwner(other: Sanction) =
+		type == other.type &&
+				reason == other.reason &&
+				member == other.member &&
+				abs(durationMS - other.durationMS) < 10_000
+	
+	suspend fun applyToMember(member: MemberBehavior, banDeleteDays: Int? = null) {
+		val user = member.fetchMemberOrNull() ?: throw DiscordRelayedException("La sanction ne peut être appliquée car le membre n'a pas été trouvé.")
+		if (user.guild.selfMember().fetchMemberOrNull()?.canInteract(user) != true) {
+			throw DiscordRelayedException("La sanction ne peut être appliquée car le bot n'a pas les permissions suffisantes.")
+		}
+		
+		when (type) {
+			SanctionType.BAN -> member.ban {
+				reason = this@Sanction.reason
+				deleteMessagesDays = banDeleteDays
+			}
+			SanctionType.KICK -> member.kick(reason)
+			SanctionType.MUTE -> member.edit {
+				timeoutUntil = Clock.System.now() + duration
+				reason = this@Sanction.reason
+			}
+			else -> return
+		}
+	}
+	
 	suspend fun sendLog(kord: Kord) {
 		kord.getLogSanctionsChannel().createEmbed {
 			sanctionEmbed(kord, this@Sanction)
@@ -90,8 +124,8 @@ data class Sanction(
 	}
 }
 
-val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)
 val offset: ZoneOffset = ZoneOffset.ofHours(1)
+val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH).withZone(offset)
 
 fun containsSanction(id: Int) = connection.createStatement().executeQuery(
 	"SELECT * FROM sanctions WHERE id = $id"

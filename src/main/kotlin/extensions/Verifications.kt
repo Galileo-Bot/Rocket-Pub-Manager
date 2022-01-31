@@ -10,6 +10,7 @@ import com.kotlindiscord.kord.extensions.components.publicButton
 import com.kotlindiscord.kord.extensions.components.publicSelectMenu
 import com.kotlindiscord.kord.extensions.components.types.emoji
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.emoji
@@ -23,6 +24,7 @@ import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCount
 import utils.ROCKET_PUB_GUILD
+import utils.STAFF_ROLE
 import utils.SanctionMessage
 import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
@@ -77,6 +79,29 @@ class Verifications : Extension() {
 					getReasonForMessage(message)?.let {
 						autoSanctionMessage(message, SanctionType.WARN, it)
 					} ?: verificationMessage(message)
+				}
+			}
+		}
+		
+		ephemeralMessageCommand {
+			name = "pub-interdite"
+			allowRole(STAFF_ROLE)
+			guild(ROCKET_PUB_GUILD)
+			
+			action {
+				val type = user.getNextSanctionType()
+				val message = targetMessages.elementAt(0)
+				
+				val author = message.getAuthorAsMember()!!
+				message.delete("Publicité interdite.")
+				Sanction(type, "Publicité interdite.", author.id, user.fetchUserOrNull()?.id, if (type == SanctionType.MUTE) author.getNextMuteDuration() else 0).apply {
+					save()
+					sendLog(message.kord)
+					
+					respond {
+						applyToMember(author)
+						content = "${author.mention} a été sanctionné pour avoir publié une publicité interdite."
+					}
 				}
 			}
 		}

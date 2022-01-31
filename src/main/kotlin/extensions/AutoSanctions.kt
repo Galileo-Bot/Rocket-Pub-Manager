@@ -6,6 +6,7 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.AuditLogEvent
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.getAuditLogEntries
@@ -24,6 +25,8 @@ import utils.SANCTION_LOGGER_CHANNEL
 import utils.getLogSanctionsChannel
 import utils.unBanEmbed
 import utils.unMuteEmbed
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -41,6 +44,8 @@ class AutoSanctions : Extension() {
 				if (getSanctions(user.id).none { it.type == SanctionType.BAN && it.isActive }) {
 					val ban = event.getBan()
 					Sanction(SanctionType.BAN, ban.reason, user.id).apply {
+						if (getSanctions(user.id).any { it.equalExceptOwner(this) }) return@action
+						
 						sendLog(event.kord)
 						save()
 					}
@@ -70,6 +75,8 @@ class AutoSanctions : Extension() {
 					it.id.timeMark.elapsedNow() < 10.seconds
 				}?.let {
 					Sanction(SanctionType.KICK, it.reason, event.user.id).apply {
+						if (getSanctions(event.user.id).any { it.equalExceptOwner(this) }) return@action
+						
 						sendLog(event.kord)
 						save()
 					}
@@ -91,8 +98,10 @@ class AutoSanctions : Extension() {
 						it.id.timeMark.elapsedNow() < 10.seconds && it.changes.any { it.key.name == "communication_disabled_until" }
 					} ?: return@let
 					
-					val duration = new.timeoutUntil!! - Clock.System.now()
+					val duration = (new.timeoutUntil ?: return@action) - Clock.System.now()
 					Sanction(SanctionType.MUTE, log.reason, new.id, log.userId, duration.inWholeMilliseconds).apply {
+						if (getSanctions(new.id).any { it.equalExceptOwner(this) }) return@action
+						
 						sendLog(kord)
 						save()
 					}
@@ -103,6 +112,49 @@ class AutoSanctions : Extension() {
 						}
 					}
 				}
+			}
+		}
+	}
+}
+
+fun UserBehavior.getNextMuteDuration(): Long {
+	val sanctions = getSanctions(id)
+	return when {
+		sanctions.isEmpty() -> 0
+		else -> {
+			return when (sanctions.size) {
+				1 -> 6.hours
+				in 2..4 -> 1.days
+				in 5..7 -> 5.days
+				in 8..10 -> 14.days
+				else -> 27.days
+			}.inWholeMilliseconds
+		}
+	}
+}
+
+fun UserBehavior.getNextSanctionType(): SanctionType {
+	val sanctions = getSanctions(id)
+	return when {
+		sanctions.isEmpty() -> SanctionType.LIGHT_WARN
+		else -> {
+			when (sanctions.size) {
+				in 1..4 -> {
+					return when {
+						sanctions.any { it.type == SanctionType.MUTE } -> SanctionType.MUTE
+						sanctions.any { it.type == SanctionType.KICK } -> SanctionType.KICK
+						sanctions.any { it.type == SanctionType.BAN } -> SanctionType.BAN
+						else -> SanctionType.WARN
+					}
+				}
+				in 5..10 -> {
+					return when {
+						sanctions.any { it.type == SanctionType.MUTE } -> return SanctionType.KICK
+						sanctions.any { it.type == SanctionType.KICK } -> return SanctionType.BAN
+						else -> SanctionType.WARN
+					}
+				}
+				else -> return SanctionType.BAN
 			}
 		}
 	}
