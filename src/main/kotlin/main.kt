@@ -9,6 +9,7 @@ import extensions.AutoSanctions
 import extensions.BannedGuilds
 import extensions.CheckAds
 import extensions.EndMessage
+import extensions.ModifySanctions
 import extensions.RemoveAds
 import extensions.Sanctions
 import extensions.Verifications
@@ -54,6 +55,7 @@ suspend fun main() {
 			add(::BannedGuilds)
 			add(::CheckAds)
 			add(::EndMessage)
+			add(::ModifySanctions)
 			add(::RemoveAds)
 			add(::Sanctions)
 			add(::Verifications)

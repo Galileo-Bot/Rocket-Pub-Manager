@@ -14,7 +14,7 @@ import utils.isAdChannel
 
 
 class RemoveAds : Extension() {
-	override val name: String = "Remove ads"
+	override val name: String = "Remove-Ads"
 	
 	override suspend fun setup() {
 		event<MemberLeaveEvent> {

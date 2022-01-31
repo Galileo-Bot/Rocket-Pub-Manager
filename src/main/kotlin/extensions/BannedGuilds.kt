@@ -36,7 +36,7 @@ enum class ModifyGuildValues(val translation: String) : ChoiceEnum {
 
 @OptIn(KordPreview::class)
 class BannedGuilds : Extension() {
-	override val name = "BannedGuilds"
+	override val name = "Banned-Guilds"
 	
 	class AddBannedGuildArguments : Arguments() {
 		/**

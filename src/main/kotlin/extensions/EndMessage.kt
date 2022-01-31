@@ -15,7 +15,7 @@ import utils.endAdChannelEmbed
 import utils.isAdChannel
 
 class EndMessage : Extension() {
-	override val name = "EndMessage"
+	override val name = "End-Message"
 	
 	override suspend fun setup() {
 		event<MessageCreateEvent> {

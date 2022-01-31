@@ -15,11 +15,11 @@ import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
 
 
-enum class ModifySanctionValues(val translation: String) {
-	APPLIED_BY("Appliquée par"),
-	DURATION("Durée"),
-	REASON("Raison"),
-	TYPE("Type"),
+enum class ModifySanctionValues {
+	APPLIED_BY,
+	DURATION,
+	REASON,
+	TYPE,
 }
 
 class ModifySanctions : Extension() {

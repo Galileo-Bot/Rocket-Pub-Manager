@@ -48,7 +48,7 @@ val sanctionMessages = mutableListOf<SanctionMessage>()
 
 @OptIn(ExperimentalTime::class, KordPreview::class)
 class CheckAds : Extension() {
-	override val name = "CheckAds"
+	override val name = "Auto-Check-Ads"
 	
 	class AddChannelArguments : Arguments() {
 		val type by enumChoice<ChannelAdType> {

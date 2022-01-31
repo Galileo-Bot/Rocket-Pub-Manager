@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 class AutoSanctions : Extension() {
-	override val name = "AutoSanctions"
+	override val name = "Detect-Sanctions"
 	private val scheduler = Scheduler()
 	
 	@OptIn(ExperimentalTime::class)
