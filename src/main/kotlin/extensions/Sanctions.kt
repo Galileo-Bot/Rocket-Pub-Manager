@@ -274,7 +274,8 @@ class Sanctions : Extension() {
 				
 				action {
 					respond {
-						val sanctions = getSanctions(arguments.user.id)
+						var sanctions = getSanctions(arguments.user.id)
+						if (arguments.type != null) sanctions = sanctions.filter { it.type == arguments.type }
 						
 						if (arguments.type != null && sanctions.none { it.type == arguments.type }) {
 							content = "Cet utilisateur n'a pas de sanctions de ce type."
