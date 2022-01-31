@@ -218,7 +218,7 @@ class Sanctions : Extension() {
 					if (sanctions.isEmpty()) throw DiscordRelayedException("Aucune sanction n'a été appliquée à cet utilisateur.")
 					
 					respondingPaginator {
-						sanctions.chunked(20).forEach {
+						sanctions.chunked(10).forEach {
 							page {
 								completeEmbed(
 									client = bot.getKoin().get(),
