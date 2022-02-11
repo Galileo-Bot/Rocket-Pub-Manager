@@ -1,9 +1,9 @@
 package utils
 
-import com.kotlindiscord.kord.extensions.time.TimestampType
-import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import configuration
+import dev.kord.common.DiscordTimestampStyle
+import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
@@ -80,7 +80,7 @@ suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	
 	field {
 		name = "Depuis :"
-		value = guild.bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.LongDateTime)
+		value = guild.bannedSince.toInstant().toKotlinInstant().toMessageFormat(DiscordTimestampStyle.LongDateTime)
 	}
 }
 

@@ -11,7 +11,6 @@ import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondingPaginator
-import dev.kord.common.annotation.KordPreview
 import kotlinx.datetime.toKotlinInstant
 import storage.addBannedGuild
 import storage.getAllBannedGuilds
@@ -34,7 +33,6 @@ enum class ModifyGuildValues(val translation: String) : ChoiceEnum {
 	override val readableName = translation
 }
 
-@OptIn(KordPreview::class)
 class BannedGuilds : Extension() {
 	override val name = "Banned-Guilds"
 	

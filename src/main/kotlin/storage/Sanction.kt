@@ -32,7 +32,6 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
-import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
 
 enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
@@ -59,7 +58,6 @@ data class Sanction(
 		type, reason ?: DEFAULT_REASON, member, appliedBy = appliedBy, durationMS = durationMS
 	)
 	
-	@OptIn(ExperimentalTime::class)
 	val duration
 		get() = durationMS.toDuration(DurationUnit.MILLISECONDS)
 	
@@ -69,7 +67,6 @@ data class Sanction(
 	
 	val activeUntil get() = Clock.System.now() + duration
 	
-	@OptIn(ExperimentalTime::class)
 	val formattedDuration: String
 		get() {
 			return when {

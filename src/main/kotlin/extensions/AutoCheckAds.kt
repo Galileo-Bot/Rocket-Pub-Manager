@@ -13,7 +13,6 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import configuration
-import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
@@ -35,7 +34,6 @@ import storage.Sanction
 import storage.SanctionType
 import utils.*
 import kotlin.time.Duration.Companion.days
-import kotlin.time.ExperimentalTime
 
 enum class ChannelAdType(private val translation: String, val sentence: String, val emote: String) : ChoiceEnum {
 	CHANNEL("salon", "liste des salons de publicités", AD_CHANNEL_EMOTE),
@@ -46,7 +44,6 @@ enum class ChannelAdType(private val translation: String, val sentence: String, 
 
 val sanctionMessages = mutableListOf<SanctionMessage>()
 
-@OptIn(ExperimentalTime::class, KordPreview::class)
 class CheckAds : Extension() {
 	override val name = "Auto-Check-Ads"
 	
@@ -146,7 +143,7 @@ class CheckAds : Extension() {
 				}
 				
 				getReasonForMessage(event.message)?.let {
-					autoSanctionMessage(event.message, SanctionType.WARN, it)
+					autoSanctionMessage(event.message, event.member!!.getNextSanctionType(), it)
 				} ?: verificationMessage(event.message)
 			}
 		}

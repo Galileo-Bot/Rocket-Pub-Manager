@@ -21,7 +21,6 @@ import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.DiscordTimestampStyle
-import dev.kord.common.annotation.KordPreview
 import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
@@ -52,7 +51,6 @@ enum class DurationUnits(translation: String, val durationUnit: DurationUnit) : 
 	override val readableName = translation
 }
 
-@OptIn(KordPreview::class)
 class Sanctions : Extension() {
 	override val name = "Sanctions"
 	

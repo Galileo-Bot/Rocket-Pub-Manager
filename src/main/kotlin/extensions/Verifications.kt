@@ -14,7 +14,6 @@ import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.emoji
-import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.edit
@@ -32,7 +31,6 @@ import utils.completeEmbed
 import utils.getReasonForMessage
 import utils.verificationEmbed
 
-@OptIn(KordPreview::class)
 class Verifications : Extension() {
 	override val name = "Verifications"
 	
