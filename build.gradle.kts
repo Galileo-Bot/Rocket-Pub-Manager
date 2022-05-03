@@ -2,9 +2,9 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	kotlin("jvm") version "1.6.10"
-	kotlin("plugin.serialization") version "1.6.10"
-	id("com.github.johnrengelman.shadow") version "7.1.2"
+	alias(libs.plugins.kotlin)
+	alias(libs.plugins.serialization)
+	alias(libs.plugins.shadow)
 	application
 }
 
@@ -29,7 +29,7 @@ dependencies {
 	implementation(libs.kord.extensions)
 	implementation(libs.kord.base)
 	implementation(libs.kotlin.stdlib)
-	implementation(libs.dotEnv)
+	implementation(libs.dotenv)
 	
 	implementation(libs.groovy)
 	implementation(libs.logback)
