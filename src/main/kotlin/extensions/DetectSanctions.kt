@@ -15,7 +15,7 @@ import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
-import dev.kord.core.firstOrNull
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import storage.Sanction
 import storage.SanctionType

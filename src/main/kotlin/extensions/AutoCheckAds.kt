@@ -219,13 +219,16 @@ suspend fun verificationMessage(message: Message, channel: TextChannel? = null) 
 
 suspend fun deleteAllSimilarAds(message: Message) {
 	val channels = getChannelsFromSanctionMessage(message)
+	val embed = message.embeds[0]
+	val embedAuthor = embed.fields.find { it.name.endsWith("Par :") }?.value ?: return
+	
 	channels.forEach { channel ->
-		channel.getMessagesBefore(channel.lastMessageId!!, 100).firstOrNull { findMessage ->
-			val reason = getReasonForMessage(findMessage)
-			val embed = message.embeds[0]
-			(if (reason != null) embed.description!!.contains(reason) else false) && embed.fields.find {
-				it.name.endsWith("Par :")
-			}?.value?.contains(findMessage.author?.fetchUserOrNull()?.id.toString()) == true
+		channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100).firstOrNull { findMessage ->
+			val reason = getReasonForMessage(findMessage) ?: return@firstOrNull false
+			val containsReason = embed.description?.contains(reason) ?: return@firstOrNull false
+			val author = findMessage.author?.fetchUserOrNull() ?: return@firstOrNull false
+			
+			containsReason && embedAuthor.contains(author.id.toString())
 		}?.deleteIgnoringNotFound()
 	}
 }

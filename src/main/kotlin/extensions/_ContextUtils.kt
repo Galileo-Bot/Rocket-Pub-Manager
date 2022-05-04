@@ -58,17 +58,17 @@ suspend fun <T : Event> CheckContext<T>.isStaff() {
 	}
 }
 
-fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel: ChannelBehavior): List<String>? {
+fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel: ChannelBehavior): List<String> {
 	val oldEmbed = sanctionMessage.embeds[0]
 	val channels = oldEmbed.fields.find { it.name.endsWith("Salons :") }!!.value.split(Regex("\n")).toMutableList()
 	val founds = channels.intersect(channel.map { it.mention }.toSet())
 	channels.removeAll(founds)
-	channels.addAll(founds.map { "$it supprimé" })
+	channels.addAll(founds.map { "$it _supprimé_" })
 	return channels
 }
 
-suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBehavior): Message? {
-	val channels = updateDeletedMessagesInChannelList(sanctionMessage, *channel) ?: return null
+suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBehavior): Message {
+	val channels = updateDeletedMessagesInChannelList(sanctionMessage, *channel)
 	
 	return sanctionMessage.edit {
 		embed {

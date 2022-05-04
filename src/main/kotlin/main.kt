@@ -40,6 +40,8 @@ suspend fun main() {
 				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
 				pass()
 			}
+			
+			syncPermissions = false
 		}
 		
 		chatCommands {

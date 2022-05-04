@@ -6,6 +6,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.C
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
+import com.kotlindiscord.kord.extensions.commands.converters.builders.ConverterBuilder
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingDefaultingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
@@ -17,12 +18,16 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondingPaginator
+import com.kotlindiscord.kord.extensions.utils.FilterStrategy
 import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
+import com.kotlindiscord.kord.extensions.utils.suggestStringMap
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.interaction.suggestString
+import dev.kord.core.entity.interaction.AutoCompleteInteraction
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
@@ -43,6 +48,29 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 
+val AutoCompleteInteraction.sanctions
+	get() = mapOf(
+		"spam" to "Spam de publicités.",
+		"spam2" to "Spam de publicités après avertissements.",
+		"interdit" to "Publicité interdite.",
+		"description" to "Publicité sans description.",
+		"suite" to "Publicités similaires à la chaîne.",
+//		"lien" to "Lien de publicité interdit dans ${channel.mention}.",
+		"categorie" to "Publicité dans la mauvaise catégorie.",
+		"mp" to "Publicité par messages privés.",
+		"fake" to "Spam de faux liens.",
+		"mention" to "Tentative de mention interdite.",
+		"invite reward" to "Publicité pour un serveur invite reward (interdit)."
+	)
+
+fun ConverterBuilder<String>.autoCompleteReason() {
+	autoComplete {
+		suggestString {
+			sanctions.forEach { (key, value) -> choice(key, value) }
+		}
+	}
+}
+
 enum class DurationUnits(translation: String, val durationUnit: DurationUnit) : ChoiceEnum {
 	DAYS("jours", DurationUnit.DAYS),
 	HOURS("heures", DurationUnit.HOURS),
@@ -62,6 +90,11 @@ class Sanctions : Extension() {
 		val reason by coalescingString {
 			name = "raison"
 			description = "La raison de du ban."
+			autoComplete {
+				suggestStringMap(
+					sanctions, FilterStrategy.Contains
+				)
+			}
 		}
 		val duration by optionalInt {
 			name = "durée"
@@ -124,6 +157,11 @@ class Sanctions : Extension() {
 		val reason by coalescingString {
 			name = "raison"
 			description = "La raison de l'expulsion."
+			autoComplete {
+				suggestStringMap(
+					sanctions, FilterStrategy.Contains
+				)
+			}
 		}
 	}
 	
@@ -144,6 +182,11 @@ class Sanctions : Extension() {
 		val reason by coalescingString {
 			name = "raison"
 			description = "La raison du mute."
+			autoComplete {
+				suggestStringMap(
+					sanctions, FilterStrategy.Contains
+				)
+			}
 		}
 	}
 	
@@ -169,11 +212,12 @@ class Sanctions : Extension() {
 	class WarnArguments : Arguments() {
 		val member by member {
 			name = "membre"
-			description = "L'utilisateur à qui avertir."
+			description = "L'utilisateur à avertir."
 		}
 		val reason by coalescingString {
 			name = "raison"
 			description = "Raison de l'avertissement."
+			autoCompleteReason()
 		}
 	}
 	

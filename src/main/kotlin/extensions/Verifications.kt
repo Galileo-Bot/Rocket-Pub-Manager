@@ -111,7 +111,7 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAds() {
 		emoji("\uD83D\uDDD1️")
 		label = "Supprimer"
 		action {
-			message?.let {
+			message.let {
 				deleteAllSimilarAds(it)
 				it.edit {
 					components = mutableListOf()
@@ -127,7 +127,7 @@ suspend fun ComponentContainer.addVerificationButton() {
 		style = ButtonStyle.Success
 		label = "Valider"
 		action {
-			message?.let {
+			message.let {
 				validate(it, user)
 				it.edit {
 					components = mutableListOf()
@@ -167,7 +167,7 @@ suspend fun PublicSlashCommandContext<*>.verificationMessage(verifMessage: Messa
 					label = "Publicité interdite"
 					
 					action {
-						message?.let {
+						message.let {
 							deleteAllSimilarAds(it)
 							it.edit {
 								components = mutableListOf()
