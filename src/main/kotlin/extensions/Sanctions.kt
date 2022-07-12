@@ -345,8 +345,6 @@ class Sanctions : Extension() {
 			name = "ban"
 			description = "Permet de bannir un membre, temporairement ou définitivement."
 			
-			check { isStaff() }
-			
 			action {
 				val duration = arguments.unit?.durationUnit?.let { arguments.duration?.toDuration(it) }
 				guild!!.getBanOrNull(arguments.member.id)?.let {
@@ -377,8 +375,6 @@ class Sanctions : Extension() {
 			name = "kick"
 			description = "Éjecte un utilisateur du serveur."
 			
-			check { isStaff() }
-			
 			action {
 				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()?.canInteract(arguments.member) != true) {
 					throw DiscordRelayedException("Je ne peux pas éjecter avec ce membre, il doit avoir un rôle inférieur au mien.")
@@ -399,8 +395,6 @@ class Sanctions : Extension() {
 		publicSlashCommand(::MuteArguments) {
 			name = "mute"
 			description = "Mute une personne en utilisant les timeout (éjections) discord."
-			
-			check { isStaff() }
 			
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
@@ -434,8 +428,6 @@ class Sanctions : Extension() {
 			name = "unban"
 			description = "Permet de dé-bannir quelqu'un."
 			
-			check { isStaff() }
-			
 			action {
 				guild!!.getBanOrNull(arguments.user.id)?.let {
 					guild!!.unban(arguments.user.id, arguments.reason)
@@ -451,8 +443,6 @@ class Sanctions : Extension() {
 		publicSlashCommand(::UnMuteArguments) {
 			name = "unmute"
 			description = "Permet de retirer le mute d'une personne (garde quand même la sanction)."
-			
-			check { isStaff() }
 			
 			action {
 				if (!guild!!.selfMember().canInteract(arguments.member)) {
@@ -475,8 +465,6 @@ class Sanctions : Extension() {
 		publicSlashCommand(::WarnArguments) {
 			name = "warn"
 			description = "Avertit un membre, enregistre cette sanction."
-			
-			check { isStaff() }
 			
 			action {
 				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {

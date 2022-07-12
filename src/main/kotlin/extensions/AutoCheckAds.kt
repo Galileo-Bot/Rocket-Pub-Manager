@@ -120,7 +120,7 @@ class CheckAds : Extension() {
 					sanctionMessages.find {
 						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
 					}?.let {
-						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage, event.channel) ?: return@action
+						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage, event.channel)
 					}
 				}
 				

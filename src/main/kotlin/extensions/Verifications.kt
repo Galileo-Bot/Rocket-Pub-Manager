@@ -23,7 +23,6 @@ import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCount
 import utils.ROCKET_PUB_GUILD
-import utils.STAFF_ROLE
 import utils.SanctionMessage
 import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
@@ -83,7 +82,6 @@ class Verifications : Extension() {
 		
 		ephemeralMessageCommand {
 			name = "pub-interdite"
-			allowRole(STAFF_ROLE)
 			guild(ROCKET_PUB_GUILD)
 			
 			action {

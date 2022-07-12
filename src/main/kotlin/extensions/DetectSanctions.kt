@@ -73,8 +73,8 @@ class AutoSanctions : Extension() {
 					userId = event.user.id
 				}.firstOrNull {
 					it.id.timeMark.elapsedNow() < 10.seconds
-				}?.let {
-					Sanction(SanctionType.KICK, it.reason, event.user.id).apply {
+				}?.let { entry ->
+					Sanction(SanctionType.KICK, entry.reason, event.user.id).apply {
 						if (getSanctions(event.user.id).any { it.equalExceptOwner(this) }) return@action
 						
 						sendLog(event.kord)
@@ -94,8 +94,8 @@ class AutoSanctions : Extension() {
 				before?.let {
 					val log = event.guild.getAuditLogEntries {
 						action = AuditLogEvent.MemberUpdate
-					}.firstOrNull {
-						it.id.timeMark.elapsedNow() < 10.seconds && it.changes.any { it.key.name == "communication_disabled_until" }
+					}.firstOrNull { entry ->
+						entry.id.timeMark.elapsedNow() < 10.seconds && entry.changes.any { it.key.name == "communication_disabled_until" }
 					} ?: return@let
 					
 					val duration = (new.timeoutUntil ?: return@action) - Clock.System.now()
