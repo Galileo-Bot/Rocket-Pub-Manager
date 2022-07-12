@@ -131,11 +131,11 @@ suspend fun EmbedBuilder.endAdChannelEmbed(client: Kord, channel: TextChannel) {
 		icon = channel.getGuild().getIconUrl(Image.Format.GIF)
 	}
 	
-	description = """
+	description = """**
 			📌 Votre publicité doit respecter les ToS de Discord.
 			<:textuel:658085848092508220> Slowmode de 1h maximum !!
 			<a:girorouge:525406076057944096> Si vous quittez le serveur vos publicités seront supprimée automatiquement !
-		""".trimIndent()
+		**""".trimIndent()
 	
 }
 

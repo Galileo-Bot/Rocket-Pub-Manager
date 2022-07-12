@@ -12,6 +12,7 @@ import extensions.EndMessage
 import extensions.ModifySanctions
 import extensions.RemoveAds
 import extensions.Sanctions
+import extensions.UserContextSanctions
 import extensions.Verifications
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
@@ -59,6 +60,7 @@ suspend fun main() {
 			add(::ModifySanctions)
 			add(::RemoveAds)
 			add(::Sanctions)
+			add(::UserContextSanctions)
 			add(::Verifications)
 		}
 		
