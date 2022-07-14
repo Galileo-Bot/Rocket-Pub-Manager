@@ -3,6 +3,7 @@ package storage
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import com.kotlindiscord.kord.extensions.events.EventHandler
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
@@ -112,6 +113,7 @@ data class Sanction(
 	}
 	
 	suspend fun PublicSlashCommandContext<*>.sendLog() = sendLog(this@sendLog.channel.kord)
+	suspend fun EventHandler<*>.sendLog() = sendLog(kord)
 	
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
 	fun toString(prefix: String) = "$prefix${type.name.lowercase()} <@$member> $reason$formattedDuration"

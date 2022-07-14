@@ -104,16 +104,29 @@ class Verifications : Extension() {
 	}
 }
 
+suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
+	publicButton {
+		emoji("\uD83D\uDDD1")
+		label = "Supprimer"
+		
+		action {
+			deleteAllSimilarAdsWithSanction(message)
+			message.edit {
+				components = mutableListOf()
+			}
+		}
+	}
+}
+
 suspend fun ComponentContainer.addBinButtonDeleteSimilarAds() {
 	publicButton {
-		emoji("\uD83D\uDDD1️")
+		emoji("\uD83D\uDDD1")
 		label = "Supprimer"
+		
 		action {
-			message.let {
-				deleteAllSimilarAds(it)
-				it.edit {
-					components = mutableListOf()
-				}
+			deleteAllSimilarAds(message)
+			message.edit {
+				components = mutableListOf()
 			}
 		}
 	}
@@ -143,7 +156,7 @@ suspend fun PublicSlashCommandContext<*>.autoSanctionMessage(sanctionMessage: Me
 		}
 		
 		components {
-			addBinButtonDeleteSimilarAds()
+			addBinButtonDeleteSimilarAdsWithSanction()
 		}
 	}.also {
 		sanctionMessages.add(SanctionMessage(sanctionMessage.getAuthorAsMember()!!, it.message, sanction))
@@ -166,7 +179,7 @@ suspend fun PublicSlashCommandContext<*>.verificationMessage(verifMessage: Messa
 					
 					action {
 						message.let {
-							deleteAllSimilarAds(it)
+							deleteAllSimilarAdsWithSanction(it)
 							it.edit {
 								components = mutableListOf()
 							}

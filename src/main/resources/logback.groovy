@@ -1,6 +1,6 @@
 import ch.qos.logback.core.joran.spi.ConsoleTarget
 
-def defaultLevel = DEBUG
+def defaultLevel = INFO
 
 logger("io.ktor.util.random", ERROR)
 logger("com.kotlindiscord.kord.extensions.i18n.ResourceBundleTranslations", ERROR)

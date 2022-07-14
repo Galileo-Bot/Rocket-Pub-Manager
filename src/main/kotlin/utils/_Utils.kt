@@ -28,7 +28,9 @@ val String?.enquote get() = this?.let { "'${replace("'", "''")}'" }
 
 val String.asSafeUsersMentions get() = replace(Regex("(<@)!?(\\d{17,19}>)"), "$1$2")
 
-fun Any.prettyPrint(): String {
+fun Any?.prettyPrint(): String {
+	if (this == null) return "null"
+	
 	var indentLevel = 0
 	val indentWidth = 4
 	

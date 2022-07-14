@@ -29,7 +29,9 @@ import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toCollection
 import storage.Sanction
 import storage.SanctionType
 import utils.*
@@ -184,7 +186,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 				autoSanctionEmbed(message, sanction)
 			}
 			components {
-				addBinButtonDeleteSimilarAds()
+				addBinButtonDeleteSimilarAdsWithSanction()
 			}
 		}.also {
 			sanctionMessages.add(SanctionMessage(message.getAuthorAsMember()!!, it, sanction))
@@ -217,19 +219,47 @@ suspend fun verificationMessage(message: Message, channel: TextChannel? = null) 
 	}
 }
 
-suspend fun deleteAllSimilarAds(message: Message) {
+suspend fun deleteAllSimilarAdsWithSanction(message: Message) {
 	val channels = getChannelsFromSanctionMessage(message)
 	val embed = message.embeds[0]
 	val embedAuthor = embed.fields.find { it.name.endsWith("Par :") }?.value ?: return
 	
 	channels.forEach { channel ->
-		channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100).firstOrNull { findMessage ->
-			val reason = getReasonForMessage(findMessage) ?: return@firstOrNull false
-			val containsReason = embed.description?.contains(reason) ?: return@firstOrNull false
-			val author = findMessage.author?.fetchUserOrNull() ?: return@firstOrNull false
+		val messagesBefore = channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100)
+		val messages = messagesBefore.filter { findMessage ->
+			val reason = getReasonForMessage(findMessage) ?: return@filter false
+			val containsReason = embed.description?.contains(reason) ?: return@filter false
+			val author = findMessage.author?.fetchUserOrNull() ?: return@filter false
 			
-			containsReason && embedAuthor.contains(author.id.toString())
-		}?.deleteIgnoringNotFound()
+			containsReason && author.id.toString() in embedAuthor
+		}.toCollection(mutableListOf())
+		
+		channel.lastMessage?.fetchMessageOrNull()?.let(messages::add)
+		
+		messages.forEach {
+			it.deleteIgnoringNotFound()
+		}
+	}
+}
+
+suspend fun deleteAllSimilarAds(message: Message) {
+	val channels = getChannelsFromSanctionMessage(message)
+	val embed = message.embeds[0]
+	val embedAuthor = embed.fields.find { it.name.endsWith("Par :") }?.value ?: return
+	val originalAdContent = embed.description ?: return
+	
+	channels.forEach { channel ->
+		val messagesBefore = channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100)
+		val messages = messagesBefore.filter {
+			val author = it.author?.fetchUserOrNull() ?: return@filter false
+			originalAdContent in it.content && author.id.toString() in embedAuthor
+		}.toCollection(mutableListOf())
+		
+		channel.lastMessage?.fetchMessageOrNull()?.let(messages::add)
+		
+		messages.forEach {
+			it.deleteIgnoringNotFound()
+		}
 	}
 }
 

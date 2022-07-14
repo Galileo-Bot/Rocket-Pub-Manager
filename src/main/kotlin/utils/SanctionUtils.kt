@@ -1,6 +1,7 @@
 package utils
 
 import debug
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
@@ -13,8 +14,9 @@ data class SanctionMessage(val member: Member, var sanctionMessage: Message, val
 suspend fun getChannelsFromSanctionMessage(message: Message): MutableSet<TextChannel> {
 	val embed = message.embeds[0]
 	val field = embed.fields.find { it.name.contains("Salons :") }
+	
 	return field!!.value.split("\n").mapNotNull {
-		val id = dev.kord.common.entity.Snowflake.forChannel(it)
+		val id = Snowflake.forChannel(it)
 		message.kord.getChannelOf<TextChannel>(id)
 	}.toMutableSet()
 }

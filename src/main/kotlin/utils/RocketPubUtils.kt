@@ -10,7 +10,7 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.Event
 import dev.kord.core.supplier.EntitySupplyStrategy
 
-const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z0-9-]+)"
+const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
 const val AD_CHANNEL_EMOTE = "<:validate:525405975289659402>"
 val SANCTION_LOGGER_CHANNEL = Snowflake(configuration["AYFRI_ROCKETMANAGER_CHANNEL_SANCTION_ID"])

@@ -13,8 +13,10 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.modify.MessageModifyBuilder
+import dev.kord.rest.builder.message.modify.embed
 import extensions.ModifyGuildValues
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
@@ -194,8 +196,13 @@ suspend fun EmbedBuilder.verificationEmbed(
 	
 	if (link != null) {
 		try {
-			val invite = getInvite(message.kord, link)
-			val guild = invite?.partialGuild?.getGuild()
+			val code = link.substringAfterLast("/")
+			println(code)
+			
+			val invite = getInvite(message.kord, code)
+			val guild = invite?.partialGuild?.getGuildOrNull()
+			
+			println(invite.prettyPrint())
 			
 			field {
 				name = "Invitation :"
@@ -212,7 +219,9 @@ suspend fun EmbedBuilder.verificationEmbed(
 				}
 				""".trimIndent()
 			}
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			e.printStackTrace()
+			
 			field {
 				name = "Invitation :"
 				value = findInviteLink(message.content)!!
@@ -260,12 +269,12 @@ suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: 
 	}
 }
 
-suspend fun FollowupMessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
+suspend fun MessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
 	embed { completeEmbed(client, title, description, block) }
 
-suspend fun FollowupMessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
+suspend fun MessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
 
-suspend fun FollowupMessageCreateBuilder.modifiedGuildEmbed(
+suspend fun MessageCreateBuilder.modifiedGuildEmbed(
 	client: Kord,
 	guild: BannedGuild,
 	value: ModifyGuildValues,
@@ -273,7 +282,51 @@ suspend fun FollowupMessageCreateBuilder.modifiedGuildEmbed(
 	valueAfter: String
 ) = embed { modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter) }
 
-suspend fun FollowupMessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
+suspend fun MessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
+	embed {
+		val user = kord.getUser(sanction.member)!!
+		
+		completeEmbed(
+			kord,
+			"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
+			"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
+		)
+		
+		field {
+			name = "\uD83D\uDCC4 Raison :"
+			value = sanction.reason
+		}
+		
+		if (sanction.appliedBy != null) {
+			field {
+				name = "<:moderator:933507900092072046> Par :"
+				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
+			}
+		}
+		
+		if (sanction.durationMS != 0L) {
+			field {
+				name = ":clock1: Durée :"
+				value = sanction.formattedDuration
+			}
+		}
+	}
+}
+
+suspend fun MessageModifyBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
+	embed { completeEmbed(client, title, description, block) }
+
+suspend fun MessageModifyBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
+
+suspend fun MessageModifyBuilder.modifiedGuildEmbed(
+	client: Kord,
+	guild: BannedGuild,
+	value: ModifyGuildValues,
+	valueBefore: String,
+	valueAfter: String
+) = embed { modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter) }
+
+suspend fun MessageModifyBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	embed {
 		val user = kord.getUser(sanction.member)!!
 		
