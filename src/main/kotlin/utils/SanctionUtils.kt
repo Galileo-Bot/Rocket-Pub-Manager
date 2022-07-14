@@ -23,7 +23,7 @@ suspend fun getChannelsFromSanctionMessage(message: Message): MutableSet<TextCha
 
 suspend fun getReasonForMessage(message: Message): String? {
 	val mention = Regex("@(everyone|here)").find(message.content)
-	val inviteLink = findInviteLink(message.content)
+	val inviteLink = findInviteCode(message.content)
 	val invite = if (inviteLink != null) getInvite(message.kord, inviteLink) else null
 	
 	val guild = invite?.partialGuild

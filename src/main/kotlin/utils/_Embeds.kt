@@ -8,9 +8,11 @@ import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.Embed
+import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
@@ -18,6 +20,7 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import dev.kord.rest.builder.message.modify.embed
 import extensions.ModifyGuildValues
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import storage.BannedGuild
@@ -182,6 +185,7 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	}
 }
 
+@OptIn(PrivilegedIntent::class)
 suspend fun EmbedBuilder.verificationEmbed(
 	message: Message,
 	vararg channels: TextChannel,
@@ -195,38 +199,52 @@ suspend fun EmbedBuilder.verificationEmbed(
 	}
 	
 	if (link != null) {
-		try {
-			val code = link.substringAfterLast("/")
-			println(code)
+//		try {
+		val invite = getInvite(message.kord, link)
+		println(invite.prettyPrint())
+		val guild: Guild? = try {
+			invite?.partialGuild?.getGuildOrNull()
+		} catch (_: Exception) {
+			null
+		}
+		
+		val owner = guild?.getOwnerOrNull() ?: try {
+			invite?.partialGuild?.members?.firstOrNull {
+				it.isOwner()
+			}
+		} catch (_: Exception) {
+			null
+		} ?: invite?.partialGuild?.owner?.let { inviterIsOwner ->
+			if (!inviterIsOwner) return@let null
 			
-			val invite = getInvite(message.kord, code)
-			val guild = invite?.partialGuild?.getGuildOrNull()
-			
-			println(invite.prettyPrint())
-			
-			field {
-				name = "Invitation :"
-				value = """
+			invite.inviterId?.let {
+				message.kord.getGuild(ROCKET_PUB_GUILD)?.getMemberOrNull(it)
+			}
+		}
+		
+		field {
+			name = "Invitation :"
+			value = """
 				Serveur : ${invite?.partialGuild?.name ?: "Non trouvé."}
 				ID du serveur : ${invite?.partialGuild?.id?.toString() ?: "Non trouvé."}
 				Nombre de membres : ${guild?.memberCount ?: invite?.approximateMemberCount ?: "Non trouvé."}
 				Owner : ${
-					when {
-						invite?.partialGuild?.owner == true -> "${message.author?.mention} (`${message.author?.id}`)"
-						guild?.owner != null -> "${guild.owner.mention} (`${guild.ownerId}`)"
-						else -> "Non trouvé."
-					}
+				when {
+					invite?.partialGuild?.owner == true -> "${message.author?.mention} (`${message.author?.id}`)"
+					owner != null -> "${owner.mention} (`${owner.id}`)"
+					else -> "Non trouvé."
 				}
-				""".trimIndent()
 			}
-		} catch (e: Exception) {
+			""".trimIndent()
+		}
+/*		} catch (e: Exception) {
 			e.printStackTrace()
 			
 			field {
 				name = "Invitation :"
 				value = findInviteLink(message.content)!!
 			}
-		}
+		}*/
 	}
 	
 	field {
