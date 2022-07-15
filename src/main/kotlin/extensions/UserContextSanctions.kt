@@ -3,10 +3,12 @@ package extensions
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
+import com.kotlindiscord.kord.extensions.modules.unsafe.commands.UnsafeUserCommand
 import com.kotlindiscord.kord.extensions.modules.unsafe.extensions.unsafeUserCommand
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.InitialUserCommandResponse
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
+import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
@@ -24,6 +26,9 @@ class UserContextSanctions : Extension() {
 		event<GuildModalSubmitInteractionCreateEvent> {
 			action {
 				if (event.interaction.modalId in modalsTargets) {
+					val commandName = event.interaction.modalId.substringBefore(" ").uppercase()
+					val sanctionType = SanctionType.valueOf(commandName)
+					
 					val r = event.interaction.deferPublicResponse()
 					
 					val userId = modalsTargets[event.interaction.modalId] ?: return@action
@@ -31,9 +36,19 @@ class UserContextSanctions : Extension() {
 					val target = event.interaction.getGuildOrNull()?.getMemberOrNull(userId) ?: return@action
 					val author = event.interaction.user
 					
-					Sanction(SanctionType.WARN, reason, target.id, appliedBy = author.id).apply {
+					Sanction(sanctionType, reason, target.id, appliedBy = author.id).apply {
 						sendLog()
 						save()
+						
+						when(commandName) {
+							"ban" -> target.ban {
+								this.reason = reason
+								deleteMessagesDays = 14
+							}
+							
+							"kick" -> target.kick(reason)
+						}
+						
 						r.respond {
 							sanctionEmbed(kord, this@apply)
 						}
@@ -42,21 +57,29 @@ class UserContextSanctions : Extension() {
 			}
 		}
 		
-		unsafeUserCommand {
-			name = "warn"
-			initialResponse = InitialUserCommandResponse.None
+		val userCommandsSanctionTypes = listOf("ban", "kick", "light_warn", "warn")
+		userCommandsSanctionTypes.forEach {
+			unsafeUserCommand {
+				createSanctionCommand(it)
+			}
+		}
+	}
+	
+	@OptIn(UnsafeAPI::class)
+	private fun UnsafeUserCommand.createSanctionCommand(type: String) {
+		name = type.replace("_", " ")
+		initialResponse = InitialUserCommandResponse.None
+		
+		action {
+			val customId = UUID.randomUUID().toString()
+			modalsTargets[customId] = event.interaction.targetId
 			
-			action {
-				val customId = UUID.randomUUID().toString()
-				modalsTargets[customId] = event.interaction.targetId
-				
-				event.interaction.modal("Avertissement de membre", customId) {
-					actionRow {
-						textInput(TextInputStyle.Paragraph, "reason", "Raison") {
-							allowedLength = 3..500
-							placeholder = "Insulte le staff..."
-							required = true
-						}
+			event.interaction.modal("Avertissement de membre", "${type.replace(" ", "_")} $customId") {
+				actionRow {
+					textInput(TextInputStyle.Paragraph, "reason", "Raison") {
+						allowedLength = 3..500
+						placeholder = "Insulte le staff..."
+						required = true
 					}
 				}
 			}
