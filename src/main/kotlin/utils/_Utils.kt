@@ -15,7 +15,7 @@ fun <E> MutableList<E>.getFromValue(old: E) = this[indexOf(old)]
 
 fun Member.hasRole(role: Snowflake) = roleIds.contains(role)
 
-suspend fun ReactionEmoji.toGuildEmoji(kord: Kord) = kord.getGuild(ROCKET_PUB_GUILD)?.getEmoji(Snowflake(this))
+suspend fun ReactionEmoji.toGuildEmoji(kord: Kord) = kord.getRocketPubGuild().getEmoji(Snowflake(this))
 
 fun String.cutFormatting(index: Int) = if (length > index - 3) take(index - 3) + "..." else this
 
@@ -24,10 +24,11 @@ fun String.remove(pattern: String) = replace(Regex(pattern), "")
 
 val ReactionEmoji.id get() = urlFormat.remove("$name:")
 
-val String?.enquote get() = this?.let { "'${replace("'", "''")}'" }
-
 val String.asSafeUsersMentions get() = replace(Regex("(<@)!?(\\d{17,19}>)"), "$1$2")
 
+val String?.enquote get() = this?.let { "'${replace("'", "''")}'" }
+
+@Suppress("unused")
 fun Any?.prettyPrint(): String {
 	if (this == null) return "null"
 	

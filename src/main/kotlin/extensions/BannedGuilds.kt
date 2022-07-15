@@ -44,6 +44,7 @@ class BannedGuilds : Extension() {
 			name = "serveur"
 			description = "Le serveur à bannir."
 		}
+		
 		val reason by string {
 			name = "raison"
 			description = "La raison de pourquoi ce serveur est à bannir."

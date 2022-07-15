@@ -18,7 +18,6 @@ import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
-import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.modify.embed
 import storage.Sanction
 import storage.saveVerification
@@ -29,6 +28,7 @@ import utils.STAFF_ROLE
 import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
 import utils.fromEmbedUnlessChannelField
+import utils.getRocketPubGuild
 import utils.hasRole
 import utils.isAdChannel
 import utils.toMention
@@ -109,8 +109,6 @@ suspend fun validate(message: Message, user: UserBehavior) {
 	if (searchVerificationMessage(message.id) == null) saveVerification(user.id, message.id)
 }
 
-suspend fun Message.addValidReaction() {
-	addReaction(kord.getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)?.getEmoji(VALID_EMOJI) ?: return)
-}
+suspend fun Message.addValidReaction() = addReaction(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 
 suspend fun PublicSlashCommandContext<*>.respond(reply: String) = respond { content = reply }

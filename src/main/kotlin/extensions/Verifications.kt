@@ -28,6 +28,7 @@ import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
 import utils.completeEmbed
 import utils.getReasonForMessage
+import utils.getRocketPubGuild
 import utils.verificationEmbed
 
 class Verifications : Extension() {
@@ -134,7 +135,7 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAds() {
 
 suspend fun ComponentContainer.addVerificationButton() {
 	publicButton {
-		emoji(kord.getGuild(ROCKET_PUB_GUILD)!!.getEmoji(VALID_EMOJI))
+		emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 		style = ButtonStyle.Success
 		label = "Valider"
 		action {

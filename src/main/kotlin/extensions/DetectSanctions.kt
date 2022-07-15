@@ -7,10 +7,8 @@ import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.AuditLogEvent
 import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.getAuditLogEntries
-import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
@@ -21,7 +19,6 @@ import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
 import utils.ROCKET_PUB_GUILD
-import utils.SANCTION_LOGGER_CHANNEL
 import utils.getLogSanctionsChannel
 import utils.unBanEmbed
 import utils.unMuteEmbed
@@ -58,7 +55,7 @@ class AutoSanctions : Extension() {
 			
 			action {
 				val user = event.user
-				kord.getGuild(ROCKET_PUB_GUILD)!!.getChannel(SANCTION_LOGGER_CHANNEL).asChannelOf<TextChannel>().createEmbed {
+				kord.getLogSanctionsChannel().createEmbed {
 					unBanEmbed(event.kord, user)
 				}
 			}

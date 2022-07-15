@@ -106,6 +106,7 @@ class CheckAds : Extension() {
 							it.edit { topic = "${type.emote} ${it.topic}" }
 							addedChannels.add(it.mention)
 						}
+						
 						respond(
 							"""${addedChannels.size} salons de publicités ont été ajoutés à la ${type.sentence} à vérifier :
 							${addedChannels.sorted().joinToString("\n")}

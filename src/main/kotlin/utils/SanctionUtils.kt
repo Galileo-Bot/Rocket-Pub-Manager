@@ -32,7 +32,7 @@ suspend fun getReasonForMessage(message: Message): String? {
 	return when {
 		!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
 		mention != null -> "Tentative de mention `${mention.value.remove("@")}`."
-		message.content == "test" -> "Test."
+		message.content == "test" -> if (debug) "Test." else null
 		isBannedGuild -> "Publicité pour un serveur interdit."
 		else -> null
 	}?.also {

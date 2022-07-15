@@ -27,7 +27,6 @@ import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.suggestString
-import dev.kord.core.entity.interaction.AutoCompleteInteraction
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
@@ -48,7 +47,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 
-val AutoCompleteInteraction.sanctions
+val sanctions
 	get() = mapOf(
 		"spam" to "Spam de publicités.",
 		"spam2" to "Spam de publicités après avertissements.",
@@ -87,15 +86,15 @@ class Sanctions : Extension() {
 			name = "membre"
 			description = "Le membre à expulser."
 		}
+		
 		val reason by coalescingString {
 			name = "raison"
 			description = "La raison de du ban."
 			autoComplete {
-				suggestStringMap(
-					sanctions, FilterStrategy.Contains
-				)
+				suggestStringMap(sanctions, FilterStrategy.Contains)
 			}
 		}
+		
 		val duration by optionalInt {
 			name = "durée"
 			description = "La durée du ban."
@@ -111,6 +110,7 @@ class Sanctions : Extension() {
 				}
 			}
 		}
+		
 		val unit by optionalEnumChoice<DurationUnits> {
 			name = "unité"
 			description = "L'unité de la durée du ban."
@@ -130,6 +130,7 @@ class Sanctions : Extension() {
 			name = "utilisateur"
 			description = "L'utilisateur à qui supprimer toutes les sanctions."
 		}
+		
 		val type by optionalEnumChoice<SanctionType> {
 			name = "type"
 			description = "Le type de sanctions à supprimer."
@@ -142,6 +143,7 @@ class Sanctions : Extension() {
 			name = "utilisateur"
 			description = "L'utilisateur à qui afficher les sanctions."
 		}
+		
 		val type by optionalEnumChoice<SanctionType> {
 			name = "type"
 			description = "Le type de sanctions à afficher."
@@ -154,6 +156,7 @@ class Sanctions : Extension() {
 			name = "membre"
 			description = "Le membre à expulser."
 		}
+		
 		val reason by coalescingString {
 			name = "raison"
 			description = "La raison de l'expulsion."
@@ -170,10 +173,12 @@ class Sanctions : Extension() {
 			name = "membre"
 			description = "Le membre à mute."
 		}
+		
 		val duration by int {
 			name = "durée"
 			description = "La durée du mute."
 		}
+		
 		val unit by enumChoice<DurationUnits> {
 			name = "unité"
 			description = "L'unité de la durée du mute."
@@ -195,6 +200,7 @@ class Sanctions : Extension() {
 			name = "utilisateur"
 			description = "L'utilisateur à dé-bannir."
 		}
+		
 		val reason by coalescingDefaultingString {
 			name = "raison"
 			description = "La raison de la dé-bannissement."
@@ -214,6 +220,7 @@ class Sanctions : Extension() {
 			name = "membre"
 			description = "L'utilisateur à avertir."
 		}
+		
 		val reason by coalescingString {
 			name = "raison"
 			description = "Raison de l'avertissement."
@@ -278,6 +285,7 @@ class Sanctions : Extension() {
 										} ?: "Automatique ou non trouvé"
 										
 										val duration = if (it.durationMS > 0) "**Durée** : ${it.formattedDuration}" else ""
+										
 										"""
 											> **Cas numéro ${it.id}** ${it.type.emote}
 											**Appliquée par** : $appliedBy
