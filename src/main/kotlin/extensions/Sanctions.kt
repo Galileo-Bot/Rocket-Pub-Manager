@@ -101,8 +101,9 @@ class Sanctions : Extension() {
 		}
 		
 		val deleteDays by optionalInt {
-			name = "supression"
+			name = "suppression"
 			description = "Le nombre de jours auquel supprimer les messages."
+			
 			validate {
 				if (value != null) {
 					if (value!! < 0) throw DiscordRelayedException("La durée de suppression doit être supérieure à 0.")
@@ -184,6 +185,7 @@ class Sanctions : Extension() {
 			description = "L'unité de la durée du mute."
 			typeName = "unité"
 		}
+		
 		val reason by coalescingString {
 			name = "raison"
 			description = "La raison du mute."

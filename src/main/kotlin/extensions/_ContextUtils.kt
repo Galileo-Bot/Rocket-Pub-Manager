@@ -35,6 +35,7 @@ import utils.toMention
 
 suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	if (!passed) return
+	
 	inGuild(ROCKET_PUB_GUILD)
 	channelType(ChannelType.GuildText)
 	isNotBot()

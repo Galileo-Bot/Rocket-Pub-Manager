@@ -13,6 +13,7 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import configuration
+import debug
 import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
@@ -97,6 +98,7 @@ class CheckAds : Extension() {
 			action {
 				val type = arguments.type
 				val isTypeCategory = type == ChannelAdType.CATEGORY
+				
 				when (val channel = arguments.channel.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).fetchChannelOrNull()) {
 					is Category -> {
 						val addedChannels = mutableListOf<String>()
@@ -140,14 +142,16 @@ class CheckAds : Extension() {
 					}
 				}
 				
-				getOldVerificationMessage(kord.getVerifChannel(), event.message)?.let { updateChannels(it, event.channel) }
+				getOldVerificationMessage(kord.getVerifChannel(), event.message)?.let {
+					updateChannels(it, event.channel)
+				}
 			}
 		}
 		
 		event<MessageCreateEvent> {
 			check {
 				adsCheck()
-				hasRole(STAFF_ROLE)
+				if (debug) hasRole(STAFF_ROLE)
 			}
 			
 			action {
@@ -199,6 +203,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			embed {
 				autoSanctionEmbed(message, sanction)
 			}
+			
 			components {
 				addBinButtonDeleteSimilarAdsWithSanction()
 			}
@@ -237,12 +242,13 @@ suspend fun deleteAllSimilarAdsWithSanction(message: Message) {
 	val channels = getChannelsFromSanctionMessage(message)
 	val embed = message.embeds[0]
 	val embedAuthor = embed.fields.find { it.name.endsWith("Par :") }?.value ?: return
+	val description = embed.description ?: return
 	
 	channels.forEach { channel ->
 		val messagesBefore = channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100)
 		val messages = messagesBefore.filter { findMessage ->
 			val reason = getReasonForMessage(findMessage) ?: return@filter false
-			val containsReason = embed.description?.contains(reason) ?: return@filter false
+			val containsReason = description.endsWith(reason)
 			val author = findMessage.author?.fetchUserOrNull() ?: return@filter false
 			
 			containsReason && author.id.toString() in embedAuthor
