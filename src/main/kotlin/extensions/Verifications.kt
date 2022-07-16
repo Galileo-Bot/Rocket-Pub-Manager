@@ -53,13 +53,15 @@ class Verifications : Extension() {
 				
 				action {
 					val verificationCount = getVerificationCount()
-					val verifications = verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
+					val verifications = verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending {it.second }.map {
+						(guild!!.getMemberOrNull(it.first) ?: return@map null) to it.second
+					}.filterNotNull()
 					
 					respond {
 						completeEmbed(
-							this@publicSubCommand.kord, "Liste des publicités vérifiées.", verifications.map {
-								"**${guild!!.getMember(it.first).tag}** : ${it.second} publicités vérifiées."
-							}.joinToString("\n\n")
+							this@publicSubCommand.kord, "Liste des publicités vérifiées.", verifications.joinToString("\n\n") {
+								"**${it.first.tag}** : ${it.second} publicités vérifiées."
+							}
 						)
 					}
 				}
