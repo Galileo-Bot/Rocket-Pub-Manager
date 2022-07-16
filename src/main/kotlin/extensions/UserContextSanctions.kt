@@ -71,10 +71,11 @@ class UserContextSanctions : Extension() {
 		initialResponse = InitialUserCommandResponse.None
 		
 		action {
-			val customId = UUID.randomUUID().toString()
+			val randomId = UUID.randomUUID().toString()
+			val customId = "$type $randomId"
 			modalsTargets[customId] = event.interaction.targetId
 			
-			event.interaction.modal("Avertissement de membre", "${type.replace(" ", "_")} $customId") {
+			event.interaction.modal("Avertissement de membre", customId) {
 				actionRow {
 					textInput(TextInputStyle.Paragraph, "reason", "Raison") {
 						allowedLength = 3..500
