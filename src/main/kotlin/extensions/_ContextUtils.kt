@@ -27,7 +27,7 @@ import utils.ROCKET_PUB_GUILD_STAFF
 import utils.STAFF_ROLE
 import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
-import utils.fromEmbedUnlessChannelField
+import utils.fromEmbed
 import utils.getRocketPubGuild
 import utils.hasRole
 import utils.isAdChannel
@@ -73,7 +73,7 @@ suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBeha
 	
 	return sanctionMessage.edit {
 		embed {
-			fromEmbedUnlessChannelField(sanctionMessage.embeds[0])
+			fromEmbed(sanctionMessage.embeds[0])
 			field {
 				name = "<:textuel:658085848092508220> Salons :"
 				value = channels.joinToString("\n")
@@ -98,7 +98,8 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 suspend fun validate(message: Message, user: UserBehavior) {
 	message.edit {
 		embed {
-			fromEmbedUnlessChannelField(message.embeds[0])
+			fromEmbed(message.embeds[0])
+			
 			title = "Publicité validée."
 			field {
 				name = "Validée par :"

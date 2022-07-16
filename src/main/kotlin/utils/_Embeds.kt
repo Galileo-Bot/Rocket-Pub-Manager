@@ -94,9 +94,8 @@ suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description:
 	apply(block)
 }
 
-fun EmbedBuilder.fromEmbedUnlessChannelField(oldEmbed: Embed) {
+fun EmbedBuilder.fromEmbed(oldEmbed: Embed) {
 	oldEmbed.fields.forEach {
-		if (it.name.endsWith("Salons :")) return@forEach
 		field {
 			name = it.name
 			value = it.value

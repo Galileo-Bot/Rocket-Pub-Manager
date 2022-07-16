@@ -12,6 +12,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
+import com.kotlindiscord.kord.extensions.utils.toReaction
 import configuration
 import debug
 import dev.kord.common.entity.Permission
@@ -40,11 +41,13 @@ import utils.AD_CHANNEL_EMOTE
 import utils.ROCKET_PUB_GUILD
 import utils.STAFF_ROLE
 import utils.SanctionMessage
+import utils.VALID_EMOJI
 import utils.asSafeUsersMentions
 import utils.autoSanctionEmbed
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
 import utils.getReasonForMessage
+import utils.getRocketPubGuild
 import utils.getVerifChannel
 import utils.isAdChannel
 import utils.isCategoryChannel
@@ -286,5 +289,12 @@ suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) =
 	if (it.embeds.isEmpty()) return@firstOrNull false
 	
 	val firstEmbed = it.embeds[0]
-	firstEmbed.description == message?.content && firstEmbed.fields.find { it.name.endsWith("Par :") }?.value?.contains(message?.author!!.id.toString()) == true
+	val isValidated = it.reactions.any { reaction ->
+		reaction.emoji === reaction.kord.getRocketPubGuild().getEmoji(VALID_EMOJI).toReaction()
+	}
+	val anyFieldIsFromField = firstEmbed.description == message?.content && firstEmbed.fields.find { field ->
+		field.name.endsWith("Par :")
+	}?.value?.contains(message?.author!!.id.toString()) == true
+	
+	anyFieldIsFromField && !isValidated
 }
