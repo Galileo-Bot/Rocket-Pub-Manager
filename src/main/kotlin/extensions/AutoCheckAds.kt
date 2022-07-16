@@ -91,7 +91,6 @@ class CheckAds : Extension() {
 			guild(ROCKET_PUB_GUILD)
 			
 			check {
-				isStaff()
 				hasPermission(Permission.Administrator)
 			}
 			

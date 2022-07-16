@@ -239,8 +239,6 @@ class Sanctions : Extension() {
 				name = "compte"
 				description = "Permet d'avoir le nombre de sanctions mises par les modérateurs."
 				
-				check { isStaff() }
-				
 				action {
 					val sanctions = getSanctionCount()
 					

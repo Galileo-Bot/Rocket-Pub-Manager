@@ -47,8 +47,6 @@ class Verifications : Extension() {
 			name = "verif"
 			description = "Permet de voir les vérifications du staff."
 			
-			check { isStaff() }
-			
 			publicSubCommand {
 				name = "list"
 				description = "Permet de voir les vérifications du staff."
