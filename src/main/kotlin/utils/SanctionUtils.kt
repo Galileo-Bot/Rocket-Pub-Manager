@@ -13,12 +13,12 @@ data class SanctionMessage(val member: Member, var sanctionMessage: Message, val
 
 suspend fun getChannelsFromSanctionMessage(message: Message): MutableSet<TextChannel> {
 	val embed = message.embeds[0]
-	val field = embed.fields.find { it.name.contains("Salons :") }
+	val field = embed.fields.find { it.name.endsWith("Salons :") }
 	
-	return field!!.value.split("\n").mapNotNull {
+	return field?.value?.split("\n")?.mapNotNull {
 		val id = Snowflake.forChannel(it)
 		message.kord.getChannelOf<TextChannel>(id)
-	}.toMutableSet()
+	}.orEmpty().toMutableSet()
 }
 
 suspend fun getReasonForMessage(message: Message): String? {

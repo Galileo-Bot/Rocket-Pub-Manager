@@ -68,16 +68,14 @@ fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel:
 	return channels
 }
 
-suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBehavior): Message {
-	val channels = updateDeletedMessagesInChannelList(sanctionMessage, *channel)
-	
-	return sanctionMessage.edit {
-		embed {
-			fromEmbed(sanctionMessage.embeds[0])
-			field {
-				name = "<:textuel:658085848092508220> Salons :"
-				value = channels.joinToString("\n")
-			}
+suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBehavior) = sanctionMessage.edit {
+	embed {
+		fromEmbed(sanctionMessage.embeds[0])
+		fields.removeIf { it.name.endsWith("Salons :") }
+		
+		field {
+			name = "<:textuel:658085848092508220> Salons :"
+			value = updateDeletedMessagesInChannelList(sanctionMessage, *channel).joinToString("\n")
 		}
 	}
 }

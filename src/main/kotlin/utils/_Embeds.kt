@@ -211,7 +211,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 			}
 		
 		field {
-			name = "Invitation :"
+			name = "📩 Invitation :"
 			value = """
 				Serveur : ${partialGuild.name}
 				ID du serveur : ${partialGuild.id}
@@ -237,7 +237,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 suspend fun EmbedBuilder.unBanEmbed(kord: Kord, user: UserBehavior, unBannedBy: UserBehavior? = null) {
 	completeEmbed(
 		kord,
-		"Dé-banissement de ${user.id}"
+		"🔓 Dé-bannissement de ${user.id}"
 	)
 	
 	if (unBannedBy != null) {
@@ -253,7 +253,7 @@ suspend fun EmbedBuilder.unBanEmbed(kord: Kord, user: UserBehavior, unBannedBy: 
 suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: UserBehavior? = null) {
 	completeEmbed(
 		kord,
-		"Dé-mute de ${user.id}",
+		"🔉 Dé-mute de ${user.id}",
 		"Le membre ${user.mention} (`${user.id}`) a bien été dé-mute."
 	)
 	

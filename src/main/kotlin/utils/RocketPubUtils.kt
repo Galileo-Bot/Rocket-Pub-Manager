@@ -14,11 +14,13 @@ const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
 const val AD_CHANNEL_EMOTE = "<:validate:525405975289659402>"
 const val AD_CHANNEL_NO_INVITE_EMOTE = "🪧"
+
+val ERROR_CHANNEL = Snowflake("864756196539105290")
+val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
+val ROCKET_PUB_GUILD_STAFF = Snowflake("770763755265064980")
 val SANCTION_LOGGER_CHANNEL = Snowflake(configuration["AYFRI_ROCKETMANAGER_CHANNEL_SANCTION_ID"])
 val SANCTION_VERIF_CHANNEL = Snowflake(configuration["AYFRI_ROCKETMANAGER_CHANNEL_VERIF_ID"])
 val STAFF_ROLE = Snowflake("494521544618278934")
-val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
-val ROCKET_PUB_GUILD_STAFF = Snowflake("770763755265064980")
 val VALID_EMOJI = Snowflake("525405975289659402")
 
 fun ChannelBehavior.isAdChannel() = this is TextChannel && topic?.contains(AD_CHANNEL_EMOTE) == true
@@ -39,3 +41,4 @@ suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 suspend fun Kord.getVerifChannel() = getChannelOf<TextChannel>(SANCTION_VERIF_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 suspend fun Kord.getLogSanctionsChannel() = getChannelOf<TextChannel>(SANCTION_LOGGER_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 suspend fun Kord.getRocketPubGuild() = getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+suspend fun Kord.getErrorsChannel() = getChannelOf<TextChannel>(ERROR_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!

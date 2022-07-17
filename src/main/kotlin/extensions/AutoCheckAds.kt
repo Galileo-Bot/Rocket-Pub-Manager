@@ -12,7 +12,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
-import com.kotlindiscord.kord.extensions.utils.toReaction
 import configuration
 import debug
 import dev.kord.common.entity.Permission
@@ -47,8 +46,8 @@ import utils.autoSanctionEmbed
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
 import utils.getReasonForMessage
-import utils.getRocketPubGuild
 import utils.getVerifChannel
+import utils.id
 import utils.isAdChannel
 import utils.isCategoryChannel
 import utils.verificationEmbed
@@ -172,15 +171,15 @@ class CheckAds : Extension() {
 	}
 }
 
-suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?, channel: TextChannel? = null) {
+suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?) {
 	val sanction = Sanction(type, reason ?: return, message.author!!.id)
-	val channelToSend = channel ?: message.kord.getVerifChannel()
+	val channelToSend = message.kord.getVerifChannel()
 	
 	val old = sanctionMessages.find {
 		it.sanction.member == sanction.member && it.sanction.reason == sanction.reason && it.sanction.type == sanction.type
 	}
 	
-	if (old != null && channel != null) {
+	if (old != null) {
 		val channels = getChannelsFromSanctionMessage(old.sanctionMessage)
 		channels.add(message.channel.asChannelOf())
 		
@@ -198,7 +197,9 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 		}
 		
 		sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
-			embed { autoSanctionEmbed(message, sanction, channels.toList()) }
+			embed {
+				autoSanctionEmbed(message, sanction, channels.toList())
+			}
 		}
 	} else {
 		channelToSend.createMessage {
@@ -215,16 +216,18 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 	}
 }
 
-suspend fun verificationMessage(message: Message, channel: TextChannel? = null) {
-	val channelToSend = channel ?: message.kord.getVerifChannel()
+suspend fun verificationMessage(message: Message) {
+	val channelToSend = message.kord.getVerifChannel()
 	val old = getOldVerificationMessage(channelToSend, message)
 	
-	if (old != null && channel == null) {
+	if (old != null) {
 		val channels = getChannelsFromSanctionMessage(old)
 		channels.add(message.channel.asChannelOf())
 		
 		old.edit {
-			embed { verificationEmbed(message, *channels.toTypedArray()) }
+			embed {
+				verificationEmbed(message, *channels.toTypedArray())
+			}
 		}
 	} else {
 		channelToSend.createMessage {
@@ -290,8 +293,9 @@ suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) =
 	
 	val firstEmbed = it.embeds[0]
 	val isValidated = it.reactions.any { reaction ->
-		reaction.emoji === reaction.kord.getRocketPubGuild().getEmoji(VALID_EMOJI).toReaction()
+		reaction.emoji.id === VALID_EMOJI.toString() && reaction.selfReacted
 	}
+	
 	val anyFieldIsFromField = firstEmbed.description == message?.content && firstEmbed.fields.find { field ->
 		field.name.endsWith("Par :")
 	}?.value?.contains(message?.author!!.id.toString()) == true
