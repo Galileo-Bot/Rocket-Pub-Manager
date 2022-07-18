@@ -13,7 +13,6 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
 const val AD_CHANNEL_EMOTE = "<:validate:525405975289659402>"
-const val AD_CHANNEL_NO_INVITE_EMOTE = "🪧"
 
 val ERROR_CHANNEL = Snowflake("864756196539105290")
 val ROCKET_PUB_GUILD = Snowflake("465918902254436362")

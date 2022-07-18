@@ -49,17 +49,17 @@ import kotlin.time.toDuration
 
 val sanctions
 	get() = mapOf(
+		"fake pub" to "Spam de faux liens.",
+		"invite reward" to "Publicité pour un serveur invite reward (interdit).",
+		"mauvaise catégorie" to "Publicité dans la mauvaise catégorie.",
+		"mention everyone/here" to "Tentative de mention interdite.",
+		"pub interdite" to "Publicité interdite.",
+		"pub mp" to "Publicité par messages privés.",
+		"pubs à la suite" to "Publicités similaires à la chaîne.",
+		"sans description" to "Publicité sans description.",
+		"spam après warn" to "Spam de publicités après avertissements.",
 		"spam" to "Spam de publicités.",
-		"spam2" to "Spam de publicités après avertissements.",
-		"interdit" to "Publicité interdite.",
-		"description" to "Publicité sans description.",
-		"suite" to "Publicités similaires à la chaîne.",
-//		"lien" to "Lien de publicité interdit dans ${channel.mention}.",
-		"categorie" to "Publicité dans la mauvaise catégorie.",
-		"mp" to "Publicité par messages privés.",
-		"fake" to "Spam de faux liens.",
-		"mention" to "Tentative de mention interdite.",
-		"invite reward" to "Publicité pour un serveur invite reward (interdit)."
+		//		"lien" to "Lien de publicité interdit dans ${channel.mention}.",
 	)
 
 fun ConverterBuilder<String>.autoCompleteReason() {
@@ -103,13 +103,9 @@ class Sanctions : Extension() {
 		val deleteDays by optionalInt {
 			name = "suppression"
 			description = "Le nombre de jours auquel supprimer les messages."
-			
-			validate {
-				if (value != null) {
-					if (value!! < 0) throw DiscordRelayedException("La durée de suppression doit être supérieure à 0.")
-					else if (value!! > 7) throw DiscordRelayedException("La durée de suppression ne peut pas être supérieure à 7 jours.")
-				}
-			}
+
+			maxValue = 7
+			minValue = 1
 		}
 		
 		val unit by optionalEnumChoice<DurationUnits> {
@@ -190,9 +186,7 @@ class Sanctions : Extension() {
 			name = "raison"
 			description = "La raison du mute."
 			autoComplete {
-				suggestStringMap(
-					sanctions, FilterStrategy.Contains
-				)
+				suggestStringMap(sanctions, FilterStrategy.Contains)
 			}
 		}
 	}
@@ -205,7 +199,7 @@ class Sanctions : Extension() {
 		
 		val reason by coalescingDefaultingString {
 			name = "raison"
-			description = "La raison de la dé-bannissement."
+			description = "La raison du dé-bannissement."
 			defaultValue = "Pas de raison définie."
 		}
 	}
@@ -402,7 +396,7 @@ class Sanctions : Extension() {
 		
 		publicSlashCommand(::MuteArguments) {
 			name = "mute"
-			description = "Mute une personne en utilisant les timeout (éjections) discord."
+			description = "Mute une personne en utilisant les timeout (exclusions) discord."
 			
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
@@ -478,6 +472,7 @@ class Sanctions : Extension() {
 				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
 					sendLog()
 					save()
+					
 					respond {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}

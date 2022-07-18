@@ -14,8 +14,10 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.channel.createEmbed
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
+import dev.kord.rest.builder.message.create.allowedMentions
+import dev.kord.rest.builder.message.create.embed
 import extensions.ModifySanctionValues
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
@@ -24,6 +26,7 @@ import logger
 import utils.enquote
 import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
+import utils.toMention
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
@@ -105,8 +108,16 @@ data class Sanction(
 	}
 	
 	suspend fun sendLog(kord: Kord) {
-		kord.getLogSanctionsChannel().createEmbed {
-			sanctionEmbed(kord, this@Sanction)
+		kord.getLogSanctionsChannel().createMessage {
+			embed {
+				sanctionEmbed(kord, this@Sanction)
+			}
+			
+			allowedMentions {
+				users += listOf(member)
+			}
+			
+			content = member.toMention<MemberBehavior>()
 		}
 		
 		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")

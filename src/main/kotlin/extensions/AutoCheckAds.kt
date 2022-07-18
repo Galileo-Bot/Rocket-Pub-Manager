@@ -296,9 +296,11 @@ suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) =
 		reaction.emoji.id === VALID_EMOJI.toString() && reaction.selfReacted
 	}
 	
-	val anyFieldIsFromField = firstEmbed.description == message?.content && firstEmbed.fields.find { field ->
+	val similarContent = firstEmbed.description == message?.content
+	
+	val sameAuthor = firstEmbed.fields.find { field ->
 		field.name.endsWith("Par :")
 	}?.value?.contains(message?.author!!.id.toString()) == true
 	
-	anyFieldIsFromField && !isValidated
+	similarContent && !isValidated && sameAuthor
 }

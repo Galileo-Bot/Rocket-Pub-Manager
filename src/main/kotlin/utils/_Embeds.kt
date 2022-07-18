@@ -160,6 +160,7 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 		"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
 		"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
 	)
+	
 	field {
 		name = "\uD83D\uDCC4 Raison :"
 		value = sanction.reason
@@ -202,7 +203,7 @@ suspend fun EmbedBuilder.verificationEmbed(
 		}.getOrNull()?.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback)
 		
 		val owner = guild?.getOwnerOrNull()
-			?: partialGuild.owner?.let owner@ { inviterIsOwner ->
+			?: partialGuild.owner?.let owner@{ inviterIsOwner ->
 				if (!inviterIsOwner) return@owner null
 				
 				invite.inviterId?.let {
@@ -267,10 +268,13 @@ suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: 
 	}
 }
 
-suspend fun MessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
-	embed { completeEmbed(client, title, description, block) }
+suspend fun MessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) = embed {
+	completeEmbed(client, title, description, block)
+}
 
-suspend fun MessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
+suspend fun MessageCreateBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed {
+	bannedGuildEmbed(client, guild)
+}
 
 suspend fun MessageCreateBuilder.modifiedGuildEmbed(
 	client: Kord,
@@ -278,43 +282,21 @@ suspend fun MessageCreateBuilder.modifiedGuildEmbed(
 	value: ModifyGuildValues,
 	valueBefore: String,
 	valueAfter: String
-) = embed { modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter) }
-
-suspend fun MessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
-	embed {
-		val user = kord.getUser(sanction.member)!!
-		
-		completeEmbed(
-			kord,
-			"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
-			"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
-		)
-		
-		field {
-			name = "\uD83D\uDCC4 Raison :"
-			value = sanction.reason
-		}
-		
-		if (sanction.appliedBy != null) {
-			field {
-				name = "<:moderator:933507900092072046> Par :"
-				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
-			}
-		}
-		
-		if (sanction.durationMS != 0L) {
-			field {
-				name = ":clock1: Durée :"
-				value = sanction.formattedDuration
-			}
-		}
-	}
+) = embed {
+	modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter)
 }
 
-suspend fun MessageModifyBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
-	embed { completeEmbed(client, title, description, block) }
+suspend fun MessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) = embed {
+	sanctionEmbed(kord, sanction)
+}
 
-suspend fun MessageModifyBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed { bannedGuildEmbed(client, guild) }
+suspend fun MessageModifyBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) = embed {
+	completeEmbed(client, title, description, block)
+}
+
+suspend fun MessageModifyBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed {
+	bannedGuildEmbed(client, guild)
+}
 
 suspend fun MessageModifyBuilder.modifiedGuildEmbed(
 	client: Kord,
@@ -322,35 +304,10 @@ suspend fun MessageModifyBuilder.modifiedGuildEmbed(
 	value: ModifyGuildValues,
 	valueBefore: String,
 	valueAfter: String
-) = embed { modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter) }
+) = embed {
+	modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter)
+}
 
-suspend fun MessageModifyBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
-	embed {
-		val user = kord.getUser(sanction.member)!!
-		
-		completeEmbed(
-			kord,
-			"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
-			"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
-		)
-		
-		field {
-			name = "\uD83D\uDCC4 Raison :"
-			value = sanction.reason
-		}
-		
-		if (sanction.appliedBy != null) {
-			field {
-				name = "<:moderator:933507900092072046> Par :"
-				value = "${kord.getUser(sanction.appliedBy)?.tag} (`${sanction.appliedBy}`)"
-			}
-		}
-		
-		if (sanction.durationMS != 0L) {
-			field {
-				name = ":clock1: Durée :"
-				value = sanction.formattedDuration
-			}
-		}
-	}
+suspend fun MessageModifyBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) = embed {
+	sanctionEmbed(kord, sanction)
 }
