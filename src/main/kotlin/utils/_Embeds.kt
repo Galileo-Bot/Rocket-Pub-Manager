@@ -235,18 +235,24 @@ suspend fun EmbedBuilder.verificationEmbed(
 	}
 }
 
-suspend fun EmbedBuilder.unBanEmbed(kord: Kord, user: UserBehavior, unBannedBy: UserBehavior? = null) {
+suspend fun EmbedBuilder.unBanEmbed(kord: Kord, user: UserBehavior, unBannedBy: UserBehavior? = null, reason: String? = null) {
 	completeEmbed(
 		kord,
-		"🔓 Dé-bannissement de ${user.id}"
+		"🔓\nDé-bannissement de ${user.id}"
 	)
 	
 	if (unBannedBy != null) {
 		field {
 			val moderator = unBannedBy.fetchUserOrNull() ?: return@field
 			name = "<:moderator:933507900092072046> Par :"
-			value = if (unBannedBy.id == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
-			else "${moderator.tag} (`${moderator.id}`)"
+			value = "${moderator.tag} (`${moderator.id}`)"
+		}
+	}
+	
+	if (reason != null) {
+		field {
+			name = "\uD83D\uDCC4 Raison :"
+			value = reason
 		}
 	}
 }

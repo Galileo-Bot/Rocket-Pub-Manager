@@ -5,10 +5,12 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
+import dev.kord.common.entity.AuditLogChangeKey
 import dev.kord.common.entity.AuditLogEvent
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.getAuditLogEntries
+import dev.kord.core.entity.User
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
@@ -37,10 +39,21 @@ class AutoSanctions : Extension() {
 			check { inGuild(ROCKET_PUB_GUILD) }
 			
 			action {
+				var sanctionedBy: User? = null
+				
+				event.guild.getAuditLogEntries {
+					action = AuditLogEvent.MemberBanAdd
+				}.firstOrNull {
+					it.id.timeMark.elapsedNow() < 10.seconds
+				}?.let { entry ->
+					sanctionedBy = event.guild.getMemberOrNull(entry.userId)
+				}
+				
 				val user = event.user
+				
 				if (getSanctions(user.id).none { it.type == SanctionType.BAN && it.isActive }) {
 					val ban = event.getBan()
-					Sanction(SanctionType.BAN, ban.reason, user.id).apply {
+					Sanction(SanctionType.BAN, ban.reason, user.id, sanctionedBy?.id).apply {
 						if (getSanctions(user.id).any { it.equalExceptOwner(this) }) return@action
 						
 						sendLog(event.kord)
@@ -54,9 +67,21 @@ class AutoSanctions : Extension() {
 			check { inGuild(ROCKET_PUB_GUILD) }
 			
 			action {
+				var sanctionedBy: User? = null
+				var reason: String? = null
+				
+				event.guild.getAuditLogEntries {
+					action = AuditLogEvent.MemberBanRemove
+				}.firstOrNull {
+					it.id.timeMark.elapsedNow() < 10.seconds
+				}?.let { entry ->
+					sanctionedBy = event.guild.getMemberOrNull(entry.userId)
+					reason = entry.reason
+				}
+				
 				val user = event.user
 				kord.getLogSanctionsChannel().createEmbed {
-					unBanEmbed(event.kord, user)
+					unBanEmbed(event.kord, user, sanctionedBy, reason)
 				}
 			}
 		}
@@ -92,7 +117,7 @@ class AutoSanctions : Extension() {
 					val log = event.guild.getAuditLogEntries {
 						action = AuditLogEvent.MemberUpdate
 					}.firstOrNull { entry ->
-						entry.id.timeMark.elapsedNow() < 10.seconds && entry.changes.any { it.key.name == "communication_disabled_until" }
+						entry.id.timeMark.elapsedNow() < 10.seconds && entry.changes.any { it.key == AuditLogChangeKey.CommunicationDisabledUntil }
 					} ?: return@let
 					
 					val duration = (new.timeoutUntil ?: return@action) - Clock.System.now()
@@ -116,17 +141,16 @@ class AutoSanctions : Extension() {
 
 fun UserBehavior.getNextMuteDuration(): Long {
 	val sanctions = getSanctions(id)
+	
 	return when {
 		sanctions.isEmpty() -> 0
-		else -> {
-			return when (sanctions.size) {
-				1 -> 6.hours
-				in 2..4 -> 1.days
-				in 5..7 -> 5.days
-				in 8..10 -> 14.days
-				else -> 27.days
-			}.inWholeMilliseconds
-		}
+		else -> when (sanctions.size) {
+			1 -> 6.hours
+			in 2..4 -> 1.days
+			in 5..7 -> 5.days
+			in 8..10 -> 14.days
+			else -> 27.days
+		}.inWholeMilliseconds
 	}
 }
 

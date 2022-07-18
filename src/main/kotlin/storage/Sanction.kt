@@ -167,7 +167,9 @@ fun getSanctions(user: Snowflake): List<Sanction> {
 		val reason = result.getString("reason")
 		val member = Snowflake(result.getString("memberID"))
 		val id = result.getInt("id")
-		val appliedBy = Snowflake(result.getString("appliedByID"))
+		val appliedBy = result.getString("appliedByID").let {
+			if (it != "null") Snowflake(it) else null
+		}
 		val durationMS = result.getLong("durationMS")
 		val sanctionedAt = LocalDateTime.parse(result.getString("sanctionedAt"), formatter)
 		sanctions += Sanction(type, reason, member, id, appliedBy, durationMS, sanctionedAt.toInstant(offset).toKotlinInstant())
