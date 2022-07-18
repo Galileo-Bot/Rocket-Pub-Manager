@@ -4,9 +4,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.RoleBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.behavior.channel.VoiceChannelBehavior
 import dev.kord.core.entity.GuildEmoji
-import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.ReactionEmoji
 
 fun <T> Snowflake(value: T) = when (value) {
@@ -18,13 +16,10 @@ fun <T> Snowflake(value: T) = when (value) {
 	else -> Snowflake(value.toString())
 }
 
-inline fun <reified T : KordEntity> Snowflake.toMention() = when (T::class) {
-	is VoiceChannelBehavior -> "<#!${this}>"
-	is ChannelBehavior -> "<#${this}>"
-	is UserBehavior -> "<@${this}>"
-	is RoleBehavior -> "<@&${this}>"
-	else -> toString()
-}
+fun Snowflake.toChannelMention() = "<#$this>"
+fun Snowflake.toRoleMention() = "<@&$this>"
+fun Snowflake.toUserMention() = "<@$this>"
+fun Snowflake.toVoiceChannelMention() = "<#!$this>"
 
 fun Snowflake.Companion.forChannel(channel: String) = Snowflake(channel.remove("[<>#]"))
 fun Snowflake.Companion.forUser(user: String) = Snowflake(user.remove("[<>@!]"))

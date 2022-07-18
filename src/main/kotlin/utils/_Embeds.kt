@@ -157,7 +157,7 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	
 	completeEmbed(
 		kord,
-		"${sanction.type.emote}${sanction.type.translation} de ${user.tag}",
+		"${sanction.type.emote}\n${sanction.type.translation} de ${user.tag}",
 		"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
 	)
 	

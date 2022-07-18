@@ -26,7 +26,7 @@ import logger
 import utils.enquote
 import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
-import utils.toMention
+import utils.toUserMention
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
@@ -40,8 +40,8 @@ import kotlin.time.toDuration
 
 enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
 	BAN("Bannissement", "<:ban:498482002601705482>"),
-	KICK("Expulsion", "<:kick:933505066273501184>\n"),
-	MUTE("Exclusion (mute)", "<:mute:933505777354834021>\n"),
+	KICK("Expulsion", "<:kick:933505066273501184>"),
+	MUTE("Exclusion (mute)", "<:mute:933505777354834021>"),
 	WARN("Avertissement", "⚠️"),
 	LIGHT_WARN("Avertissement léger", "❕");
 	
@@ -72,13 +72,11 @@ data class Sanction(
 	val activeUntil get() = Clock.System.now() + duration
 	
 	val formattedDuration: String
-		get() {
-			return when {
-				duration.toDouble(DurationUnit.MILLISECONDS) == 0.0 -> ""
-				duration.toDouble(DurationUnit.HOURS) > 24 -> " ${duration.toDouble(DurationUnit.DAYS).roundToInt()}d"
-				duration.toDouble(DurationUnit.HOURS) < 1 -> " ${duration.toDouble(DurationUnit.MINUTES).roundToInt()}m"
-				else -> " ${duration.toDouble(DurationUnit.HOURS).roundToInt()}h"
-			}
+		get() = when {
+			duration.toDouble(DurationUnit.MILLISECONDS) == 0.0 -> ""
+			duration.toDouble(DurationUnit.HOURS) > 24 -> " ${duration.toDouble(DurationUnit.DAYS).roundToInt()}d"
+			duration.toDouble(DurationUnit.HOURS) < 1 -> " ${duration.toDouble(DurationUnit.MINUTES).roundToInt()}m"
+			else -> " ${duration.toDouble(DurationUnit.HOURS).roundToInt()}h"
 		}
 	
 	fun equalExceptOwner(other: Sanction) =
@@ -117,7 +115,7 @@ data class Sanction(
 				users += listOf(member)
 			}
 			
-			content = member.toMention<MemberBehavior>()
+			content = "||${member.toUserMention()}||"
 		}
 		
 		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")

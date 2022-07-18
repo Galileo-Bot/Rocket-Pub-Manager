@@ -61,8 +61,9 @@ suspend fun main() {
 		
 		extensions {
 			sentry {
-				enable = true
-				
+//				enable = true
+				enable = false
+	/*			
 				setup {
 					init {
 						dsn = configuration["AYFRI_ROCKETMANAGER_SENTRY_DSN"]
@@ -87,7 +88,7 @@ suspend fun main() {
 							return@setBeforeSend event
 						}
 					}
-				}
+				}*/
 			}
 			
 			add(::AutoSanctions)
