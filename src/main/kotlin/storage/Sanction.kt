@@ -13,6 +13,7 @@ import debug
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
@@ -26,7 +27,7 @@ import logger
 import utils.enquote
 import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
-import utils.toUserMention
+import utils.toMention
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
@@ -115,7 +116,7 @@ data class Sanction(
 				users += listOf(member)
 			}
 			
-			content = "||${member.toUserMention()}||"
+			content = "||${member.toMention<UserBehavior>()}||"
 		}
 		
 		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")

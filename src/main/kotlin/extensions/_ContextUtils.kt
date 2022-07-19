@@ -31,7 +31,7 @@ import utils.fromEmbed
 import utils.getRocketPubGuild
 import utils.hasRole
 import utils.isAdChannel
-import utils.toUserMention
+import utils.toMention
 
 suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	if (!passed) return
@@ -86,7 +86,7 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 			autoSanctionEmbed(message, sanction)
 			field {
 				name = "Sanctionnée par :"
-				value = sanction.member.toUserMention()
+				value = sanction.member.toMention<UserBehavior>()
 			}
 		}
 	}
