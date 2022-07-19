@@ -156,27 +156,22 @@ fun UserBehavior.getNextMuteDuration(): Long {
 
 fun UserBehavior.getNextSanctionType(): SanctionType {
 	val sanctions = getSanctions(id)
+	
 	return when {
 		sanctions.isEmpty() -> SanctionType.LIGHT_WARN
-		else -> {
-			when (sanctions.size) {
-				in 1..4 -> {
-					return when {
-						sanctions.any { it.type == SanctionType.MUTE } -> SanctionType.MUTE
-						sanctions.any { it.type == SanctionType.KICK } -> SanctionType.KICK
-						sanctions.any { it.type == SanctionType.BAN } -> SanctionType.BAN
-						else -> SanctionType.WARN
-					}
-				}
-				in 5..10 -> {
-					return when {
-						sanctions.any { it.type == SanctionType.MUTE } -> return SanctionType.KICK
-						sanctions.any { it.type == SanctionType.KICK } -> return SanctionType.BAN
-						else -> SanctionType.WARN
-					}
-				}
-				else -> return SanctionType.BAN
+		else -> when (sanctions.size) {
+			in 1..4 -> when {
+				sanctions.any { it.type == SanctionType.MUTE } -> SanctionType.MUTE
+				sanctions.any { it.type == SanctionType.KICK } -> SanctionType.KICK
+				sanctions.any { it.type == SanctionType.BAN } -> SanctionType.BAN
+				else -> SanctionType.WARN
 			}
+			in 5..10 -> when {
+				sanctions.any { it.type == SanctionType.MUTE } -> return SanctionType.KICK
+				sanctions.any { it.type == SanctionType.KICK } -> return SanctionType.BAN
+				else -> SanctionType.WARN
+			}
+			else -> return SanctionType.BAN
 		}
 	}
 }

@@ -28,11 +28,14 @@ import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.runBlocking
 import storage.Sanction
 import storage.SanctionType
 import utils.AD_CATEGORY_CHANNEL_EMOTE
@@ -45,12 +48,14 @@ import utils.asSafeUsersMentions
 import utils.autoSanctionEmbed
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
+import utils.getLogSanctionsChannel
 import utils.getReasonForMessage
 import utils.getVerifChannel
 import utils.id
 import utils.isAdChannel
 import utils.isCategoryChannel
 import utils.verificationEmbed
+import java.util.*
 import kotlin.time.Duration.Companion.days
 
 enum class ChannelAdType(private val translation: String, val sentence: String, val emote: String) : ChoiceEnum {
@@ -163,8 +168,36 @@ class CheckAds : Extension() {
 					setSanctionedBy(it.sanctionMessage, it.sanction)
 				}
 				
-				getReasonForMessage(event.message)?.let {
-					autoSanctionMessage(event.message, event.member!!.getNextSanctionType(), it)
+				getReasonForMessage(event.message)?.let { reason ->
+					val sanction = event.member!!.getNextSanctionType()
+					if (sanction == SanctionType.LIGHT_WARN) {
+						kord.getLogSanctionsChannel().createMessage {
+							val actualHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+							val welcome = if (actualHour in 6..18) "Bonjour" else "Bonsoir"
+							
+							content =
+							"""
+								<:nope:553265076195295236> $welcome **${event.member!!.mention}**, ceci est un avertissement léger pour la raison suivante :
+								> ${reason.dropLast(1)}, dans le salon ${event.message.channel.mention} _(message supprimé)_.
+								_<a:girorouge:525406076057944096> Merci de relire le règlement pour éviter d'être sanctionné._
+							""".trimIndent()
+							
+							allowedMentions {
+								users += event.member!!.id
+							}
+							
+							Sanction(sanction, reason, event.message.author!!.id, appliedBy = kord.selfId).save()
+							
+							runBlocking {
+								delay(5000)
+								event.message.delete()
+							}
+						}
+						
+						return@action
+					}
+					
+					autoSanctionMessage(event.message, sanction, reason)
 				} ?: verificationMessage(event.message)
 			}
 		}
