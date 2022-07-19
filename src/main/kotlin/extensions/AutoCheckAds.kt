@@ -15,10 +15,12 @@ import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import configuration
 import debug
 import dev.kord.common.entity.Permission
+import dev.kord.core.behavior.channel.TextChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.edit
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.Category
 import dev.kord.core.entity.channel.StageChannel
@@ -121,14 +123,12 @@ class CheckAds : Extension() {
 							""".trimIndent()
 						)
 					}
-					is TextChannel -> {
-						when {
-							isTypeCategory && channel.isCategoryChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
-							!isTypeCategory && channel.isAdChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
-							else -> {
-								channel.edit { topic = "${type.emote} ${channel.topic}" }
-								respond("Le salon ${channel.mention} a été ajouté à la ${type.sentence} à vérifier.")
-							}
+					is TextChannel -> when {
+						isTypeCategory && channel.isCategoryChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
+						!isTypeCategory && channel.isAdChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
+						else -> {
+							channel.edit { topic = "${type.emote} ${channel.topic}" }
+							respond("Le salon ${channel.mention} a été ajouté à la ${type.sentence} à vérifier.")
 						}
 					}
 					else -> respond("Ce salon n'est pas ajoutable à la ${type.sentence} à vérifier.")
@@ -171,28 +171,7 @@ class CheckAds : Extension() {
 				getReasonForMessage(event.message)?.let { reason ->
 					val sanction = event.member!!.getNextSanctionType()
 					if (sanction == SanctionType.LIGHT_WARN) {
-						kord.getLogSanctionsChannel().createMessage {
-							val actualHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-							val welcome = if (actualHour in 6..18) "Bonjour" else "Bonsoir"
-							
-							content =
-							"""
-								<:nope:553265076195295236> $welcome **${event.member!!.mention}**, ceci est un avertissement léger pour la raison suivante :
-								> ${reason.dropLast(1)}, dans le salon ${event.message.channel.mention} _(message supprimé)_.
-								_<a:girorouge:525406076057944096> Merci de relire le règlement pour éviter d'être sanctionné._
-							""".trimIndent()
-							
-							allowedMentions {
-								users += event.member!!.id
-							}
-							
-							Sanction(sanction, reason, event.message.author!!.id, appliedBy = kord.selfId).save()
-							
-							runBlocking {
-								delay(5000)
-								event.message.delete()
-							}
-						}
+						kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
 						
 						return@action
 					}
@@ -200,6 +179,39 @@ class CheckAds : Extension() {
 					autoSanctionMessage(event.message, sanction, reason)
 				} ?: verificationMessage(event.message)
 			}
+		}
+	}
+}
+
+suspend fun TextChannelBehavior.lightSanction(
+	member: Member,
+	reason: String,
+	message: Message? = null,
+) {
+	createMessage {
+		val actualHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+		val welcome = if (actualHour in 6..18) "Bonjour" else "Bonsoir"
+		
+		val shownReason = message?.let {
+			"${reason.dropLast(1)}, dans le salon ${message.channel.mention} _(message supprimé)_."
+		} ?: reason
+		
+		content =
+			"""
+				<:nope:553265076195295236> $welcome **${member.mention}**, ceci est un avertissement léger pour la raison suivante :
+				> $shownReason.
+				_<a:girorouge:525406076057944096> Merci de relire le règlement pour éviter d'être sanctionné._
+			""".trimIndent()
+		
+		allowedMentions {
+			users += member.id
+		}
+		
+		Sanction(SanctionType.LIGHT_WARN, reason, member.id, appliedBy = kord.selfId).save()
+		
+		runBlocking {
+			delay(5000)
+			message?.delete()
 		}
 	}
 }

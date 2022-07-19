@@ -14,6 +14,7 @@ import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
 import storage.Sanction
 import storage.SanctionType
+import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
 import java.util.*
 
@@ -37,21 +38,26 @@ class UserContextSanctions : Extension() {
 					val author = event.interaction.user
 					
 					Sanction(sanctionType, reason, target.id, appliedBy = author.id).apply {
-						sendLog()
 						save()
-						
-						when(commandName) {
-							"ban" -> target.ban {
-								this.reason = reason
-								deleteMessagesDays = 14
-							}
-							
-							"kick" -> target.kick(reason)
-						}
 						
 						r.respond {
 							sanctionEmbed(kord, this@apply)
 						}
+						
+						when(sanctionType) {
+							SanctionType.LIGHT_WARN -> {
+								kord.getLogSanctionsChannel().lightSanction(target, reason)
+								return@apply
+							}
+							SanctionType.BAN -> target.ban {
+								this.reason = reason
+								deleteMessagesDays = 14
+							}
+							SanctionType.KICK -> target.kick(reason)
+							else -> {}
+						}
+						
+						sendLog()
 					}
 				}
 			}
