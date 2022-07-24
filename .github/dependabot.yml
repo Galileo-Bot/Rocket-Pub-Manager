@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+
+    labels:
+      - dependencies
+    assignees:
+      - Ayfri
+
+    ignore:
+        - dependency-name: 'com.kotlindiscord.kord.extensions*',
+        - dependency-name: 'dev.kord*'
