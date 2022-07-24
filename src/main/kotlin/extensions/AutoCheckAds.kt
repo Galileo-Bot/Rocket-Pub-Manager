@@ -1,7 +1,6 @@
 package extensions
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
-import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
@@ -14,7 +13,6 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import configuration
 import debug
-import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.channel.TextChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
@@ -98,10 +96,6 @@ class CheckAds : Extension() {
 			description = "Ajoute un salon de publicités à la liste des salons de publicités à vérifier."
 			
 			guild(ROCKET_PUB_GUILD)
-			
-			check {
-				hasPermission(Permission.Administrator)
-			}
 			
 			action {
 				val type = arguments.type

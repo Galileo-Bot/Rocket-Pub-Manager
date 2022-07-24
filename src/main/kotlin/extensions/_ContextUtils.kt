@@ -1,10 +1,8 @@
 package extensions
 
 import com.kotlindiscord.kord.extensions.checks.channelType
-import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.isNotBot
-import com.kotlindiscord.kord.extensions.checks.memberFor
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
 import com.kotlindiscord.kord.extensions.types.respond
@@ -23,7 +21,6 @@ import storage.Sanction
 import storage.saveVerification
 import storage.searchVerificationMessage
 import utils.ROCKET_PUB_GUILD
-import utils.ROCKET_PUB_GUILD_STAFF
 import utils.STAFF_ROLE
 import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
@@ -47,16 +44,8 @@ suspend fun MemberBehavior?.isStaff() = this?.let {
 	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMemberOrNull()?.hasRole(STAFF_ROLE) == true
 } ?: false
 
-suspend fun <T : Event> CheckContext<T>.isStaff() {
-	if (!passed) return
-	val guild = guildFor(event)
-	
-	val inStaffGuild = guild?.id == ROCKET_PUB_GUILD_STAFF
-	val isStaff = memberFor(event)?.asMemberOrNull().isStaff()
-	
-	failIf("Vous n'avez pas le rôle Staff, cette commande ne vous est alors pas permise.") {
-		guild == null || !inStaffGuild || !isStaff
-	}
+suspend fun Message.removeComponents() = edit {
+	components = mutableListOf()
 }
 
 fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel: ChannelBehavior): List<String> {

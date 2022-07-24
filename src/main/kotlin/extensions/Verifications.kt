@@ -16,7 +16,6 @@ import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.emoji
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.rest.builder.message.create.embed
 import storage.Sanction
@@ -53,7 +52,7 @@ class Verifications : Extension() {
 				
 				action {
 					val verificationCount = getVerificationCount()
-					val verifications = verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending {it.second }.map {
+					val verifications = verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }.map {
 						(guild!!.getMemberOrNull(it.first) ?: return@map null) to it.second
 					}.filterNotNull()
 					
@@ -92,13 +91,13 @@ class Verifications : Extension() {
 				val author = message.getAuthorAsMember()!!
 				message.delete("Publicité interdite.")
 				Sanction(type, "Publicité interdite.", author.id, user.fetchUserOrNull()?.id, if (type == SanctionType.MUTE) author.getNextMuteDuration() else 0).apply {
-					save()
-					sendLog(message.kord)
-					
 					respond {
-						applyToMember(author)
 						content = "${author.mention} a été sanctionné pour avoir publié une publicité interdite."
 					}
+					
+					applyToMember(author)
+					sendLog(message.kord)
+					save()
 				}
 			}
 		}
@@ -111,13 +110,12 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
 		label = "Supprimer"
 		
 		action {
+			message.removeComponents()
 			deleteAllSimilarAdsWithSanction(message)
-			message.edit {
-				components = mutableListOf()
-			}
 		}
 	}
 }
+
 
 suspend fun ComponentContainer.addBinButtonDeleteSimilarAds() {
 	publicButton {
@@ -125,10 +123,8 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAds() {
 		label = "Supprimer"
 		
 		action {
+			message.removeComponents()
 			deleteAllSimilarAds(message)
-			message.edit {
-				components = mutableListOf()
-			}
 		}
 	}
 }
@@ -138,13 +134,10 @@ suspend fun ComponentContainer.addVerificationButton() {
 		emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 		style = ButtonStyle.Success
 		label = "Valider"
+		
 		action {
-			message.let {
-				validate(it, user)
-				it.edit {
-					components = mutableListOf()
-				}
-			}
+			message.removeComponents()
+			validate(message, user)
 		}
 	}
 }
@@ -179,12 +172,8 @@ suspend fun PublicSlashCommandContext<*>.verificationMessage(verifMessage: Messa
 					label = "Publicité interdite"
 					
 					action {
-						message.let {
-							deleteAllSimilarAdsWithSanction(it)
-							it.edit {
-								components = mutableListOf()
-							}
-						}
+						message.removeComponents()
+						deleteAllSimilarAdsWithSanction(message)
 					}
 				}
 			}

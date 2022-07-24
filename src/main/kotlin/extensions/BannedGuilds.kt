@@ -154,10 +154,12 @@ class BannedGuilds : Extension() {
 				
 				action {
 					respond {
-						searchBannedGuild(arguments.guild)?.let {
+						val bannedGuildFound = searchBannedGuild(arguments.guild)?.let {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
 							modifiedGuildEmbed(bot.getKoin().get(), it, arguments.value, it[arguments.value], arguments.newValue)
-						} ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also { content = it }
+						}
+						
+						bannedGuildFound ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also { content = it }
 					}
 				}
 			}
@@ -168,13 +170,13 @@ class BannedGuilds : Extension() {
 				
 				action {
 					respond {
+						val validGuild = isValidGuild(arguments.guild)
+						
 						content =
-							if (isValidGuild(arguments.guild)) {
-								removeBannedGuild(arguments.guild)
-								"Serveur `${arguments.guild}` retiré de la liste des serveurs interdits !"
-							} else {
-								"Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
-							}
+							if (validGuild) "Serveur `${arguments.guild}` retiré de la liste des serveurs interdits !"
+							else "Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
+						
+						if (validGuild) removeBannedGuild(arguments.guild)
 					}
 				}
 			}

@@ -56,8 +56,8 @@ class AutoSanctions : Extension() {
 					Sanction(SanctionType.BAN, ban.reason, user.id, sanctionedBy?.id).apply {
 						if (getSanctions(user.id).any { it.equalExceptOwner(this) }) return@action
 						
-						sendLog(event.kord)
 						save()
+						sendLog()
 					}
 				}
 			}
@@ -99,8 +99,8 @@ class AutoSanctions : Extension() {
 					Sanction(SanctionType.KICK, entry.reason, event.user.id).apply {
 						if (getSanctions(event.user.id).any { it.equalExceptOwner(this) }) return@action
 						
-						sendLog(event.kord)
 						save()
+						sendLog()
 					}
 				}
 			}
@@ -124,8 +124,8 @@ class AutoSanctions : Extension() {
 					Sanction(SanctionType.MUTE, log.reason, new.id, log.userId, duration.inWholeMilliseconds).apply {
 						if (getSanctions(new.id).any { it.equalExceptOwner(this) }) return@action
 						
-						sendLog(kord)
 						save()
+						sendLog()
 					}
 					
 					scheduler.schedule(duration, name = "Un-mute Scheduler") {

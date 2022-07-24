@@ -103,7 +103,7 @@ class Sanctions : Extension() {
 		val deleteDays by optionalInt {
 			name = "suppression"
 			description = "Le nombre de jours auquel supprimer les messages."
-
+			
 			maxValue = 7
 			minValue = 1
 		}
@@ -254,9 +254,8 @@ class Sanctions : Extension() {
 				
 				action {
 					val user = arguments.user
-					val sanctions = getSanctions(user.id).let {
-						if (arguments.type != null) it.filter { it.type == arguments.type }
-						else it
+					val sanctions = getSanctions(user.id).let { sanctions ->
+						arguments.type?.let { sanctions.filter { it.type == arguments.type } } ?: sanctions
 					}
 					if (sanctions.isEmpty()) throw DiscordRelayedException("Aucune sanction n'a été appliquée à cet utilisateur.")
 					
@@ -317,10 +316,10 @@ class Sanctions : Extension() {
 				description = "Permet de supprimer toutes les sanctions d'un utilisateur."
 				
 				action {
+					var sanctions = getSanctions(arguments.user.id)
+					arguments.type?.let { sanctions = sanctions.filter { it.type == arguments.type } }
+					
 					respond {
-						var sanctions = getSanctions(arguments.user.id)
-						if (arguments.type != null) sanctions = sanctions.filter { it.type == arguments.type }
-						
 						if (arguments.type != null && sanctions.none { it.type == arguments.type }) {
 							content = "Cet utilisateur n'a pas de sanctions de ce type."
 						} else if (sanctions.isEmpty()) {
@@ -354,6 +353,7 @@ class Sanctions : Extension() {
 					sanctions.find { it.type == SanctionType.BAN && it.isActive }?.let {
 						throw DiscordRelayedException("La personne est déjà bannie jusqu'à ${it.toDiscordTimestamp(TimestampType.RelativeTime)}")
 					}
+					
 					throw DiscordRelayedException("La personne est déjà bannie.")
 				}
 				
@@ -362,13 +362,13 @@ class Sanctions : Extension() {
 				}
 				
 				Sanction(SanctionType.BAN, arguments.reason, arguments.member.id, durationMS = duration?.inWholeMilliseconds ?: 0, appliedBy = user.id).apply {
-					sendLog()
-					save()
-					
 					respond {
 						applyToMember(arguments.member, arguments.deleteDays)
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
+					
+					save()
+					sendLog()
 				}
 			}
 		}
@@ -383,13 +383,13 @@ class Sanctions : Extension() {
 				}
 				
 				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
-					sendLog()
-					save()
-					
 					respond {
 						applyToMember(arguments.member)
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
+					
+					save()
+					sendLog()
 				}
 			}
 		}
@@ -415,13 +415,13 @@ class Sanctions : Extension() {
 				}
 				
 				Sanction(SanctionType.MUTE, arguments.reason, arguments.member.id, durationMS = duration.inWholeMilliseconds, appliedBy = user.id).apply {
-					sendLog()
-					save()
-					
 					respond {
 						applyToMember(arguments.member)
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
 					}
+					
+					save()
+					sendLog()
 				}
 			}
 		}
@@ -432,13 +432,15 @@ class Sanctions : Extension() {
 			
 			action {
 				guild!!.getBanOrNull(arguments.user.id)?.let {
-					guild!!.unban(arguments.user.id, arguments.reason)
 					respond {
 						embed {
 							unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
 						}
 					}
-				} ?: throw DiscordRelayedException("Le membre **${arguments.user.tag}** n'a pas été trouvé dans la liste des bans.")
+				}
+				
+				guild!!.unban(arguments.user.id, arguments.reason)
+				throw DiscordRelayedException("Le membre **${arguments.user.tag}** n'a pas été trouvé dans la liste des bans.")
 			}
 		}
 		
@@ -450,17 +452,19 @@ class Sanctions : Extension() {
 				if (!guild!!.selfMember().canInteract(arguments.member)) {
 					throw DiscordRelayedException("Je ne peux pas retirer le mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
 				}
+				
 				arguments.member.timeoutUntil?.let {
-					arguments.member.edit {
-						timeoutUntil = null
-					}.also {
-						respond {
-							embed {
-								unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
-							}
+					respond {
+						embed {
+							unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
 						}
 					}
-				} ?: throw DiscordRelayedException("Cette personne n'est pas mute, je ne peux pas l'un-mute voyons...")
+					
+					arguments.member.edit {
+						timeoutUntil = null
+					}
+				}
+				throw DiscordRelayedException("Cette personne n'est pas mute, je ne peux pas l'un-mute voyons...")
 			}
 		}
 		
@@ -470,8 +474,8 @@ class Sanctions : Extension() {
 			
 			action {
 				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
-					sendLog()
 					save()
+					sendLog()
 					
 					respond {
 						sanctionEmbed(this@publicSlashCommand.kord, this@apply)

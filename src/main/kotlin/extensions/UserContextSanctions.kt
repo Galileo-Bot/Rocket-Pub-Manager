@@ -38,11 +38,12 @@ class UserContextSanctions : Extension() {
 					val author = event.interaction.user
 					
 					Sanction(sanctionType, reason, target.id, appliedBy = author.id).apply {
-						save()
-						
 						r.respond {
 							sanctionEmbed(kord, this@apply)
 						}
+						
+						save()
+						sendLog()
 						
 						when(sanctionType) {
 							SanctionType.LIGHT_WARN -> {
@@ -56,8 +57,6 @@ class UserContextSanctions : Extension() {
 							SanctionType.KICK -> target.kick(reason)
 							else -> {}
 						}
-						
-						sendLog()
 					}
 				}
 			}
