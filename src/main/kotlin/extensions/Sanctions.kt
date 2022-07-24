@@ -32,10 +32,9 @@ import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.runBlocking
 import storage.Sanction
 import storage.SanctionType
-import storage.containsSanction
+import storage.getSanction
 import storage.getSanctionCount
 import storage.getSanctions
-import storage.removeSanction
 import storage.removeSanctions
 import utils.completeEmbed
 import utils.sanctionEmbed
@@ -300,12 +299,29 @@ class Sanctions : Extension() {
 				description = "Permet de supprimer une sanction via son numéro de cas."
 				
 				action {
+					val sanctionId = arguments.id
+					val sanction = getSanction(sanctionId) ?: throw DiscordRelayedException("Aucune sanction avec l'ID `$sanctionId` n'a été trouvée.")
+					
+					val appliedBy = sanction.appliedBy?.let {
+						val user = this@publicSubCommand.kord.getUser(it) ?: return@let null
+						"${user.tag} (`${user.id}`)"
+					}
+					
 					respond {
-						if (containsSanction(arguments.id)) {
-							removeSanction(arguments.id)
-							completeEmbed(this@publicSubCommand.kord, "Sanction supprimée.", "La sanction a été supprimée avec succès.")
-						} else {
-							content = "Sanction non trouvée."
+						completeEmbed(
+							this@publicSubCommand.kord,
+							"Sanction supprimée.",
+							"La sanction numéro $sanctionId a été supprimée avec succès par ${user.mention}."
+						) {
+							field {
+								name = "Cas numéro : $sanctionId ${sanction.type.emote}"
+								value =
+									"""
+									> **Cas numéro ${sanction.id}** ${sanction.type.emote}
+									**Appliquée par** : $appliedBy
+									**Date** : ${sanction.sanctionedAt.toMessageFormat(DiscordTimestampStyle.LongDateTime)}
+									""".trimIndent()
+							}
 						}
 					}
 				}
@@ -373,7 +389,8 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::KickArguments) {
+		publicSlashCommand(::KickArguments)
+		{
 			name = "kick"
 			description = "Éjecte un utilisateur du serveur."
 			
@@ -394,7 +411,8 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::MuteArguments) {
+		publicSlashCommand(::MuteArguments)
+		{
 			name = "mute"
 			description = "Mute une personne en utilisant les timeout (exclusions) discord."
 			
@@ -426,7 +444,8 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::UnBanArguments) {
+		publicSlashCommand(::UnBanArguments)
+		{
 			name = "unban"
 			description = "Permet de dé-bannir quelqu'un."
 			
@@ -444,7 +463,8 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::UnMuteArguments) {
+		publicSlashCommand(::UnMuteArguments)
+		{
 			name = "unmute"
 			description = "Permet de retirer le mute d'une personne (garde quand même la sanction)."
 			
@@ -468,7 +488,8 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::WarnArguments) {
+		publicSlashCommand(::WarnArguments)
+		{
 			name = "warn"
 			description = "Avertit un membre, enregistre cette sanction."
 			
