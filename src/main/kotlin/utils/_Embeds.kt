@@ -96,10 +96,7 @@ suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description:
 
 fun EmbedBuilder.fromEmbed(oldEmbed: Embed) {
 	oldEmbed.fields.forEach {
-		field {
-			name = it.name
-			value = it.value
-		}
+		field(it.name, it.inline ?: false) { it.value }
 	}
 	
 	description = oldEmbed.description
@@ -107,19 +104,26 @@ fun EmbedBuilder.fromEmbed(oldEmbed: Embed) {
 	url = oldEmbed.url
 	timestamp = oldEmbed.timestamp
 	color = oldEmbed.color
+	image = oldEmbed.image?.url
 	
-	if (oldEmbed.author != null) {
-		author {
-			name = oldEmbed.author!!.name
-			icon = oldEmbed.author!!.iconUrl
-			url = oldEmbed.author!!.url
+	oldEmbed.thumbnail?.let {
+		thumbnail {
+			url = it.url!!
 		}
 	}
 	
-	if (oldEmbed.footer != null) {
+	oldEmbed.author?.let {
+		author {
+			name = it.name
+			icon = it.iconUrl
+			url = it.url
+		}
+	}
+	
+	oldEmbed.footer?.let {
 		footer {
-			text = oldEmbed.footer!!.text
-			icon = oldEmbed.footer!!.iconUrl
+			text = it.text
+			icon = it.iconUrl
 		}
 	}
 }

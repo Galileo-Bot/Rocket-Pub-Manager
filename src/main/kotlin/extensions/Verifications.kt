@@ -148,7 +148,7 @@ class Verifications : Extension() {
 				action {
 					verifications.find {
 						it.verificationMessage?.id == message.id
-					}?.deleteAllAds("Suppression de toutes les publicités d'une vérification.")
+					}?.deleteAllAds()
 				}
 			}
 		}

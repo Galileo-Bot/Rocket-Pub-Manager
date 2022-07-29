@@ -61,7 +61,7 @@ class BannedGuilds : Extension() {
 	class RemoveBannedGuildArguments : Arguments() {
 		val guild by string {
 			name = "serveur"
-			description = "Le serveur à dé-bannir."
+			description = "Le serveur à débannir."
 		}
 	}
 	
@@ -70,11 +70,13 @@ class BannedGuilds : Extension() {
 			name = "serveur"
 			description = "Le serveur à modifier."
 		}
+		
 		val value by enumChoice<ModifyGuildValues> {
 			name = "propriété"
 			description = "La propriété à modifier."
 			typeName = "Nom/Id/Raison"
 		}
+		
 		val newValue by string {
 			name = "valeur"
 			description = "La nouvelle valeur à utiliser."

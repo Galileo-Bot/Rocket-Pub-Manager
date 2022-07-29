@@ -364,7 +364,8 @@ class Sanctions : Extension() {
 			
 			action {
 				val duration = arguments.unit?.durationUnit?.let { arguments.duration?.toDuration(it) }
-				guild!!.getBanOrNull(arguments.member.id)?.let {
+				
+				guild?.getBanOrNull(arguments.member.id)?.let {
 					val sanctions = getSanctions(arguments.member.id)
 					sanctions.find { it.type == SanctionType.BAN && it.isActive }?.let {
 						throw DiscordRelayedException("La personne est déjà bannie jusqu'à ${it.toDiscordTimestamp(TimestampType.RelativeTime)}")
@@ -389,8 +390,7 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::KickArguments)
-		{
+		publicSlashCommand(::KickArguments) {
 			name = "kick"
 			description = "Éjecte un utilisateur du serveur."
 			
@@ -411,8 +411,7 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::MuteArguments)
-		{
+		publicSlashCommand(::MuteArguments) {
 			name = "mute"
 			description = "Mute une personne en utilisant les timeout (exclusions) discord."
 			
@@ -444,13 +443,12 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::UnBanArguments)
-		{
+		publicSlashCommand(::UnBanArguments) {
 			name = "unban"
-			description = "Permet de dé-bannir quelqu'un."
+			description = "Permet de débannir quelqu'un."
 			
 			action {
-				guild!!.getBanOrNull(arguments.user.id)?.let {
+				guild?.getBanOrNull(arguments.user.id)?.let {
 					respond {
 						embed {
 							unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
@@ -458,13 +456,12 @@ class Sanctions : Extension() {
 					}
 				}
 				
-				guild!!.unban(arguments.user.id, arguments.reason)
+				guild?.unban(arguments.user.id, arguments.reason)
 				throw DiscordRelayedException("Le membre **${arguments.user.tag}** n'a pas été trouvé dans la liste des bans.")
 			}
 		}
 		
-		publicSlashCommand(::UnMuteArguments)
-		{
+		publicSlashCommand(::UnMuteArguments) {
 			name = "unmute"
 			description = "Permet de retirer le mute d'une personne (garde quand même la sanction)."
 			
@@ -488,8 +485,7 @@ class Sanctions : Extension() {
 			}
 		}
 		
-		publicSlashCommand(::WarnArguments)
-		{
+		publicSlashCommand(::WarnArguments) {
 			name = "warn"
 			description = "Avertit un membre, enregistre cette sanction."
 			
