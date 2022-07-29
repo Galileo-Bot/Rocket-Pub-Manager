@@ -166,11 +166,13 @@ fun UserBehavior.getNextSanctionType(): SanctionType {
 				sanctions.any { it.type == SanctionType.BAN } -> SanctionType.BAN
 				else -> SanctionType.WARN
 			}
+			
 			in 5..10 -> when {
 				sanctions.any { it.type == SanctionType.MUTE } -> return SanctionType.KICK
 				sanctions.any { it.type == SanctionType.KICK } -> return SanctionType.BAN
 				else -> SanctionType.WARN
 			}
+			
 			else -> return SanctionType.BAN
 		}
 	}

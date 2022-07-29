@@ -1,45 +1,38 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
+import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.message
 import com.kotlindiscord.kord.extensions.components.ComponentContainer
-import com.kotlindiscord.kord.extensions.components.components
+import com.kotlindiscord.kord.extensions.components.callbacks.ComponentCallbackRegistry
 import com.kotlindiscord.kord.extensions.components.publicButton
-import com.kotlindiscord.kord.extensions.components.publicSelectMenu
 import com.kotlindiscord.kord.extensions.components.types.emoji
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
+import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.emoji
-import dev.kord.common.entity.ButtonStyle
-import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.entity.Message
-import dev.kord.rest.builder.message.create.embed
+import configuration
+import debug
+import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.event.message.MessageDeleteEvent
+import entities.DELETE_ALL_ADS_VERIF_BUTTON_ID
+import entities.VALIDATE_VERIF_BUTTON_ID
+import entities.Verification
+import entities.findNotValidated
 import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCount
 import utils.ROCKET_PUB_GUILD
-import utils.SanctionMessage
-import utils.VALID_EMOJI
-import utils.autoSanctionEmbed
+import utils.STAFF_ROLE
+import utils.asSafeUsersMentions
 import utils.completeEmbed
+import utils.getFromValue
+import utils.getLogSanctionsChannel
 import utils.getReasonForMessage
-import utils.getRocketPubGuild
-import utils.verificationEmbed
 
 class Verifications : Extension() {
 	override val name = "Verifications"
-	
-	class VerifyMessageArguments : Arguments() {
-		val message by message {
-			name = "message"
-			description = "Le message à verifier."
-			requireGuild = true
-		}
-	}
+	val verifications = ArrayDeque<Verification>(100)
 	
 	override suspend fun setup() {
 		publicSlashCommand {
@@ -65,19 +58,6 @@ class Verifications : Extension() {
 					}
 				}
 			}
-			
-			publicSubCommand(::VerifyMessageArguments) {
-				name = "message"
-				description = "Permet de vérifier un message."
-				
-				action {
-					val message = arguments.message.fetchMessage()
-					
-					getReasonForMessage(message)?.let {
-						autoSanctionMessage(message, SanctionType.WARN, it)
-					} ?: verificationMessage(message)
-				}
-			}
 		}
 		
 		ephemeralMessageCommand {
@@ -101,6 +81,77 @@ class Verifications : Extension() {
 				}
 			}
 		}
+		
+		event<MessageCreateEvent> {
+			check {
+				adsCheck()
+				if (debug) hasRole(STAFF_ROLE)
+			}
+			
+			action {
+				sanctionMessages.find {
+					it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
+				}?.let {
+					sanctionMessages.remove(it)
+					setSanctionedBy(it.sanctionMessage, it.sanction)
+				}
+				
+				getReasonForMessage(event.message)?.let { reason ->
+					val sanction = event.member!!.getNextSanctionType()
+					if (sanction == SanctionType.LIGHT_WARN) {
+						kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
+						
+						return@action
+					}
+					
+					autoSanctionMessage(event.message, sanction, reason)
+					return@action
+				}
+				
+				verifications.find {
+					it.adContent == event.message.content && it.author == event.message.author!!.id
+				}?.let {
+					it.addAdChannel(event.message)
+					return@action
+				}
+				
+				Verification.create(event.message).also { verifications += it }
+			}
+		}
+		
+		event<MessageDeleteEvent> {
+			check { adsCheck() }
+			
+			action {
+				getReasonForMessage(event.message ?: return@action)?.let { reason ->
+					sanctionMessages.find {
+						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
+					}?.let {
+						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage, event.channel)
+					}
+				}
+				
+				verifications.findNotValidated(event.message ?: return@action)?.setDeletedChannel(event.channel.id)
+			}
+		}
+		
+		getKoin().get<ComponentCallbackRegistry>().also { registry ->
+			registry.registerForPublicButton(VALIDATE_VERIF_BUTTON_ID) {
+				action {
+					verifications.find {
+						it.verificationMessage?.id == event.interaction.message.id
+					}?.validateBy(event.interaction.user.id)
+				}
+			}
+			
+			registry.registerForPublicButton(DELETE_ALL_ADS_VERIF_BUTTON_ID) {
+				action {
+					verifications.find {
+						it.verificationMessage?.id == message.id
+					}?.deleteAllAds("Suppression de toutes les publicités d'une vérification.")
+				}
+			}
+		}
 	}
 }
 
@@ -112,71 +163,6 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
 		action {
 			message.removeComponents()
 			deleteAllSimilarAdsWithSanction(message)
-		}
-	}
-}
-
-
-suspend fun ComponentContainer.addBinButtonDeleteSimilarAds() {
-	publicButton {
-		emoji("\uD83D\uDDD1")
-		label = "Supprimer"
-		
-		action {
-			message.removeComponents()
-			deleteAllSimilarAds(message)
-		}
-	}
-}
-
-suspend fun ComponentContainer.addVerificationButton() {
-	publicButton {
-		emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
-		style = ButtonStyle.Success
-		label = "Valider"
-		
-		action {
-			message.removeComponents()
-			validate(message, user)
-		}
-	}
-}
-
-suspend fun PublicSlashCommandContext<*>.autoSanctionMessage(sanctionMessage: Message, type: SanctionType, reason: String?) {
-	val sanction = Sanction(type, reason ?: return, sanctionMessage.author!!.id)
-	respond {
-		embed {
-			autoSanctionEmbed(sanctionMessage, sanction)
-		}
-		
-		components {
-			addBinButtonDeleteSimilarAdsWithSanction()
-		}
-	}.also {
-		sanctionMessages.add(SanctionMessage(sanctionMessage.getAuthorAsMember()!!, it.message, sanction))
-	}
-}
-
-suspend fun PublicSlashCommandContext<*>.verificationMessage(verifMessage: Message) {
-	respond {
-		embed {
-			verificationEmbed(verifMessage, verifMessage.channel.asChannelOf())
-		}
-		
-		components {
-			addVerificationButton()
-			
-			publicSelectMenu {
-				option("interdit", "banned-ad") {
-					emoji("\uD83D\uDEAB")
-					label = "Publicité interdite"
-					
-					action {
-						message.removeComponents()
-						deleteAllSimilarAdsWithSanction(message)
-					}
-				}
-			}
 		}
 	}
 }

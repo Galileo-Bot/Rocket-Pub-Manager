@@ -1,18 +1,14 @@
 package extensions
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
-import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
 import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
-import configuration
-import debug
 import dev.kord.core.behavior.channel.TextChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
@@ -25,8 +21,6 @@ import dev.kord.core.entity.channel.StageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.VoiceChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
@@ -38,23 +32,7 @@ import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import storage.Sanction
 import storage.SanctionType
-import utils.AD_CATEGORY_CHANNEL_EMOTE
-import utils.AD_CHANNEL_EMOTE
-import utils.ROCKET_PUB_GUILD
-import utils.STAFF_ROLE
-import utils.SanctionMessage
-import utils.VALID_EMOJI
-import utils.asSafeUsersMentions
-import utils.autoSanctionEmbed
-import utils.getChannelsFromSanctionMessage
-import utils.getFromValue
-import utils.getLogSanctionsChannel
-import utils.getReasonForMessage
-import utils.getVerifChannel
-import utils.id
-import utils.isAdChannel
-import utils.isCategoryChannel
-import utils.verificationEmbed
+import utils.*
 import java.util.*
 import kotlin.time.Duration.Companion.days
 
@@ -117,6 +95,7 @@ class CheckAds : Extension() {
 							""".trimIndent()
 						)
 					}
+					
 					is TextChannel -> when {
 						isTypeCategory && channel.isCategoryChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
 						!isTypeCategory && channel.isAdChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
@@ -125,53 +104,9 @@ class CheckAds : Extension() {
 							respond("Le salon ${channel.mention} a été ajouté à la ${type.sentence} à vérifier.")
 						}
 					}
+					
 					else -> respond("Ce salon n'est pas ajoutable à la ${type.sentence} à vérifier.")
 				}
-			}
-		}
-		
-		event<MessageDeleteEvent> {
-			check { adsCheck() }
-			
-			action {
-				getReasonForMessage(event.message ?: return@action)?.let { reason ->
-					sanctionMessages.find {
-						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
-					}?.let {
-						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage, event.channel)
-					}
-				}
-				
-				getOldVerificationMessage(kord.getVerifChannel(), event.message)?.let {
-					updateChannels(it, event.channel)
-				}
-			}
-		}
-		
-		event<MessageCreateEvent> {
-			check {
-				adsCheck()
-				if (debug) hasRole(STAFF_ROLE)
-			}
-			
-			action {
-				sanctionMessages.find {
-					it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
-				}?.let {
-					sanctionMessages.remove(it)
-					setSanctionedBy(it.sanctionMessage, it.sanction)
-				}
-				
-				getReasonForMessage(event.message)?.let { reason ->
-					val sanction = event.member!!.getNextSanctionType()
-					if (sanction == SanctionType.LIGHT_WARN) {
-						kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
-						
-						return@action
-					}
-					
-					autoSanctionMessage(event.message, sanction, reason)
-				} ?: verificationMessage(event.message)
 			}
 		}
 	}
@@ -228,6 +163,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 				sanction.type = SanctionType.MUTE
 				sanction.durationMS = channels.size.div(2).days.inWholeMilliseconds
 			}
+			
 			in 10..Int.MAX_VALUE -> {
 				sanction.type = SanctionType.MUTE
 				sanction.durationMS = channels.size.days.inWholeMilliseconds
@@ -251,33 +187,6 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			}
 		}.also {
 			sanctionMessages.add(SanctionMessage(message.getAuthorAsMember()!!, it, sanction))
-		}
-	}
-}
-
-suspend fun verificationMessage(message: Message) {
-	val channelToSend = message.kord.getVerifChannel()
-	val old = getOldVerificationMessage(channelToSend, message)
-	
-	if (old != null) {
-		val channels = getChannelsFromSanctionMessage(old)
-		channels.add(message.channel.asChannelOf())
-		
-		old.edit {
-			embed {
-				verificationEmbed(message, *channels.toTypedArray())
-			}
-		}
-	} else {
-		channelToSend.createMessage {
-			embed {
-				verificationEmbed(message, message.channel.asChannelOf())
-			}
-			
-			components {
-				addVerificationButton()
-				addBinButtonDeleteSimilarAds()
-			}
 		}
 	}
 }

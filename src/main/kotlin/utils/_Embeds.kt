@@ -26,7 +26,7 @@ import storage.Sanction
 suspend fun EmbedBuilder.autoSanctionEmbed(
 	message: Message,
 	sanction: Sanction,
-	channels: List<ChannelBehavior> = listOf(message.channel)
+	channels: List<ChannelBehavior> = listOf(message.channel),
 ) {
 	completeEmbed(
 		message.kord,
@@ -145,7 +145,7 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 	guild: BannedGuild,
 	value: ModifyGuildValues,
 	valueBefore: String,
-	valueAfter: String
+	valueAfter: String,
 ) {
 	bannedGuildEmbed(client, guild)
 	
@@ -179,59 +179,6 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 			name = ":clock1: Durée :"
 			value = sanction.formattedDuration
 		}
-	}
-}
-
-suspend fun EmbedBuilder.verificationEmbed(
-	message: Message,
-	vararg channels: TextChannel,
-) {
-	completeEmbed(message.kord, "Nouvelle publicité à vérifier.", message.content)
-	val link = findInviteCode(message.content)
-	
-	field {
-		name = "<:textuel:658085848092508220> Salons :"
-		value = channels.distinctBy { it.id.value }.joinToString("\n", transform = TextChannel::mention)
-	}
-	
-	link?.let { link ->
-		val invite = getInvite(message.kord, link)
-		
-		val partialGuild = invite?.partialGuild ?: return@let
-		val guild = kotlin.runCatching {
-			partialGuild.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).getGuildOrNull()
-		}.getOrNull()?.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback)
-		
-		val owner = guild?.getOwnerOrNull()
-			?: partialGuild.owner?.let owner@{ inviterIsOwner ->
-				if (!inviterIsOwner) return@owner null
-				
-				invite.inviterId?.let {
-					message.kord.getRocketPubGuild().getMemberOrNull(it)
-				}
-			}
-		
-		field {
-			name = "📩 Invitation :"
-			value = """
-				Serveur : ${partialGuild.name}
-				ID du serveur : ${partialGuild.id}
-				Nombre de membres : ${guild?.memberCount ?: invite.approximateMemberCount ?: "Non trouvé."}
-				Owner : ${
-				when {
-					partialGuild.owner == true -> "${message.author?.mention} (`${message.author?.id}`)"
-					owner != null -> "${owner.mention} (`${owner.id}`)"
-					else -> "Non trouvé."
-				}
-			}
-			""".trimIndent()
-		}
-	}
-	
-	field {
-		val user = message.author?.fetchUserOrNull() ?: message.kord.getSelf(EntitySupplyStrategy.cacheWithCachingRestFallback)
-		name = "<:user:933508955722899477> Par :"
-		value = "${user.mention} (`${user.id}`)"
 	}
 }
 
@@ -287,7 +234,7 @@ suspend fun MessageCreateBuilder.modifiedGuildEmbed(
 	guild: BannedGuild,
 	value: ModifyGuildValues,
 	valueBefore: String,
-	valueAfter: String
+	valueAfter: String,
 ) = embed {
 	modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter)
 }
@@ -309,7 +256,7 @@ suspend fun MessageModifyBuilder.modifiedGuildEmbed(
 	guild: BannedGuild,
 	value: ModifyGuildValues,
 	valueBefore: String,
-	valueAfter: String
+	valueAfter: String,
 ) = embed {
 	modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter)
 }

@@ -1,12 +1,9 @@
-
-import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.channelFor
 import com.kotlindiscord.kord.extensions.checks.userFor
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
-import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import extensions.AutoSanctions
@@ -20,12 +17,9 @@ import extensions.Sanctions
 import extensions.UserContextSanctions
 import extensions.Verifications
 import io.github.cdimascio.dotenv.dotenv
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import utils.ROCKET_PUB_GUILD_STAFF
 import utils.enquote
-import utils.getErrorsChannel
 import java.sql.Connection
 import java.util.*
 
@@ -39,6 +33,8 @@ val endMessageAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_END
 
 lateinit var connection: Connection
 lateinit var bot: ExtensibleBot
+
+val ExtensibleBot.kord get() = getKoin().get<Kord>()
 
 @PrivilegedIntent
 suspend fun main() {
@@ -60,36 +56,7 @@ suspend fun main() {
 		}
 		
 		extensions {
-			sentry {
-//				enable = true
-				enable = false
-	/*			
-				setup {
-					init {
-						dsn = configuration["AYFRI_ROCKETMANAGER_SENTRY_DSN"]
-						tracesSampleRate = 1.0
-						
-						setBeforeSend { event, _ ->
-							if (!event.isErrored) return@setBeforeSend null
-							
-							runBlocking {
-								bot.getKoin().get<Kord>().getErrorsChannel().createEmbed {
-									title = "An error occurred: ${event.exceptions?.get(0)?.type}"
-									description = event.exceptions?.joinToString("\n\n") { sentryException ->
-										sentryException.stacktrace?.frames?.joinToString("\n") {
-											"${it.filename}.${it.function}():${it.lineno}"
-										} ?: "No stacktrace available"
-									}
-									
-									color = DISCORD_RED
-								}
-							}
-							
-							return@setBeforeSend event
-						}
-					}
-				}*/
-			}
+			sentry { enable = false }
 			
 			add(::AutoSanctions)
 			add(::BannedGuilds)
@@ -112,20 +79,6 @@ suspend fun main() {
 		i18n { defaultLocale = Locale.FRENCH }
 		
 		intents { +Intents.all }
-		
-		kord {
-			val exceptionHandling = CoroutineExceptionHandler { _, exception ->
-				runBlocking {
-					bot.getKoin().get<Kord>().getErrorsChannel().createEmbed {
-						title = "An error occurred: ${exception.message}"
-						description = exception.stackTrace.joinToString("\n")
-						color = DISCORD_RED
-					}
-				}
-			}
-			
-			stackTraceRecovery = true
-		}
 		
 		presence {
 			status = PresenceStatus.Idle

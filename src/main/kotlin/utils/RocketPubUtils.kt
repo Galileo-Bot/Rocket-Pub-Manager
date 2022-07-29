@@ -27,8 +27,10 @@ fun ChannelBehavior.isCategoryChannel() = this is TextChannel && topic?.contains
 
 suspend fun <T : Event> CheckContext<T>.isAdChannel() {
 	if (!passed) return
-	val channel = channelFor(event) ?: return
-	failIfNot("Channel isn't an ad channel.") { channel.fetchChannel().isAdChannel() }
+	val channel = channelFor(event)
+	
+	if (channel == null) fail("Channel is null")
+	failIfNot("Channel isn't an ad channel.") { channel!!.fetchChannel().isAdChannel() }
 }
 
 suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
@@ -40,4 +42,3 @@ suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 suspend fun Kord.getVerifChannel() = getChannelOf<TextChannel>(SANCTION_VERIF_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 suspend fun Kord.getLogSanctionsChannel() = getChannelOf<TextChannel>(SANCTION_LOGGER_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 suspend fun Kord.getRocketPubGuild() = getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
-suspend fun Kord.getErrorsChannel() = getChannelOf<TextChannel>(ERROR_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
