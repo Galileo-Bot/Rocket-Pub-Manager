@@ -6,16 +6,7 @@ import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
-import extensions.AutoSanctions
-import extensions.BannedGuilds
-import extensions.CheckAds
-import extensions.EndMessage
-import extensions.Errors
-import extensions.ModifySanctions
-import extensions.RemoveAds
-import extensions.Sanctions
-import extensions.UserContextSanctions
-import extensions.Verifications
+import extensions.*
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
 import utils.ROCKET_PUB_GUILD_STAFF
@@ -95,7 +86,9 @@ suspend fun main() {
 		allowMultiQueries = true
 		user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
 	}
+	
 	connection = dataSource.connection
+	
 	logger.info("Connection to the Database established.")
 	if (debug) logger.debug("Debug mode is enabled.")
 	

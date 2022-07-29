@@ -17,12 +17,12 @@ import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.modify.embed
 import extensions.addValidReaction
 import kord
+import storage.saveVerification
 import utils.*
 
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
 const val VALIDATE_VERIF_BUTTON_ID = "validate-verif"
 private const val CHANNELS_EMOJI = "<:textuel:658085848092508220>"
-
 
 data class VerificationMessage(
 	val id: Snowflake,
@@ -59,11 +59,6 @@ data class Verification(
 		updateChannelsFieldInEmbed()
 	}
 	
-	suspend fun deleteAdInChannel(channelId: Snowflake) {
-		adChannels.find { it.channelId == channelId }?.delete("Suppression de la publicité.")
-		updateChannelsFieldInEmbed()
-	}
-	
 	suspend fun deleteAllAds(reason: String = "") = adChannels.forEach { it.delete(reason) }
 	
 	suspend fun setDeletedChannel(channelId: Snowflake) {
@@ -88,6 +83,8 @@ data class Verification(
 				}
 			}
 		}
+		
+		saveVerification(user, verificationMessage?.id)
 		
 		verificationMessage?.addValidReaction()
 	}
@@ -134,10 +131,10 @@ data class Verification(
 					if (invite != null) {
 						name = "\uD83D\uDCE9 Invitation :"
 						value = """
-						Serveur : ${invite?.partialGuild?.name ?: "Non trouvé."}
-						ID du serveur : ${invite?.partialGuild?.id?.toString() ?: "Non trouvé."}
-						Nombre de membres : ${invite?.approximateMemberCount ?: "Non trouvé."}
-					""".trimIndent()
+							Serveur : ${invite?.partialGuild?.name ?: "Non trouvé."}
+							ID du serveur : ${invite?.partialGuild?.id?.toString() ?: "Non trouvé."}
+							Nombre de membres : ${invite?.approximateMemberCount ?: "Non trouvé."}
+						""".trimIndent()
 					} else {
 						name = "Invitation :"
 						value = findInviteLink(adContent)!!
