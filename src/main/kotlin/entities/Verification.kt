@@ -15,19 +15,20 @@ import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
+import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
-import extensions.addValidReaction
 import kord
 import storage.saveVerification
 import utils.ROCKET_PUB_GUILD
-import utils.SANCTION_VERIF_CHANNEL
 import utils.VALID_EMOJI
+import utils.VERIF_CHANNEL
 import utils.completeEmbed
 import utils.findInviteCode
 import utils.findInviteLink
 import utils.fromEmbed
 import utils.getInvite
 import utils.getRocketPubGuild
+import utils.getVerifLogsChannel
 import utils.toMention
 
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
@@ -80,24 +81,27 @@ data class Verification(
 	suspend fun validateBy(user: Snowflake) {
 		validatedBy = user
 		
-		verificationMessage?.edit {
-			components = mutableListOf()
+		if (verificationMessage != null) {
+			val verificationMessageId = verificationMessage!!.id
 			
-			embed {
-				fromEmbed(verificationMessage!!.channel.getMessageOrNull(verificationMessage!!.id)?.embeds!![0])
-				
-				title = "✅ Publicité validée"
-				
-				field {
-					name = "<:moderator:933507900092072046> Validée par :"
-					value = "${user.toMention<UserBehavior>()} (${user})"
+			verificationMessage!!.delete()
+			verificationMessage!!.kord.getVerifLogsChannel().let {
+				it.createMessage {
+					embed {
+						fromEmbed(verificationMessage!!.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
+						
+						title = "✅ Publicité validée"
+						
+						field {
+							name = "<:moderator:933507900092072046> Validée par :"
+							value = "${user.toMention<UserBehavior>()} (${user})"
+						}
+					}
 				}
+				
+				saveVerification(user, verificationMessageId)
 			}
 		}
-		
-		saveVerification(user, verificationMessage?.id)
-		
-		verificationMessage?.addValidReaction()
 	}
 	
 	suspend fun updateChannelsFieldInEmbed() {
@@ -156,7 +160,7 @@ data class Verification(
 	}
 	
 	companion object {
-		private val verificationsChannelId = SANCTION_VERIF_CHANNEL
+		private val verificationsChannelId = VERIF_CHANNEL
 		
 		suspend fun create(adMessage: Message) = Verification(
 			author = adMessage.author!!.id,
