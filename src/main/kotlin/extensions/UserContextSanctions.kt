@@ -45,15 +45,17 @@ class UserContextSanctions : Extension() {
 						save()
 						sendLog()
 						
-						when(sanctionType) {
+						when (sanctionType) {
 							SanctionType.LIGHT_WARN -> {
 								kord.getLogSanctionsChannel().lightSanction(target, reason)
 								return@apply
 							}
+							
 							SanctionType.BAN -> target.ban {
 								this.reason = reason
 								deleteMessagesDays = 14
 							}
+							
 							SanctionType.KICK -> target.kick(reason)
 							else -> {}
 						}

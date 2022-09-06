@@ -82,9 +82,9 @@ data class Sanction(
 	
 	fun equalExceptOwner(other: Sanction) =
 		type == other.type &&
-				reason == other.reason &&
-				member == other.member &&
-				abs(durationMS - other.durationMS) < 10_000
+			reason == other.reason &&
+			member == other.member &&
+			abs(durationMS - other.durationMS) < 10_000
 	
 	suspend fun applyToMember(member: MemberBehavior, banDeleteDays: Int? = null) {
 		val user = member.fetchMemberOrNull() ?: throw DiscordRelayedException("La sanction ne peut être appliquée car le membre n'a pas été trouvé.")
@@ -97,11 +97,13 @@ data class Sanction(
 				reason = this@Sanction.reason
 				deleteMessagesDays = banDeleteDays
 			}
+			
 			SanctionType.KICK -> member.kick(reason)
 			SanctionType.MUTE -> member.edit {
 				timeoutUntil = Clock.System.now() + duration
 				reason = this@Sanction.reason
 			}
+			
 			else -> return
 		}
 	}
