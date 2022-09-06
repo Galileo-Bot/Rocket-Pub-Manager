@@ -18,8 +18,6 @@ import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.rest.builder.message.modify.embed
 import storage.Sanction
-import storage.saveVerification
-import storage.searchVerificationMessage
 import utils.ROCKET_PUB_GUILD
 import utils.STAFF_ROLE
 import utils.VALID_EMOJI
@@ -80,22 +78,6 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 		}
 	}
 	message.addValidReaction()
-}
-
-suspend fun validate(message: Message, user: UserBehavior) {
-	message.edit {
-		embed {
-			fromEmbed(message.embeds[0])
-			
-			title = "Publicité validée."
-			field {
-				name = "Validée par :"
-				value = user.mention
-			}
-		}
-	}
-	message.addValidReaction()
-	if (searchVerificationMessage(message.id) == null) saveVerification(user.id, message.id)
 }
 
 suspend fun Message.addValidReaction() = addReaction(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))

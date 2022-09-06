@@ -27,7 +27,6 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import storage.Sanction
@@ -36,13 +35,11 @@ import utils.AD_CATEGORY_CHANNEL_EMOTE
 import utils.AD_CHANNEL_EMOTE
 import utils.ROCKET_PUB_GUILD
 import utils.SanctionMessage
-import utils.VALID_EMOJI
 import utils.autoSanctionEmbed
 import utils.getChannelsFromSanctionMessage
 import utils.getFromValue
 import utils.getReasonForMessage
 import utils.getVerifChannel
-import utils.id
 import utils.isAdChannel
 import utils.isCategoryChannel
 import java.util.*
@@ -246,21 +243,4 @@ suspend fun deleteAllSimilarAds(message: Message) {
 			it.deleteIgnoringNotFound()
 		}
 	}
-}
-
-suspend fun getOldVerificationMessage(channel: TextChannel, message: Message?) = channel.messages.firstOrNull {
-	if (it.embeds.isEmpty()) return@firstOrNull false
-	
-	val firstEmbed = it.embeds[0]
-	val isValidated = it.reactions.any { reaction ->
-		reaction.emoji.id === VALID_EMOJI.toString() && reaction.selfReacted
-	}
-	
-	val similarContent = firstEmbed.description == message?.content
-	
-	val sameAuthor = firstEmbed.fields.find { field ->
-		field.name.endsWith("Par :")
-	}?.value?.contains(message?.author!!.id.toString()) == true
-	
-	similarContent && !isValidated && sameAuthor
 }
