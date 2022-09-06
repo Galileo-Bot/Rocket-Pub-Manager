@@ -31,8 +31,18 @@ val debug get() = configuration["AYFRI_ROCKETMANAGER_ENVIRONMENT"] == "developme
 val adsAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS"].toBooleanStrict()
 val endMessageAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE"].toBooleanStrict()
 
-lateinit var connection: Connection
 lateinit var bot: ExtensibleBot
+
+val dataSource = MysqlConnectionPoolDataSource().apply {
+	serverName = configuration["AYFRI_ROCKETMANAGER_DB_IP"]
+	port = configuration["AYFRI_ROCKETMANAGER_DB_PORT"].toInt()
+	databaseName = configuration["AYFRI_ROCKETMANAGER_DB_NAME"]
+	password = configuration["AYFRI_ROCKETMANAGER_DB_MDP"]
+	allowMultiQueries = true
+	user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
+}.also { logger.debug("Database connection initialized") }
+
+val connection: Connection get() = dataSource.connection
 
 val ExtensibleBot.kord get() = getKoin().get<Kord>()
 
@@ -86,21 +96,7 @@ suspend fun main() {
 		}
 	}
 	
-	val dataSource = MysqlConnectionPoolDataSource()
-	dataSource.apply {
-		serverName = configuration["AYFRI_ROCKETMANAGER_DB_IP"]
-		port = configuration["AYFRI_ROCKETMANAGER_DB_PORT"].toInt()
-		databaseName = configuration["AYFRI_ROCKETMANAGER_DB_NAME"]
-		password = configuration["AYFRI_ROCKETMANAGER_DB_MDP"]
-		allowMultiQueries = true
-		user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
-	}
-	
-	connection = dataSource.connection
-	
-	logger.info("Connection to the Database established.")
 	if (debug) logger.debug("Debug mode is enabled.")
-	
 	bot.start()
 }
 
