@@ -42,7 +42,22 @@ val dataSource = MysqlConnectionPoolDataSource().apply {
 	user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
 }.also { logger.debug("Database connection initialized") }
 
-val connection: Connection get() = dataSource.connection
+private var oldConnection: Connection? = null
+
+val connection: Connection
+	get() {
+		if (oldConnection == null) oldConnection = dataSource.connection
+		oldConnection?.let {
+			try {
+				it.createStatement().execute("SELECT 1")
+			} catch (e: Exception) {
+				logger.debug("Connection is closed, creating a new one")
+				oldConnection = dataSource.connection
+			}
+		}
+		
+		return oldConnection!!
+	}
 
 val ExtensibleBot.kord get() = getKoin().get<Kord>()
 

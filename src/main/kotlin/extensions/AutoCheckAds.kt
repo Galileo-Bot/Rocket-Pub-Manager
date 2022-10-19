@@ -223,24 +223,3 @@ suspend fun deleteAllSimilarAdsWithSanction(message: Message) {
 		}
 	}
 }
-
-suspend fun deleteAllSimilarAds(message: Message) {
-	val channels = getChannelsFromSanctionMessage(message)
-	val embed = message.embeds[0]
-	val embedAuthor = embed.fields.find { it.name.endsWith("Par :") }?.value ?: return
-	val originalAdContent = embed.description ?: return
-	
-	channels.forEach { channel ->
-		val messagesBefore = channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100)
-		val messages = messagesBefore.filter {
-			val author = it.author?.fetchUserOrNull() ?: return@filter false
-			originalAdContent in it.content && author.id.toString() in embedAuthor
-		}.toCollection(mutableListOf())
-		
-		channel.lastMessage?.fetchMessageOrNull()?.let(messages::add)
-		
-		messages.forEach {
-			it.deleteIgnoringNotFound()
-		}
-	}
-}
