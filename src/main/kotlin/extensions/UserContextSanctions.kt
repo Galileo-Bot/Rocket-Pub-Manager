@@ -17,6 +17,7 @@ import storage.SanctionType
 import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
 import java.util.*
+import kotlin.time.Duration.Companion.days
 
 class UserContextSanctions : Extension() {
 	override val name = "UserContextSanctions"
@@ -53,7 +54,7 @@ class UserContextSanctions : Extension() {
 							
 							SanctionType.BAN -> target.ban {
 								this.reason = reason
-								deleteMessagesDays = 14
+								deleteMessageDuration = 7.days
 							}
 							
 							SanctionType.KICK -> target.kick(reason)

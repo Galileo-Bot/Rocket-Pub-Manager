@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -95,7 +96,7 @@ data class Sanction(
 		when (type) {
 			SanctionType.BAN -> member.ban {
 				reason = this@Sanction.reason
-				deleteMessagesDays = banDeleteDays
+				deleteMessageDuration = banDeleteDays?.days
 			}
 			
 			SanctionType.KICK -> member.kick(reason)

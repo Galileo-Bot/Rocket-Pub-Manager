@@ -56,12 +56,11 @@ data class VerificationMessage(
 data class Verification(
 	val author: Snowflake,
 	val adContent: String,
-	var verificationMessage: Message? = null,
 	val adChannels: MutableSet<VerificationMessage> = mutableSetOf(),
 	var validatedBy: Snowflake? = null,
 ) {
+	lateinit var verificationMessage: Message
 	val isValidated get() = validatedBy != null
-	
 	val channelsFormatted get() = adChannels.joinToString("\n") { it.toString() }
 	
 	suspend fun addAdChannel(message: Message) {
@@ -81,33 +80,30 @@ data class Verification(
 	suspend fun validateBy(user: Snowflake) {
 		validatedBy = user
 		
-		if (verificationMessage != null) {
-			val verificationMessageId = verificationMessage!!.id
-			
-			verificationMessage!!.delete()
-			verificationMessage!!.kord.getVerifLogsChannel().let {
-				it.createMessage {
-					embed {
-						fromEmbed(verificationMessage!!.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
-						
-						title = "✅ Publicité validée"
-						
-						field {
-							name = "<:moderator:933507900092072046> Validée par :"
-							value = "${user.toMention<UserBehavior>()} (${user})"
-						}
+		val verificationMessageId = verificationMessage.id
+		verificationMessage.kord.getVerifLogsChannel().let {
+			it.createMessage {
+				embed {
+					fromEmbed(verificationMessage.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
+					
+					title = "✅ Publicité validée"
+					
+					field {
+						name = "<:moderator:933507900092072046> Validée par :"
+						value = "${user.toMention<UserBehavior>()} (${user})"
 					}
 				}
-				
-				saveVerification(user, verificationMessageId)
 			}
+			
+			saveVerification(user, verificationMessageId)
 		}
+		verificationMessage.delete()
 	}
 	
 	suspend fun updateChannelsFieldInEmbed() {
-		verificationMessage?.edit {
+		verificationMessage.edit {
 			embed {
-				fromEmbed(verificationMessage!!.embeds[0])
+				fromEmbed(verificationMessage.embeds[0])
 				
 				fields.find { it.name.endsWith("Salons :") }?.value = channelsFormatted
 			}

@@ -139,7 +139,7 @@ class Verifications : Extension() {
 			registry.registerForPublicButton(VALIDATE_VERIF_BUTTON_ID) {
 				action {
 					verifications.find {
-						it.verificationMessage?.id == event.interaction.message.id
+						it.verificationMessage.id == event.interaction.message.id
 					}?.validateBy(event.interaction.user.id)
 				}
 			}
@@ -147,7 +147,7 @@ class Verifications : Extension() {
 			registry.registerForPublicButton(DELETE_ALL_ADS_VERIF_BUTTON_ID) {
 				action {
 					verifications.find {
-						it.verificationMessage?.id == message.id
+						it.verificationMessage.id == message.id
 					}?.deleteAllAds()
 				}
 			}
