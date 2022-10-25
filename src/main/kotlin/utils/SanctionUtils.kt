@@ -16,7 +16,7 @@ suspend fun getChannelsFromSanctionMessage(message: Message): MutableSet<TextCha
 	val field = embed.fields.find { it.name.endsWith("Salons :") }
 	
 	return field?.value?.split("\n")?.mapNotNull {
-		val id = Snowflake.forChannel(it)
+		val id = Snowflake.forChannel(it.substringBefore("_"))
 		message.kord.getChannelOf<TextChannel>(id)
 	}.orEmpty().toMutableSet()
 }
