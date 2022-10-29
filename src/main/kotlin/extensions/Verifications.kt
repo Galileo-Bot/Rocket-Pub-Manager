@@ -93,7 +93,8 @@ class Verifications : Extension() {
 					it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
 				}?.let {
 					sanctionMessages.remove(it)
-					setSanctionedBy(it.sanctionMessage, it.sanction)
+					val message = it.sanctionMessage.fetchMessageOrNull() ?: return@let
+					setSanctionedBy(message, it.sanction)
 				}
 				
 				getReasonForMessage(event.message)?.let { reason ->
