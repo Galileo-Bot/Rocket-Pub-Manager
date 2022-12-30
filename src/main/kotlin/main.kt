@@ -63,6 +63,8 @@ val ExtensibleBot.kord get() = getKoin().get<Kord>()
 
 @PrivilegedIntent
 suspend fun main() {
+	TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
+	
 	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
 		applicationCommands {
 			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
@@ -114,4 +116,3 @@ suspend fun main() {
 	if (debug) logger.debug("Debug mode is enabled.")
 	bot.start()
 }
-

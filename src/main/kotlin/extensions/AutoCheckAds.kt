@@ -131,7 +131,7 @@ suspend fun TextChannelBehavior.lightSanction(
 		val welcome = if (actualHour in 6..18) "Bonjour" else "Bonsoir"
 		
 		val shownReason = message?.let {
-			"${reason.dropLast(1)}, dans le salon ${message.channel.mention} _(message supprimé)_."
+			"${reason.dropLast(1)}, dans le salon ${it.channel.mention} _(message supprimé)_."
 		} ?: reason
 		
 		content =
