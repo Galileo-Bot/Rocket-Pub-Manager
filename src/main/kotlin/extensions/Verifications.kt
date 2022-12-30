@@ -3,7 +3,6 @@ package extensions
 import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.components.ComponentContainer
-import com.kotlindiscord.kord.extensions.components.callbacks.ComponentCallbackRegistry
 import com.kotlindiscord.kord.extensions.components.publicButton
 import com.kotlindiscord.kord.extensions.components.types.emoji
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -15,8 +14,6 @@ import configuration
 import debug
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
-import entities.DELETE_ALL_ADS_VERIF_BUTTON_ID
-import entities.VALIDATE_VERIF_BUTTON_ID
 import entities.Verification
 import entities.findNotValidated
 import storage.Sanction
@@ -32,7 +29,6 @@ import utils.getReasonForMessage
 
 class Verifications : Extension() {
 	override val name = "Verifications"
-	val verifications = ArrayDeque<Verification>(100)
 	
 	override suspend fun setup() {
 		publicSlashCommand {
@@ -109,14 +105,14 @@ class Verifications : Extension() {
 					return@action
 				}
 				
-				verifications.find {
+				Verification.verifications.find {
 					it.adContent == event.message.content && it.author == event.message.author!!.id
 				}?.let {
 					it.addAdChannel(event.message)
 					return@action
 				}
 				
-				Verification.create(event.message).also { verifications += it }
+				Verification.create(event.message)
 			}
 		}
 		
@@ -132,25 +128,7 @@ class Verifications : Extension() {
 					}
 				}
 				
-				verifications.findNotValidated(event.message ?: return@action)?.setDeletedChannel(event.channel.id)
-			}
-		}
-		
-		getKoin().get<ComponentCallbackRegistry>().also { registry ->
-			registry.registerForPublicButton(VALIDATE_VERIF_BUTTON_ID) {
-				action {
-					verifications.find {
-						it.verificationMessage.id == event.interaction.message.id
-					}?.validateBy(event.interaction.user.id)
-				}
-			}
-			
-			registry.registerForPublicButton(DELETE_ALL_ADS_VERIF_BUTTON_ID) {
-				action {
-					verifications.find {
-						it.verificationMessage.id == message.id
-					}?.deleteAllAds()
-				}
+				Verification.verifications.findNotValidated(event.message ?: return@action)?.setDeletedChannel(event.channel.id)
 			}
 		}
 	}

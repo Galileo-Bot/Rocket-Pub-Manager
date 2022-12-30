@@ -5,6 +5,9 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashC
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.events.EventHandler
 import com.kotlindiscord.kord.extensions.time.TimestampType
+import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
+import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
+import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
@@ -125,8 +128,20 @@ data class Sanction(
 		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")
 	}
 	
-	suspend fun PublicSlashCommandContext<*>.sendLog() = sendLog(this@sendLog.channel.kord)
+	suspend fun PublicSlashCommandContext<*, *>.sendLog() = sendLog(this@sendLog.channel.kord)
 	suspend fun EventHandler<*>.sendLog() = sendLog(kord)
+	
+	suspend fun PublicInteractionContext.replyWithSanctionEmbed() {
+		respond {
+			sanctionEmbed(interactionResponse.kord, this@Sanction)
+		}
+	}
+	
+	suspend fun EphemeralInteractionContext.replyWithSanctionEmbed() {
+		respond {
+			sanctionEmbed(interactionResponse.kord, this@Sanction)
+		}
+	}
 	
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
 	fun toString(prefix: String) = "$prefix${type.name.lowercase()} <@$member> $reason$formattedDuration"

@@ -156,14 +156,13 @@ data class Verification(
 	}
 	
 	companion object {
-		private val verificationsChannelId = VERIF_CHANNEL
+		val verifications = ArrayDeque<Verification>(100)
 		
 		suspend fun create(adMessage: Message) = Verification(
 			author = adMessage.author!!.id,
 			adContent = adMessage.content,
 		).apply {
-			val verificationChannel = bot.kord.getChannelOf<TextChannel>(verificationsChannelId)!!
-			
+			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
 			adChannels += VerificationMessage(adMessage.id, adMessage.channel.id)
 			
 			val verificationMessage = verificationChannel.createMessage {
@@ -175,7 +174,11 @@ data class Verification(
 						style = ButtonStyle.Success
 						label = "Valider"
 						
-						useCallback(VALIDATE_VERIF_BUTTON_ID)
+						action {
+							verifications.find {
+								it.verificationMessage.id == event.interaction.message.id
+							}?.validateBy(event.interaction.user.id)
+						}
 					}
 					
 					publicButton {
@@ -183,12 +186,17 @@ data class Verification(
 						style = ButtonStyle.Danger
 						label = "Supprimer"
 						
-						useCallback(DELETE_ALL_ADS_VERIF_BUTTON_ID)
+						action {
+							verifications.find {
+								it.verificationMessage.id == message.id
+							}?.deleteAllAds()
+						}
 					}
 				}
 			}
 			
 			this.verificationMessage = verificationMessage
+			verifications += this
 		}
 	}
 }

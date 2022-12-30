@@ -1,50 +1,59 @@
 package extensions
 
+import com.kotlindiscord.kord.extensions.checks.inGuild
+import com.kotlindiscord.kord.extensions.components.forms.ModalForm
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
-import com.kotlindiscord.kord.extensions.modules.unsafe.commands.UnsafeUserCommand
-import com.kotlindiscord.kord.extensions.modules.unsafe.extensions.unsafeUserCommand
-import com.kotlindiscord.kord.extensions.modules.unsafe.types.InitialUserCommandResponse
-import dev.kord.common.entity.Snowflake
-import dev.kord.common.entity.TextInputStyle
+import com.kotlindiscord.kord.extensions.extensions.ephemeralUserCommand
 import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.interaction.modal
-import dev.kord.core.behavior.interaction.response.respond
-import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
 import storage.Sanction
 import storage.SanctionType
+import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
-import utils.sanctionEmbed
-import java.util.*
 import kotlin.time.Duration.Companion.days
 
 class UserContextSanctions : Extension() {
 	override val name = "UserContextSanctions"
-	private val modalsTargets = mutableMapOf<String, Snowflake>()
 	
-	@OptIn(UnsafeAPI::class)
+	inner class ModalArguments : ModalForm() {
+		override var title = "Sanctionner un membre"
+		
+		val reason = paragraphText {
+			label = "Raison"
+			maxLength = 500
+			minLength = 3
+			placeholder = "Insulte le staff..."
+			required = true
+		}
+	}
+	
 	override suspend fun setup() {
-		event<GuildModalSubmitInteractionCreateEvent> {
-			action {
-				if (event.interaction.modalId in modalsTargets) {
-					val commandName = event.interaction.modalId.substringBefore(" ").uppercase()
-					val sanctionType = SanctionType.valueOf(commandName)
+		val userCommandsSanctionTypes = listOf("ban", "kick", "light_warn", "warn")
+		userCommandsSanctionTypes.forEach { commandName ->
+			ephemeralUserCommand(::ModalArguments) {
+				name = commandName
+				guildId = ROCKET_PUB_GUILD
+				
+				check {
+					inGuild(ROCKET_PUB_GUILD)
+				}
+				
+				action { modal ->
+					if (modal == null || modal.reason.value.isNullOrBlank()) {
+						respond("Veuillez remplir le formulaire.")
+						return@action
+					}
 					
-					val r = event.interaction.deferPublicResponse()
-					
-					val userId = modalsTargets[event.interaction.modalId] ?: return@action
-					val reason = event.interaction.actionRows[0].textInputs["reason"]?.value ?: return@action
-					val target = event.interaction.getGuildOrNull()?.getMemberOrNull(userId) ?: return@action
+					val sanctionType = SanctionType.valueOf(commandName.uppercase())
+					val reason = modal.reason.value!!
+					val target = event.interaction.target.asMember(guild!!.id)
 					val author = event.interaction.user
 					
 					Sanction(sanctionType, reason, target.id, appliedBy = author.id).apply {
-						r.respond {
-							sanctionEmbed(kord, this@apply)
-						}
+						val kord = this@ephemeralUserCommand.kord
 						
+						replyWithSanctionEmbed()
 						save()
-						sendLog()
+						sendLog(kord)
 						
 						when (sanctionType) {
 							SanctionType.LIGHT_WARN -> {
@@ -60,35 +69,6 @@ class UserContextSanctions : Extension() {
 							SanctionType.KICK -> target.kick(reason)
 							else -> {}
 						}
-					}
-				}
-			}
-		}
-		
-		val userCommandsSanctionTypes = listOf("ban", "kick", "light_warn", "warn")
-		userCommandsSanctionTypes.forEach {
-			unsafeUserCommand {
-				createSanctionCommand(it)
-			}
-		}
-	}
-	
-	@OptIn(UnsafeAPI::class)
-	private fun UnsafeUserCommand.createSanctionCommand(type: String) {
-		name = type.replace("_", " ")
-		initialResponse = InitialUserCommandResponse.None
-		
-		action {
-			val randomId = UUID.randomUUID().toString()
-			val customId = "$type $randomId"
-			modalsTargets[customId] = event.interaction.targetId
-			
-			event.interaction.modal("Avertissement de membre", customId) {
-				actionRow {
-					textInput(TextInputStyle.Paragraph, "reason", "Raison") {
-						allowedLength = 3..500
-						placeholder = "Insulte le staff..."
-						required = true
 					}
 				}
 			}
