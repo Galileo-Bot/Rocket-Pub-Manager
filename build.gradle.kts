@@ -41,9 +41,12 @@ dependencies {
 	implementation(libs.datetime)
 }
 
+kotlin {
+	jvmToolchain(17)
+}
+
 tasks.withType<KotlinCompile> {
 	kotlinOptions.jvmTarget = "17"
-	kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
 }
 
 tasks.withType<ShadowJar> {
