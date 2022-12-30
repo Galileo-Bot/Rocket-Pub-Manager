@@ -51,7 +51,9 @@ class Verifications : Extension() {
 					
 					respond {
 						completeEmbed(
-							this@publicSubCommand.kord, "Liste des publicités vérifiées.", verifications.joinToString("\n\n") {
+							client = this@publicSubCommand.kord,
+							title = "Liste des publicités vérifiées.",
+							description = verifications.joinToString("\n\n") {
 								"**${it.first.tag}** : ${it.second} publicités vérifiées."
 							}
 						)
@@ -71,9 +73,7 @@ class Verifications : Extension() {
 				val author = message.getAuthorAsMember()!!
 				message.delete("Publicité interdite.")
 				Sanction(type, "Publicité interdite.", author.id, user.fetchUserOrNull()?.id, if (type == SanctionType.MUTE) author.getNextMuteDuration() else 0).apply {
-					respond {
-						content = "${author.mention} a été sanctionné pour avoir publié une publicité interdite."
-					}
+					respond("${author.mention} a été sanctionné pour avoir publié une publicité interdite.")
 					
 					applyToMember(author)
 					sendLog(message.kord)

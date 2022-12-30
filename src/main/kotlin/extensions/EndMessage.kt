@@ -30,14 +30,15 @@ class EndMessage : Extension() {
 			}
 			
 			action {
-				event.message.channel.messages.filter {
+				val channel = event.message.channel
+				channel.messages.filter {
 					it.author?.isBot == true && (it.embeds[0].author?.name ?: return@filter false) in event.message.getGuild().name
 				}.collect {
 					it.deleteIgnoringNotFound()
 				}
 				
-				event.message.channel.createEmbed {
-					endAdChannelEmbed(kord, event.message.channel.fetchChannel().asChannelOf())
+				channel.createEmbed {
+					endAdChannelEmbed(kord, channel.fetchChannel().asChannelOf())
 				}
 			}
 		}

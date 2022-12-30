@@ -237,9 +237,9 @@ class Sanctions : Extension() {
 					
 					respond {
 						completeEmbed(
-							bot.getKoin().get(),
-							"Liste des sanctions appliquées.",
-							sanctions.groupBy { it }.map {
+							client = bot.getKoin().get(),
+							title = "Liste des sanctions appliquées.",
+							description = sanctions.groupBy { it }.map {
 								"**${guild!!.getMember(it.key).tag}** : ${it.value.size} sanctions appliquées."
 							}.joinToString("\n\n")
 						)
@@ -418,11 +418,7 @@ class Sanctions : Extension() {
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
 				if (arguments.member.timeoutUntil != null) throw DiscordRelayedException(
-					"La personne est déjà mute et sera unmute ${
-						arguments.member.timeoutUntil!!.toMessageFormat(
-							DiscordTimestampStyle.RelativeTime
-						)
-					}."
+					"La personne est déjà mute et sera unmute ${arguments.member.timeoutUntil!!.toMessageFormat(DiscordTimestampStyle.RelativeTime)}."
 				)
 				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
 				if (duration > 28.days) throw DiscordRelayedException("La durée doit être de moins de 28 jours.")

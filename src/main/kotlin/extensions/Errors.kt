@@ -2,7 +2,6 @@ package extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
-import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.core.behavior.UserBehavior
 import utils.toMention
 
@@ -15,9 +14,7 @@ class Errors : Extension() {
 			description = "tamer"
 			
 			action {
-				respond {
-					content = user.id.toMention<UserBehavior>()
-				}
+				respond(user.id.toMention<UserBehavior>())
 				
 				throw IllegalStateException("test")
 			}

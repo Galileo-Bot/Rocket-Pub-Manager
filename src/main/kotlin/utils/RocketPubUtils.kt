@@ -58,4 +58,4 @@ suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 suspend fun Kord.getVerifChannel() = getChannelOf<TextChannel>(VERIF_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 suspend fun Kord.getLogSanctionsChannel() = getChannelOf<TextChannel>(SANCTION_LOGS_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 suspend fun Kord.getVerifLogsChannel() = getChannelOf<TextChannel>(VERIF_LOGS_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
-suspend fun Kord.getRocketPubGuild() = getGuild(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+suspend fun Kord.getRocketPubGuild() = getGuildOrNull(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!

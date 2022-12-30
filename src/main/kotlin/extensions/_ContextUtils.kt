@@ -4,13 +4,15 @@ import com.kotlindiscord.kord.extensions.checks.channelType
 import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
+import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
+import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import debug
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.edit
@@ -42,9 +44,7 @@ suspend fun MemberBehavior?.isStaff() = this?.let {
 	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMemberOrNull()?.hasRole(STAFF_ROLE) == true
 } ?: false
 
-suspend fun Message.removeComponents() = edit {
-	components = mutableListOf()
-}
+suspend fun MessageBehavior.removeComponents() = edit { components = mutableListOf() }
 
 fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel: ChannelBehavior): List<String> {
 	val oldEmbed = sanctionMessage.embeds[0]
@@ -82,4 +82,5 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 
 suspend fun Message.addValidReaction() = addReaction(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 
-suspend fun PublicSlashCommandContext<*>.respond(reply: String) = respond { content = reply }
+suspend fun PublicInteractionContext.respond(reply: String) = respond { content = reply }
+suspend fun EphemeralInteractionContext.respond(reply: String) = respond { content = reply }

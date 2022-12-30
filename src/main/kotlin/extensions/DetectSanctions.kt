@@ -139,41 +139,30 @@ class AutoSanctions : Extension() {
 	}
 }
 
-fun UserBehavior.getNextMuteDuration(): Long {
-	val sanctions = getSanctions(id)
-	
-	return when {
-		sanctions.isEmpty() -> 0
-		else -> when (sanctions.size) {
-			1 -> 6.hours
-			in 2..4 -> 1.days
-			in 5..7 -> 5.days
-			in 8..10 -> 14.days
-			else -> 27.days
-		}.inWholeMilliseconds
-	}
-}
+fun UserBehavior.getNextMuteDuration() = when (getSanctions(id).size) {
+	0 -> 0.seconds
+	in 1..2 -> 6.hours
+	in 3..4 -> 1.days
+	in 5..6 -> 5.days
+	in 7..8 -> 14.days
+	else -> 27.days
+}.inWholeMilliseconds
 
-fun UserBehavior.getNextSanctionType(): SanctionType {
-	val sanctions = getSanctions(id)
+fun UserBehavior.getNextSanctionType() = when (getSanctions(id).size) {
+	0 -> SanctionType.LIGHT_WARN
 	
-	return when {
-		sanctions.isEmpty() -> SanctionType.LIGHT_WARN
-		else -> when (sanctions.size) {
-			in 1..4 -> when {
-				sanctions.any { it.type == SanctionType.MUTE } -> SanctionType.MUTE
-				sanctions.any { it.type == SanctionType.KICK } -> SanctionType.KICK
-				sanctions.any { it.type == SanctionType.BAN } -> SanctionType.BAN
-				else -> SanctionType.WARN
-			}
-			
-			in 5..10 -> when {
-				sanctions.any { it.type == SanctionType.MUTE } -> return SanctionType.KICK
-				sanctions.any { it.type == SanctionType.KICK } -> return SanctionType.BAN
-				else -> SanctionType.WARN
-			}
-			
-			else -> return SanctionType.BAN
-		}
+	in 1..4 -> when {
+		getSanctions(id).any { it.type == SanctionType.MUTE } -> SanctionType.MUTE
+		getSanctions(id).any { it.type == SanctionType.KICK } -> SanctionType.KICK
+		getSanctions(id).any { it.type == SanctionType.BAN } -> SanctionType.BAN
+		else -> SanctionType.WARN
 	}
+	
+	in 5..10 -> when {
+		getSanctions(id).any { it.type == SanctionType.MUTE } -> SanctionType.KICK
+		getSanctions(id).any { it.type == SanctionType.KICK } -> SanctionType.BAN
+		else -> SanctionType.WARN
+	}
+	
+	else -> SanctionType.BAN
 }

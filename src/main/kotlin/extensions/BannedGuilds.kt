@@ -128,25 +128,26 @@ class BannedGuilds : Extension() {
 					
 					if (bannedGuilds.isEmpty()) {
 						respond("Aucun serveur interdit pour le moment.")
-					} else {
-						respondingPaginator {
-							bannedGuilds.chunked(20).forEach {
-								page {
-									val list = it.map {
-										val date = it.bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
-										val result = "${it.name ?: it.id}${it.id?.run { "(`${this})`" } ?: ""} $date"
-										"$result - ${it.reason.cutFormatting(80 - result.length)}"
-									}
-									
-									completeEmbed(
-										client = this@publicSubCommand.kord,
-										title = "Liste des serveurs bannis",
-										description = list.joinToString("\n") + "\n\nFaites `/${this@publicSlashCommand.name} get <id>` pour avoir plus d'informations sur un serveur."
-									)
-								}
-							}
-						}.send()
+						return@action
 					}
+					
+					respondingPaginator {
+						bannedGuilds.chunked(20).forEach { bannedGuildListChunk ->
+							page {
+								val list = bannedGuildListChunk.map {
+									val date = it.bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
+									val result = "${it.name ?: it.id}${it.id?.run { "(`${this})`" } ?: ""} $date"
+									"$result - ${it.reason.cutFormatting(80 - result.length)}"
+								}
+								
+								completeEmbed(
+									client = this@publicSubCommand.kord,
+									title = "Liste des serveurs bannis",
+									description = list.joinToString("\n") + "\n\nFaites `/${this@publicSlashCommand.name} get <id>` pour avoir plus d'informations sur un serveur."
+								)
+							}
+						}
+					}.send()
 				}
 			}
 			
