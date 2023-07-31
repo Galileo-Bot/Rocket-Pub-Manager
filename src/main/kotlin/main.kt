@@ -9,7 +9,6 @@ import dev.kord.gateway.PrivilegedIntent
 import extensions.*
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
-import utils.ROCKET_PUB_GUILD_STAFF
 import utils.enquote
 import java.sql.Connection
 import java.util.*
@@ -58,8 +57,6 @@ suspend fun main() {
 
 	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
 		applicationCommands {
-			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
-
 			slashCommandCheck {
 				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
 				pass()
