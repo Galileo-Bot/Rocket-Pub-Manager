@@ -9,7 +9,7 @@ groovy = "3.0.14"
 kord-base = "0.10.0"
 kord-extensions = "1.5.8-SNAPSHOT"
 logging = "3.0.5"
-logback = "1.2.8"
+logback = "1.4.8"
 serialization = "1.5.1"
 
 [libraries]

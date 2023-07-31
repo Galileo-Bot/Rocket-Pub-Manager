@@ -1,0 +1,15 @@
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%gray([%date{yyyy/MM/dd HH:mm:ss.SSS}]) %highlight(%7.7([%.5level])) %yellow(%50.50logger{50}) - %message%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="io.ktor.util.random" level="ERROR"/>
+    <logger name="com.kotlindiscord.kord.extensions.i18n.ResourceBundleTranslations" level="ERROR"/>
+    <logger name="main" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
