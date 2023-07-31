@@ -10,7 +10,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import dev.kord.core.behavior.channel.TextChannelBehavior
-import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.edit
@@ -26,8 +25,6 @@ import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.runBlocking
 import storage.Sanction
 import storage.SanctionType
@@ -155,64 +152,44 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 	}
 
 	if (old != null) {
-		val channels = getChannelsFromSanctionMessage(old.sanctionMessage)
-		channels.add(message.channel.asChannelOf())
+		val messages = getMessagesFromSanctionMessage(old.sanctionMessage)
+		messages += message
 
-		when (channels.size) {
+		when (messages.size) {
 			1 -> return
 
 			in 5..9 -> {
 				sanction.type = SanctionType.MUTE
-				sanction.durationMS = channels.size.div(2).days.inWholeMilliseconds
+				sanction.durationMS = messages.size.div(2).days.inWholeMilliseconds
 			}
 
 			in 10..Int.MAX_VALUE -> {
 				sanction.type = SanctionType.MUTE
-				sanction.durationMS = channels.size.days.inWholeMilliseconds
+				sanction.durationMS = messages.size.days.inWholeMilliseconds
 				sanction.reason = "Publicité dans toutes les catégories."
 			}
 		}
 
 		sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
 			embed {
-				autoSanctionEmbed(message, sanction, channels.toList())
+				autoSanctionEmbed(message, sanction, messages.toList())
 			}
 		}
-	} else {
-		channelToSend.createMessage {
-			embed {
-				autoSanctionEmbed(message, sanction)
-			}
+		return
+	}
 
-			components {
-				addBinButtonDeleteSimilarAdsWithSanction()
-			}
-		}.also {
-			sanctionMessages.add(SanctionMessage(message.getAuthorAsMemberOrThrow(), it, sanction))
+	channelToSend.createMessage {
+		embed {
+			autoSanctionEmbed(message, sanction)
 		}
+
+		components {
+			addBinButtonDeleteSimilarAdsWithSanction()
+		}
+	}.also {
+		sanctionMessages.add(SanctionMessage(message.getAuthorAsMemberOrThrow(), it, sanction))
 	}
 }
 
-suspend fun deleteAllSimilarAdsWithSanction(message: Message) {
-	val channels = getChannelsFromSanctionMessage(message)
-	val embed = message.embeds[0]
-	val embedAuthor = embed.fields.find { it.name.endsWith("Par :") }?.value ?: return
-	val description = embed.description ?: return
-
-	channels.forEach { channel ->
-		val messagesBefore = channel.getMessagesBefore(channel.lastMessageId ?: return@forEach, 100)
-		val messages = messagesBefore.filter { findMessage ->
-			val reason = getReasonForMessage(findMessage) ?: return@filter false
-			val containsReason = description.endsWith(reason)
-			val author = findMessage.author?.fetchUserOrNull() ?: return@filter false
-
-			containsReason && author.id.toString() in embedAuthor
-		}.toCollection(mutableListOf())
-
-		channel.lastMessage?.fetchMessageOrNull()?.let(messages::add)
-
-		messages.forEach {
-			it.deleteIgnoringNotFound()
-		}
-	}
-}
+suspend fun deleteAllSimilarAdsWithSanction(message: Message) =
+	getMessagesFromSanctionMessage(message).forEach { it.deleteIgnoringNotFound() }

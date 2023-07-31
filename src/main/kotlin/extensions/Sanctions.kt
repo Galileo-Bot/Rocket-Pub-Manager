@@ -253,7 +253,7 @@ class Sanctions : Extension() {
 							page {
 								completeEmbed(
 									client = bot.getKoin().get(),
-									title = "Liste des sanctions ${arguments.type?.let { "du type **${it.translation}**" } ?: ""} appliquées à ${user.username} (${user.id}).",
+									title = "Liste des sanctions ${arguments.type?.let { "du type **${it.translation}** " } ?: ""}appliquées à ${user.username} (${user.id}).",
 									description = it.joinToString("\n\n") {
 										val appliedBy = it.appliedBy?.let { appliedById ->
 											val getUserTag = runBlocking {

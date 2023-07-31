@@ -27,10 +27,10 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
+import utils.asMention
 import utils.enquote
 import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
-import utils.toMention
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
@@ -123,7 +123,7 @@ data class Sanction(
 				users += listOf(member)
 			}
 
-			content = "||${member.toMention<UserBehavior>()}||"
+			content = "||${member.asMention<UserBehavior>()}||"
 		}
 
 		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")

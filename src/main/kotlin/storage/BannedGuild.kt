@@ -22,6 +22,7 @@ fun addBannedGuild(id: Snowflake, reason: String) = addBannedGuild(id.toString()
 fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
 	val state = connection.createStatement()
 	val dateTime = SimpleDateFormat(datePattern).format(Date.from(Instant.now())).enquote
+	//language=MySQL
 	state.executeUpdate(
 		"""
 		INSERT INTO banned_guilds

@@ -10,15 +10,15 @@ import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.ReactionEmoji
 
 fun <T> Snowflake(value: T) = when (value) {
-	is ChannelBehavior -> Snowflake.forChannel(value.mention)
-	is UserBehavior -> Snowflake.forUser(value.mention)
-	is RoleBehavior -> Snowflake.forRole(value.mention)
-	is ReactionEmoji -> Snowflake.forEmoji(value.mention)
+	is ChannelBehavior -> Snowflake.fromChannelMention(value.mention)
+	is UserBehavior -> Snowflake.fromUserMention(value.mention)
+	is RoleBehavior -> Snowflake.fromRoleMention(value.mention)
+	is ReactionEmoji -> Snowflake.fromEmojiMention(value.mention)
 	is GuildEmoji -> value.id
 	else -> Snowflake(value.toString())
 }
 
-inline fun <reified T : KordEntity> Snowflake.toMention() = when (T::class) {
+inline fun <reified T : KordEntity> Snowflake.asMention() = when (T::class) {
 	VoiceChannelBehavior::class -> "<#!$this>"
 	ChannelBehavior::class -> "<#$this>"
 	UserBehavior::class -> "<@$this>"
@@ -26,9 +26,11 @@ inline fun <reified T : KordEntity> Snowflake.toMention() = when (T::class) {
 	else -> toString()
 }
 
-fun Snowflake.Companion.forChannel(channel: String) = Snowflake(channel.remove("[<>#]"))
-fun Snowflake.Companion.forUser(user: String) = Snowflake(user.remove("[<>@!]"))
-fun Snowflake.Companion.forRole(role: String) = Snowflake(role.remove("[<>@&]"))
-fun Snowflake.Companion.forEmoji(emoji: String) = Snowflake(emoji.replace("<a?:.+?:(\\d+)>", "$1"))
+fun Snowflake.Companion.fromChannelMention(channel: String) = Snowflake(channel.remove("[<>#]"))
+fun Snowflake.Companion.fromUserMention(user: String) = Snowflake(user.remove("[<>@!]"))
+fun Snowflake.Companion.fromRoleMention(role: String) = Snowflake(role.remove("[<>@&]"))
+fun Snowflake.Companion.fromEmojiMention(emoji: String) = Snowflake(emoji.replace("<a?:.+?:(\\d+)>", "$1"))
+
+fun Snowflake.Companion.fromMessageLink(link: String) = Snowflake(link.split("/").dropLast(1).last()) to Snowflake(link.split("/").last())
 
 val Snowflake?.enquote get() = toString().enquote

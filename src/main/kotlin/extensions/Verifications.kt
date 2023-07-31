@@ -108,7 +108,7 @@ class Verifications : Extension() {
 				Verification.verifications.find {
 					it.adContent == event.message.content && it.author == event.message.author!!.id
 				}?.let {
-					it.addAdChannel(event.message)
+					it.addAdMessage(event.message)
 					return@action
 				}
 
@@ -120,15 +120,17 @@ class Verifications : Extension() {
 			check { adsCheck() }
 
 			action {
-				getReasonForMessage(event.message ?: return@action)?.let { reason ->
+				val eventMessage = event.message ?: return@action
+
+				getReasonForMessage(eventMessage)?.let { reason ->
 					sanctionMessages.find {
-						it.sanction.member == event.message!!.author!!.id && it.sanction.reason == reason
+						it.sanction.member == eventMessage.author!!.id && it.sanction.reason == reason
 					}?.let {
-						sanctionMessages.getFromValue(it).sanctionMessage = updateChannels(it.sanctionMessage, event.channel)
+						sanctionMessages.getFromValue(it).sanctionMessage = updateMessagesInEmbed(it.sanctionMessage, eventMessage)
 					}
 				}
 
-				Verification.verifications.findNotValidated(event.message ?: return@action)?.setDeletedChannel(event.channel.id)
+				Verification.verifications.findNotValidated(eventMessage)?.setDeletedMessage(event.channel.id)
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
 import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import debug
 import dev.kord.common.entity.ChannelType
@@ -14,7 +15,6 @@ import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
@@ -38,23 +38,25 @@ suspend fun MemberBehavior?.isStaff() = this?.let {
 
 suspend fun MessageBehavior.removeComponents() = edit { components = mutableListOf() }
 
-fun updateDeletedMessagesInChannelList(sanctionMessage: Message, vararg channel: ChannelBehavior): List<String> {
+fun updateDeletedMessagesInEmbed(sanctionMessage: Message, vararg messages: Message): List<String> {
 	val oldEmbed = sanctionMessage.embeds[0]
-	val channels = oldEmbed.fields.find { it.name.endsWith("Salons :") }!!.value.split(Regex("\n")).toMutableList()
-	val founds = channels.intersect(channel.map { it.mention }.toSet())
-	channels.removeAll(founds)
-	channels.addAll(founds.map { "$it _supprimé_" })
-	return channels
+	val oldMessages = oldEmbed.fields.find { it.name.endsWith("Messages :") }!!.value.split(Regex("\n")).toMutableList()
+	val founds = oldMessages.intersect(messages.map { it.getJumpUrl() }.toSet())
+
+	oldMessages.removeAll(founds)
+	oldMessages.addAll(founds.map { "$it _supprimé_" })
+
+	return oldMessages
 }
 
-suspend fun updateChannels(sanctionMessage: Message, vararg channel: ChannelBehavior) = sanctionMessage.edit {
+suspend fun updateMessagesInEmbed(sanctionMessage: Message, vararg messages: Message) = sanctionMessage.edit {
 	embed {
 		fromEmbed(sanctionMessage.embeds[0])
-		fields.removeIf { it.name.endsWith("Salons :") }
+		fields.removeIf { it.name.endsWith("Messages :") }
 
 		field {
-			name = "<:textuel:658085848092508220> Salons :"
-			value = updateDeletedMessagesInChannelList(sanctionMessage, *channel).joinToString("\n")
+			name = "<:textuel:658085848092508220> Messages :"
+			value = updateDeletedMessagesInEmbed(sanctionMessage, *messages).joinToString("\n")
 		}
 	}
 }
@@ -65,7 +67,7 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 			autoSanctionEmbed(message, sanction)
 			field {
 				name = "Sanctionnée par :"
-				value = sanction.member.toMention<UserBehavior>()
+				value = sanction.member.asMention<UserBehavior>()
 			}
 		}
 	}

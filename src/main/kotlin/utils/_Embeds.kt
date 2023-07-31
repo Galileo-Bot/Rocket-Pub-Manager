@@ -6,7 +6,6 @@ import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.Embed
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
@@ -26,7 +25,7 @@ import storage.Sanction
 suspend fun EmbedBuilder.autoSanctionEmbed(
 	message: Message,
 	sanction: Sanction,
-	channels: List<ChannelBehavior> = listOf(message.channel),
+	messages: List<Message> = listOf(message),
 ) {
 	completeEmbed(
 		message.kord,
@@ -46,8 +45,8 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 	}
 
 	field {
-		name = "<:textuel:658085848092508220> Salons :"
-		value = channels.joinToString("\n", transform = ChannelBehavior::mention)
+		name = "<:textuel:658085848092508220> Messages :"
+		value = messages.joinToString("\n", transform = Message::getJumpUrl)
 	}
 }
 

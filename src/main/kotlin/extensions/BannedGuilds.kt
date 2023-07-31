@@ -19,7 +19,14 @@ import utils.cutFormatting
 import utils.modifiedGuildEmbed
 
 
-fun isValidGuild(string: String) = string.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
+fun isValidGuildId(value: String) = value.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
+fun isValidInvitation(value: String) =
+	value.matches(
+		Regex(
+			"\\b(?:https?://)?(?:www\\.)?(?:discord\\.(?:gg|io|me|li)|discordapp\\.com/invite)/[a-zA-Z0-9]+(?:\\?[a-zA-Z0-9]+=[a-zA-Z0-9]+(&[a-zA-Z0-9]+=[a-zA-Z0-9]+)*)?\\b",
+			setOf(RegexOption.DOT_MATCHES_ALL)
+		)
+	)
 
 enum class ModifyGuildValues(val translation: String) : ChoiceEnum {
 	NAME("Nom"),
@@ -90,11 +97,20 @@ class BannedGuilds : Extension() {
 
 				action {
 					respond {
-						content = if (isValidGuild(arguments.guild)) {
-							addBannedGuild(arguments.guild, arguments.reason)
-							"Serveur `${arguments.guild}` ajouté à la liste des serveurs interdits !"
-						} else {
-							"Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
+						content = when {
+							isValidGuildId(arguments.guild) -> {
+								addBannedGuild(arguments.guild, arguments.reason)
+								"Serveur `${arguments.guild}` ajouté à la liste des serveurs interdits !"
+							}
+
+							isValidInvitation(arguments.guild) -> {
+								val invitation = this@publicSubCommand.kord.getInviteOrNull(arguments.guild)
+
+								addBannedGuild(arguments.guild, arguments.reason, invitation?.partialGuild?.id)
+								"Serveur `${arguments.guild}` ajouté à la liste des serveurs interdits !"
+							}
+
+							else -> "Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
 						}
 					}
 				}
@@ -130,16 +146,16 @@ class BannedGuilds : Extension() {
 					respondingPaginator {
 						bannedGuilds.chunked(20).forEach { bannedGuildListChunk ->
 							page {
-								val list = bannedGuildListChunk.map {
-									val date = it.bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
-									val result = "${it.name ?: it.id}${it.id?.run { "(`${this})`" } ?: ""} $date"
-									"$result - ${it.reason.cutFormatting(80 - result.length)}"
+								val list = bannedGuildListChunk.map { (name, id, reason, bannedSince) ->
+									val date = bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
+									val result = "${name ?: id} ${id?.run { "`($this)`" } ?: ""} $date"
+									"$result - ${reason.cutFormatting(100 - result.length)}"
 								}
 
 								completeEmbed(
 									client = this@publicSubCommand.kord,
 									title = "Liste des serveurs bannis",
-									description = list.joinToString("\n") + "\n\nFaites `/${this@publicSlashCommand.name} get <id>` pour avoir plus d'informations sur un serveur."
+									description = "${list.joinToString("\n")}\n\nFaites `/${this@publicSlashCommand.name} get <id ou nom>` pour avoir plus d'informations sur un serveur."
 								)
 							}
 						}
@@ -169,7 +185,7 @@ class BannedGuilds : Extension() {
 
 				action {
 					respond {
-						val validGuild = isValidGuild(arguments.guild)
+						val validGuild = isValidGuildId(arguments.guild)
 
 						content =
 							if (validGuild) "Serveur `${arguments.guild}` retiré de la liste des serveurs interdits !"

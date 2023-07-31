@@ -11,14 +11,15 @@ import storage.searchBannedGuild
 
 data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
 
-suspend fun getChannelsFromSanctionMessage(message: Message): MutableSet<TextChannel> {
+suspend fun getMessagesFromSanctionMessage(message: Message): MutableSet<Message> {
 	val embed = message.embeds[0]
-	val field = embed.fields.find { it.name.endsWith("Salons :") }
+	val field = embed.fields.find { it.name.endsWith("Messages :") }
 
 	return field?.value?.split("\n")?.mapNotNull {
-		val id = Snowflake.forChannel(it.substringBefore("_"))
-		message.kord.getChannelOf<TextChannel>(id)
-	}.orEmpty().toMutableSet()
+		Snowflake.fromMessageLink(it).let { (channelId, messageId) ->
+			message.kord.getChannelOf<TextChannel>(channelId)?.getMessage(messageId)
+		}
+	}.orEmpty().distinctBy { it.id }.toMutableSet()
 }
 
 suspend fun getReasonForMessage(message: Message): String? {

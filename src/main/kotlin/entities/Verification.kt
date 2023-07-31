@@ -31,6 +31,8 @@ data class VerificationMessage(
 	val channelId: Snowflake,
 	var deleted: Boolean = false,
 ) {
+	val jumpUrl get() = "https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id}"
+
 	suspend fun delete() {
 		val kord = bot.kord
 		val channel = kord.getChannelOf<TextChannel>(channelId) ?: return
@@ -38,35 +40,34 @@ data class VerificationMessage(
 	}
 
 	override fun toString(): String {
-		val jumpToMessage =
-			if (!deleted) "[Aller au message](https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id})" else ""
-		val deleted = if (deleted) "(supprimé)" else ""
-		return "${channelId.toMention<ChannelBehavior>()} $jumpToMessage $deleted"
+		val jumpToMessage = if (!deleted) jumpUrl else ""
+		val deleted = if (deleted) "${channelId.asMention<ChannelBehavior>()} (supprimé)" else ""
+		return "$jumpToMessage $deleted"
 	}
 }
 
 data class Verification(
 	val author: Snowflake,
 	val adContent: String,
-	val adChannels: MutableSet<VerificationMessage> = mutableSetOf(),
+	val adMessages: MutableSet<VerificationMessage> = mutableSetOf(),
 	var validatedBy: Snowflake? = null,
 ) {
 	lateinit var verificationMessage: Message
 	val isValidated get() = validatedBy != null
-	val channelsFormatted get() = adChannels.joinToString("\n") { it.toString() }
+	val messagesFormatted get() = adMessages.joinToString("\n") { it.toString() }
 
-	suspend fun addAdChannel(message: Message) {
-		if (adChannels.any { it.channelId == message.channelId }) return
+	suspend fun addAdMessage(message: Message) {
+		if (adMessages.any { it.channelId == message.channelId }) return
 
-		adChannels += VerificationMessage(message.id, message.channelId)
-		updateChannelsFieldInEmbed()
+		adMessages += VerificationMessage(message.id, message.channelId)
+		updateMessagesFieldInEmbed()
 	}
 
-	suspend fun deleteAllAds() = adChannels.forEach { it.delete() }
+	suspend fun deleteAllAds() = adMessages.forEach { it.delete() }
 
-	suspend fun setDeletedChannel(channelId: Snowflake) {
-		adChannels.find { it.channelId == channelId }?.deleted = true
-		updateChannelsFieldInEmbed()
+	suspend fun setDeletedMessage(channelId: Snowflake) {
+		adMessages.find { it.channelId == channelId }?.deleted = true
+		updateMessagesFieldInEmbed()
 	}
 
 	suspend fun validateBy(user: Snowflake) {
@@ -82,7 +83,7 @@ data class Verification(
 
 					field {
 						name = "<:moderator:933507900092072046> Validée par :"
-						value = "${user.toMention<UserBehavior>()} (${user})"
+						value = "${user.asMention<UserBehavior>()} (${user})"
 					}
 				}
 			}
@@ -92,12 +93,12 @@ data class Verification(
 		verificationMessage.delete()
 	}
 
-	suspend fun updateChannelsFieldInEmbed() {
+	suspend fun updateMessagesFieldInEmbed() {
 		verificationMessage.edit {
 			embed {
 				fromEmbed(verificationMessage.embeds[0])
 
-				fields.find { it.name.endsWith("Salons :") }?.value = channelsFormatted
+				fields.find { it.name.endsWith("Messages :") }?.value = messagesFormatted
 			}
 		}
 	}
@@ -141,8 +142,8 @@ data class Verification(
 			}
 
 			field {
-				name = "$CHANNELS_EMOJI Salons :"
-				value = channelsFormatted
+				name = "$CHANNELS_EMOJI Messages :"
+				value = messagesFormatted
 			}
 		}
 	}
@@ -155,7 +156,7 @@ data class Verification(
 			adContent = adMessage.content,
 		).apply {
 			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
-			adChannels += VerificationMessage(adMessage.id, adMessage.channel.id)
+			adMessages += VerificationMessage(adMessage.id, adMessage.channel.id)
 
 			val verificationMessage = verificationChannel.createMessage {
 				generateEmbed(adMessage)

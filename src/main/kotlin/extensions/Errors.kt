@@ -1,9 +1,11 @@
 package extensions
 
+import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import dev.kord.core.behavior.UserBehavior
-import utils.toMention
+import utils.STAFF_ROLE
+import utils.asMention
 
 class Errors : Extension() {
 	override val name = "errors"
@@ -13,10 +15,14 @@ class Errors : Extension() {
 			name = "test"
 			description = "tamer"
 
-			action {
-				respond(user.id.toMention<UserBehavior>())
+			check {
+				hasRole(STAFF_ROLE)
+			}
 
-				throw IllegalStateException("test")
+			action {
+				respond(user.id.asMention<UserBehavior>())
+
+				throw IllegalStateException("test made by ${user.asUser().username}")
 			}
 		}
 	}
