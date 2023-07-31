@@ -35,16 +35,16 @@ fun getAllBannedGuilds(): List<BannedGuild> {
 	val list = mutableListOf<BannedGuild>()
 	val state = connection.createStatement()
 	val result = state.executeQuery("SELECT * FROM banned_guilds")
-	
+
 	while (result.next()) {
 		val name = result.getString("name")
 		val id = result.getString("id")
 		val reason = result.getString("reason")
 		val bannedSince = result.getString("bannedSince")
-		
+
 		list += BannedGuild(name, id, reason, SimpleDateFormat(datePattern).parse(bannedSince))
 	}
-	
+
 	return list
 }
 
@@ -67,9 +67,9 @@ fun searchBannedGuild(name: String): BannedGuild? {
 		${whereNameOrId(name)}
 	""".trimIndent()
 	)
-	
+
 	result.next()
-	
+
 	return runCatching {
 		BannedGuild(
 			result.getNString("name"),

@@ -16,19 +16,19 @@ import utils.isAdChannel
 
 class EndMessage : Extension() {
 	override val name = "End-Message"
-	
+
 	override suspend fun setup() {
 		event<MessageCreateEvent> {
 			check {
 				inGuild(ROCKET_PUB_GUILD)
 				isAdChannel()
 				isNotBot()
-				
+
 				if (!passed) return@check
-				
+
 				failIf { !endMessageAutomatic }
 			}
-			
+
 			action {
 				val channel = event.message.channel
 				channel.messages.filter {
@@ -36,7 +36,7 @@ class EndMessage : Extension() {
 				}.collect {
 					it.deleteIgnoringNotFound()
 				}
-				
+
 				channel.createEmbed {
 					endAdChannelEmbed(kord, channel.fetchChannel().asChannelOf())
 				}

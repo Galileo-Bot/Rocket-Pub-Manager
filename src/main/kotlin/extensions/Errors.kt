@@ -7,15 +7,15 @@ import utils.toMention
 
 class Errors : Extension() {
 	override val name = "errors"
-	
+
 	override suspend fun setup() {
 		ephemeralSlashCommand {
 			name = "test"
 			description = "tamer"
-			
+
 			action {
 				respond(user.id.toMention<UserBehavior>())
-				
+
 				throw IllegalStateException("test")
 			}
 		}

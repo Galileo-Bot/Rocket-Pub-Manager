@@ -12,11 +12,7 @@ import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import kotlinx.datetime.toKotlinInstant
-import storage.addBannedGuild
-import storage.getAllBannedGuilds
-import storage.modifyGuildValue
-import storage.removeBannedGuild
-import storage.searchBannedGuild
+import storage.*
 import utils.bannedGuildEmbed
 import utils.completeEmbed
 import utils.cutFormatting
@@ -29,13 +25,13 @@ enum class ModifyGuildValues(val translation: String) : ChoiceEnum {
 	NAME("Nom"),
 	ID("ID"),
 	REASON("Raison");
-	
+
 	override val readableName = translation
 }
 
 class BannedGuilds : Extension() {
 	override val name = "Banned-Guilds"
-	
+
 	class AddBannedGuildArguments : Arguments() {
 		/**
 		 * Could be name or Snowflake.
@@ -44,54 +40,54 @@ class BannedGuilds : Extension() {
 			name = "serveur"
 			description = "Le serveur à bannir."
 		}
-		
+
 		val reason by string {
 			name = "raison"
 			description = "La raison de pourquoi ce serveur est à bannir."
 		}
 	}
-	
+
 	class GetBannedGuildArguments : Arguments() {
 		val guild by string {
 			name = "serveur"
 			description = "Le serveur à récupérer."
 		}
 	}
-	
+
 	class RemoveBannedGuildArguments : Arguments() {
 		val guild by string {
 			name = "serveur"
 			description = "Le serveur à débannir."
 		}
 	}
-	
+
 	class ModifyBannedGuildArguments : Arguments() {
 		val guild by string {
 			name = "serveur"
 			description = "Le serveur à modifier."
 		}
-		
+
 		val value by enumChoice<ModifyGuildValues> {
 			name = "propriété"
 			description = "La propriété à modifier."
 			typeName = "Nom/Id/Raison"
 		}
-		
+
 		val newValue by string {
 			name = "valeur"
 			description = "La nouvelle valeur à utiliser."
 		}
 	}
-	
+
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = "serveurs"
 			description = "Permet de gérer les serveurs interdits."
-			
+
 			publicSubCommand(::AddBannedGuildArguments) {
 				name = "add"
 				description = "Ajoute un serveur à la liste des serveurs interdits."
-				
+
 				action {
 					respond {
 						content = if (isValidGuild(arguments.guild)) {
@@ -103,11 +99,11 @@ class BannedGuilds : Extension() {
 					}
 				}
 			}
-			
+
 			publicSubCommand(::GetBannedGuildArguments) {
 				name = "get"
 				description = "Permet d'avoir des informations sur un serveur interdit."
-				
+
 				action {
 					respond {
 						searchBannedGuild(arguments.guild)?.let {
@@ -118,19 +114,19 @@ class BannedGuilds : Extension() {
 					}
 				}
 			}
-			
+
 			publicSubCommand {
 				name = "list"
 				description = "Permet d'avoir la liste des serveurs interdits."
-				
+
 				action {
 					val bannedGuilds = getAllBannedGuilds()
-					
+
 					if (bannedGuilds.isEmpty()) {
 						respond("Aucun serveur interdit pour le moment.")
 						return@action
 					}
-					
+
 					respondingPaginator {
 						bannedGuilds.chunked(20).forEach { bannedGuildListChunk ->
 							page {
@@ -139,7 +135,7 @@ class BannedGuilds : Extension() {
 									val result = "${it.name ?: it.id}${it.id?.run { "(`${this})`" } ?: ""} $date"
 									"$result - ${it.reason.cutFormatting(80 - result.length)}"
 								}
-								
+
 								completeEmbed(
 									client = this@publicSubCommand.kord,
 									title = "Liste des serveurs bannis",
@@ -150,35 +146,35 @@ class BannedGuilds : Extension() {
 					}.send()
 				}
 			}
-			
+
 			publicSubCommand(::ModifyBannedGuildArguments) {
 				name = "modifier"
 				description = "Permet de modifier un serveur interdit."
-				
+
 				action {
 					respond {
 						val bannedGuildFound = searchBannedGuild(arguments.guild)?.let {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
 							modifiedGuildEmbed(bot.getKoin().get(), it, arguments.value, it[arguments.value], arguments.newValue)
 						}
-						
+
 						bannedGuildFound ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also { content = it }
 					}
 				}
 			}
-			
+
 			publicSubCommand(::RemoveBannedGuildArguments) {
 				name = "remove"
 				description = "Retire un serveur de la liste des serveurs interdits."
-				
+
 				action {
 					respond {
 						val validGuild = isValidGuild(arguments.guild)
-						
+
 						content =
 							if (validGuild) "Serveur `${arguments.guild}` retiré de la liste des serveurs interdits !"
 							else "Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
-						
+
 						if (validGuild) removeBannedGuild(arguments.guild)
 					}
 				}

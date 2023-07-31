@@ -49,7 +49,7 @@ enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum
 	MUTE("Exclusion (mute)", "<:mute:933505777354834021>"),
 	WARN("Avertissement", "⚠️"),
 	LIGHT_WARN("Avertissement léger", "❕");
-	
+
 	override val readableName = translation
 }
 
@@ -66,16 +66,16 @@ data class Sanction(
 	constructor(type: SanctionType, reason: String? = null, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long = 0) : this(
 		type, reason ?: DEFAULT_REASON, member, appliedBy = appliedBy, durationMS = durationMS
 	)
-	
+
 	val duration
 		get() = durationMS.toDuration(DurationUnit.MILLISECONDS)
-	
+
 	fun toDiscordTimestamp(type: TimestampType) = type.format(durationMS)
-	
+
 	val isActive get() = durationMS > 0 && activeUntil > Clock.System.now()
-	
+
 	val activeUntil get() = Clock.System.now() + duration
-	
+
 	val formattedDuration: String
 		get() = when {
 			duration.toDouble(DurationUnit.MILLISECONDS) == 0.0 -> ""
@@ -83,69 +83,70 @@ data class Sanction(
 			duration.toDouble(DurationUnit.HOURS) < 1 -> " ${duration.toDouble(DurationUnit.MINUTES).roundToInt()}m"
 			else -> " ${duration.toDouble(DurationUnit.HOURS).roundToInt()}h"
 		}
-	
+
 	fun equalExceptOwner(other: Sanction) =
 		type == other.type &&
 			reason == other.reason &&
 			member == other.member &&
 			abs(durationMS - other.durationMS) < 10_000
-	
+
 	suspend fun applyToMember(member: MemberBehavior, banDeleteDays: Int? = null) {
-		val user = member.fetchMemberOrNull() ?: throw DiscordRelayedException("La sanction ne peut être appliquée car le membre n'a pas été trouvé.")
+		val user = member.fetchMemberOrNull()
+			?: throw DiscordRelayedException("La sanction ne peut être appliquée car le membre n'a pas été trouvé.")
 		if (user.guild.selfMember().fetchMemberOrNull()?.canInteract(user) != true) {
 			throw DiscordRelayedException("La sanction ne peut être appliquée car le bot n'a pas les permissions suffisantes.")
 		}
-		
+
 		when (type) {
 			SanctionType.BAN -> member.ban {
 				reason = this@Sanction.reason
 				deleteMessageDuration = banDeleteDays?.days
 			}
-			
+
 			SanctionType.KICK -> member.kick(reason)
 			SanctionType.MUTE -> member.edit {
 				timeoutUntil = Clock.System.now() + duration
 				reason = this@Sanction.reason
 			}
-			
+
 			else -> return
 		}
 	}
-	
+
 	suspend fun sendLog(kord: Kord) {
 		kord.getLogSanctionsChannel().createMessage {
 			embed {
 				sanctionEmbed(kord, this@Sanction)
 			}
-			
+
 			allowedMentions {
 				users += listOf(member)
 			}
-			
+
 			content = "||${member.toMention<UserBehavior>()}||"
 		}
-		
+
 		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")
 	}
-	
+
 	suspend fun PublicSlashCommandContext<*, *>.sendLog() = sendLog(this@sendLog.channel.kord)
 	suspend fun EventHandler<*>.sendLog() = sendLog(kord)
-	
+
 	suspend fun PublicInteractionContext.replyWithSanctionEmbed() {
 		respond {
 			sanctionEmbed(interactionResponse.kord, this@Sanction)
 		}
 	}
-	
+
 	suspend fun EphemeralInteractionContext.replyWithSanctionEmbed() {
 		respond {
 			sanctionEmbed(interactionResponse.kord, this@Sanction)
 		}
 	}
-	
+
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
 	fun toString(prefix: String) = "$prefix${type.name.lowercase()} <@$member> $reason$formattedDuration"
-	
+
 	companion object {
 		const val DEFAULT_REASON = "Pas de raison définie."
 	}
@@ -161,7 +162,7 @@ fun containsSanction(id: Int) = connection.createStatement().executeQuery(
 fun getSanction(id: Int): Sanction? {
 	val query = "SELECT * FROM sanctions WHERE id = $id"
 	val result = connection.createStatement().executeQuery(query)
-	
+
 	return result.takeIf { it.next() }?.let {
 		val type = SanctionType.valueOf(it.getString("type"))
 		val reason = it.getString("reason")
@@ -203,14 +204,14 @@ fun getSanctionCount(): List<Snowflake> {
 		SELECT appliedByID FROM sanctions ORDER BY ID
 		""".trimIndent()
 	)
-	
+
 	while (result.next()) {
 		runCatching {
 			val appliedBy = result.getNString("appliedByID")
 			sanctions += appliedBy?.let { Snowflake(it) }
 		}
 	}
-	
+
 	return sanctions.filterNotNull()
 }
 

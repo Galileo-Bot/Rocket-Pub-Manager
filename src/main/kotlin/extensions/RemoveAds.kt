@@ -15,14 +15,14 @@ import utils.isAdChannel
 
 class RemoveAds : Extension() {
 	override val name: String = "Remove-Ads"
-	
+
 	override suspend fun setup() {
 		event<MemberLeaveEvent> {
 			check {
 				isNotBot()
 				inGuild(ROCKET_PUB_GUILD)
 			}
-			
+
 			action {
 				event.guild.channels.getTextChannels().filter(TextChannel::isAdChannel).collect { channel ->
 					channel.messages.filter {

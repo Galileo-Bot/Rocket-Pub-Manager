@@ -1,26 +1,25 @@
 [versions]
-kotlin = "1.8.0"
+kotlin = "1.9.0"
 shadow = "7.1.2"
 
-connector = "8.0.31"
+connector = "8.1.0"
 datetime = "0.4.0"
-dotenv = "6.4.0"
+dotenv = "6.4.1"
 groovy = "3.0.14"
-kord-base = "0.8.x-SNAPSHOT"
-kord-extensions = "1.5.6-SNAPSHOT"
-logging = "2.1.23"
+kord-base = "0.10.0"
+kord-extensions = "1.5.8-SNAPSHOT"
+logging = "3.0.5"
 logback = "1.2.8"
-serialization = "1.4.1"
+serialization = "1.5.1"
 
 [libraries]
-connector = { module = "mysql:mysql-connector-java", version.ref = "connector" }
+connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
 datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
 kord-base = { module = "dev.kord:kord-core", version.ref = "kord-base" }
 kord-extensions = { module = "com.kotlindiscord.kord.extensions:kord-extensions", version.ref = "kord-extensions" }
 kord-unsafe = { module = "com.kotlindiscord.kord.extensions:unsafe", version.ref = "kord-extensions" }
-kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "logging" }
 serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }

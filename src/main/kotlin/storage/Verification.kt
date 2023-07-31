@@ -9,7 +9,7 @@ import java.util.*
 
 fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake? = null) {
 	val state = connection.createStatement()
-	
+
 	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
 	state.executeUpdate(
 		"""
@@ -32,7 +32,7 @@ fun searchVerificationMessage(messageID: Snowflake): String? {
 		""".trimIndent()
 	)
 	result.next()
-	
+
 	return runCatching { result.getNString("messageID") }.getOrNull()
 }
 
@@ -44,13 +44,13 @@ fun getVerificationCount(): List<Snowflake> {
 		SELECT staffID FROM verifications
 		""".trimIndent()
 	)
-	
+
 	while (result.next()) {
 		runCatching {
 			val appliedBy = result.getNString("staffID")
 			verifications += appliedBy?.let { Snowflake(it) }
 		}
 	}
-	
+
 	return verifications.filterNotNull()
 }

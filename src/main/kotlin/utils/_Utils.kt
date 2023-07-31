@@ -31,16 +31,16 @@ val String?.enquote get() = this?.let { "'${replace("'", "''")}'" }
 @Suppress("unused")
 fun Any?.prettyPrint(): String {
 	if (this == null) return "null"
-	
+
 	var indentLevel = 0
 	val indentWidth = 4
-	
+
 	fun padding() = "".padStart(indentLevel * indentWidth)
-	
+
 	val toString = toString()
-	
+
 	val stringBuilder = StringBuilder(toString.length)
-	
+
 	var i = 0
 	while (i < toString.length) {
 		when (val char = toString[i]) {
@@ -48,24 +48,24 @@ fun Any?.prettyPrint(): String {
 				indentLevel++
 				stringBuilder.appendLine(char).append(padding())
 			}
-			
+
 			')', ']', '}' -> {
 				indentLevel--
 				stringBuilder.appendLine().append(padding()).append(char)
 			}
-			
+
 			',' -> {
 				stringBuilder.appendLine(char).append(padding())
 				val nextChar = toString.getOrElse(i + 1) { char }
 				if (nextChar == ' ') i++
 			}
-			
+
 			else -> {
 				stringBuilder.append(char)
 			}
 		}
 		i++
 	}
-	
+
 	return stringBuilder.toString()
 }

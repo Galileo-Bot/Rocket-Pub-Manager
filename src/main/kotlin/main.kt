@@ -6,16 +6,7 @@ import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
-import extensions.AutoSanctions
-import extensions.BannedGuilds
-import extensions.CheckAds
-import extensions.EndMessage
-import extensions.Errors
-import extensions.ModifySanctions
-import extensions.RemoveAds
-import extensions.Sanctions
-import extensions.UserContextSanctions
-import extensions.Verifications
+import extensions.*
 import io.github.cdimascio.dotenv.dotenv
 import mu.KotlinLogging
 import utils.ROCKET_PUB_GUILD_STAFF
@@ -55,7 +46,7 @@ val connection: Connection
 				oldConnection = dataSource.connection
 			}
 		}
-		
+
 		return oldConnection!!
 	}
 
@@ -64,27 +55,27 @@ val ExtensibleBot.kord get() = getKoin().get<Kord>()
 @PrivilegedIntent
 suspend fun main() {
 	TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
-	
+
 	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
 		applicationCommands {
 			if (debug) defaultGuild = ROCKET_PUB_GUILD_STAFF
-			
+
 			slashCommandCheck {
 				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
 				pass()
 			}
-			
+
 			syncPermissions = false
 		}
-		
+
 		chatCommands {
 			enabled = true
 			defaultPrefix = configuration["AYFRI_ROCKETMANAGER_PREFIX"]
 		}
-		
+
 		extensions {
 			sentry { enable = false }
-			
+
 			add(::AutoSanctions)
 			add(::BannedGuilds)
 			add(::CheckAds)
@@ -96,23 +87,23 @@ suspend fun main() {
 			add(::UserContextSanctions)
 			add(::Verifications)
 		}
-		
+
 		hooks {
 			extensionAdded {
 				if (debug) logger.info("Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events")
 			}
 		}
-		
+
 		i18n { defaultLocale = Locale.FRENCH }
-		
+
 		intents { +Intents.all }
-		
+
 		presence {
 			status = PresenceStatus.Idle
 			listening(" les membres.")
 		}
 	}
-	
+
 	if (debug) logger.debug("Debug mode is enabled.")
 	bot.start()
 }

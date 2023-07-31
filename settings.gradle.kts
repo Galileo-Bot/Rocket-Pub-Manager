@@ -1,7 +1,4 @@
-
 rootProject.name = "Rocket-Manager"
-
-enableFeaturePreview("VERSION_CATALOGS")
 
 dependencyResolutionManagement {
 	versionCatalogs {

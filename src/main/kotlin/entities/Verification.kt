@@ -14,22 +14,13 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kord
 import storage.saveVerification
-import utils.ROCKET_PUB_GUILD
-import utils.VALID_EMOJI
-import utils.VERIF_CHANNEL
-import utils.completeEmbed
-import utils.findInviteCode
-import utils.findInviteLink
-import utils.fromEmbed
-import utils.getInvite
-import utils.getRocketPubGuild
-import utils.getVerifLogsChannel
-import utils.toMention
+import utils.*
 
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
 const val VALIDATE_VERIF_BUTTON_ID = "validate-verif"
@@ -45,9 +36,10 @@ data class VerificationMessage(
 		val channel = kord.getChannelOf<TextChannel>(channelId) ?: return
 		channel.getMessageOrNull(id)?.deleteIgnoringNotFound()
 	}
-	
+
 	override fun toString(): String {
-		val jumpToMessage = if (!deleted) "[Aller au message](https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id})" else ""
+		val jumpToMessage =
+			if (!deleted) "[Aller au message](https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id})" else ""
 		val deleted = if (deleted) "(supprimé)" else ""
 		return "${channelId.toMention<ChannelBehavior>()} $jumpToMessage $deleted"
 	}
@@ -62,57 +54,57 @@ data class Verification(
 	lateinit var verificationMessage: Message
 	val isValidated get() = validatedBy != null
 	val channelsFormatted get() = adChannels.joinToString("\n") { it.toString() }
-	
+
 	suspend fun addAdChannel(message: Message) {
 		if (adChannels.any { it.channelId == message.channelId }) return
-		
+
 		adChannels += VerificationMessage(message.id, message.channelId)
 		updateChannelsFieldInEmbed()
 	}
-	
+
 	suspend fun deleteAllAds() = adChannels.forEach { it.delete() }
-	
+
 	suspend fun setDeletedChannel(channelId: Snowflake) {
 		adChannels.find { it.channelId == channelId }?.deleted = true
 		updateChannelsFieldInEmbed()
 	}
-	
+
 	suspend fun validateBy(user: Snowflake) {
 		validatedBy = user
-		
+
 		val verificationMessageId = verificationMessage.id
 		verificationMessage.kord.getVerifLogsChannel().let {
 			it.createMessage {
 				embed {
 					fromEmbed(verificationMessage.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
-					
+
 					title = "✅ Publicité validée"
-					
+
 					field {
 						name = "<:moderator:933507900092072046> Validée par :"
 						value = "${user.toMention<UserBehavior>()} (${user})"
 					}
 				}
 			}
-			
+
 			saveVerification(user, verificationMessageId)
 		}
 		verificationMessage.delete()
 	}
-	
+
 	suspend fun updateChannelsFieldInEmbed() {
 		verificationMessage.edit {
 			embed {
 				fromEmbed(verificationMessage.embeds[0])
-				
+
 				fields.find { it.name.endsWith("Salons :") }?.value = channelsFormatted
 			}
 		}
 	}
-	
+
 	suspend fun MessageCreateBuilder.generateEmbed(adMessage: Message) {
-		val authorUser = adMessage.getAuthorAsMember()!!
-		
+		val authorUser = adMessage.getAuthorAsMemberOrThrow()
+
 		var invite: Invite? = null
 		val link = findInviteCode(adContent)
 		link?.let {
@@ -120,18 +112,18 @@ data class Verification(
 				invite = getInvite(bot.kord, it.substringAfterLast("/"))
 			}
 		}
-		
+
 		completeEmbed(bot.kord, "Nouvelle publicité à valider.", adContent) {
 			author {
-				name = "${authorUser.tag} | ${authorUser.displayName}"
-				icon = (authorUser.avatar ?: authorUser.defaultAvatar).url
+				name = "${authorUser.username} | ${authorUser.effectiveName}"
+				icon = (authorUser.avatar ?: authorUser.defaultAvatar).cdnUrl.toUrl { size = Image.Size.Size512 }
 			}
-			
+
 			field {
 				name = "<:user:933508955722899477> Auteur :"
 				value = "${authorUser.mention} (${authorUser.id})"
 			}
-			
+
 			if (link != null) {
 				field {
 					if (invite != null) {
@@ -147,45 +139,45 @@ data class Verification(
 					}
 				}
 			}
-			
+
 			field {
 				name = "$CHANNELS_EMOJI Salons :"
 				value = channelsFormatted
 			}
 		}
 	}
-	
+
 	companion object {
 		val verifications = ArrayDeque<Verification>(100)
-		
+
 		suspend fun create(adMessage: Message) = Verification(
 			author = adMessage.author!!.id,
 			adContent = adMessage.content,
 		).apply {
 			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
 			adChannels += VerificationMessage(adMessage.id, adMessage.channel.id)
-			
+
 			val verificationMessage = verificationChannel.createMessage {
 				generateEmbed(adMessage)
-				
+
 				components {
 					publicButton {
 						emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 						style = ButtonStyle.Success
 						label = "Valider"
-						
+
 						action {
 							verifications.find {
 								it.verificationMessage.id == event.interaction.message.id
 							}?.validateBy(event.interaction.user.id)
 						}
 					}
-					
+
 					publicButton {
 						emoji("\uD83D\uDDD1")
 						style = ButtonStyle.Danger
 						label = "Supprimer"
-						
+
 						action {
 							verifications.find {
 								it.verificationMessage.id == message.id
@@ -194,7 +186,7 @@ data class Verification(
 					}
 				}
 			}
-			
+
 			this.verificationMessage = verificationMessage
 			verifications += this
 		}
