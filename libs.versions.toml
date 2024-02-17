@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.9.0"
+kotlin = "1.9.22"
 shadow = "7.1.2"
 
 connector = "8.1.0"
