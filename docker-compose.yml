@@ -14,11 +14,6 @@ services:
     db:
         image: mysql:8.0
         restart: unless-stopped
-        environment:
-            - MYSQL_DATABASE=rocket_manager
-            - MYSQL_USER=rocket
-            - MYSQL_PASSWORD=rocket_password
-            - MYSQL_ROOT_PASSWORD=root_password
         volumes:
             - mysql_data:/var/lib/mysql
             - ./dump.sql:/docker-entrypoint-initdb.d/init.sql

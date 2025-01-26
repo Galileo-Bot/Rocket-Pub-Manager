@@ -1,5 +1,6 @@
 package extensions
 
+import com.kotlindiscord.kord.extensions.annotations.AlwaysPublicResponse
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
@@ -9,8 +10,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
-import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import kotlinx.datetime.toKotlinInstant
 import storage.*
 import utils.bannedGuildEmbed
@@ -19,7 +18,9 @@ import utils.cutFormatting
 import utils.modifiedGuildEmbed
 
 
-fun isValidGuildId(value: String) = value.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
+fun isValidGuildId(value: String) =
+	value.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
+
 fun isValidInvitation(value: String) =
 	value.matches(
 		Regex(
@@ -86,6 +87,7 @@ class BannedGuilds : Extension() {
 		}
 	}
 
+	@OptIn(AlwaysPublicResponse::class)
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = "serveurs"
@@ -147,7 +149,8 @@ class BannedGuilds : Extension() {
 						bannedGuilds.chunked(20).forEach { bannedGuildListChunk ->
 							page {
 								val list = bannedGuildListChunk.map { (name, id, reason, bannedSince) ->
-									val date = bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
+									val date =
+										bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
 									val result = "${name ?: id} ${id?.run { "`($this)`" } ?: ""} $date"
 									"$result - ${reason.cutFormatting(100 - result.length)}"
 								}
@@ -171,10 +174,18 @@ class BannedGuilds : Extension() {
 					respond {
 						val bannedGuildFound = searchBannedGuild(arguments.guild)?.let {
 							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
-							modifiedGuildEmbed(bot.getKoin().get(), it, arguments.value, it[arguments.value], arguments.newValue)
+							modifiedGuildEmbed(
+								bot.getKoin().get(),
+								it,
+								arguments.value,
+								it[arguments.value],
+								arguments.newValue
+							)
 						}
 
-						bannedGuildFound ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also { content = it }
+						bannedGuildFound ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also {
+							content = it
+						}
 					}
 				}
 			}

@@ -22,7 +22,6 @@ import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.suggestString
 import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
 import kotlinx.coroutines.runBlocking
 import storage.*
@@ -468,10 +467,9 @@ class Sanctions : Extension() {
 			action {
 				guild?.getBanOrNull(arguments.user.id)?.let {
 					respond {
-						fun EmbedBuilder.() {
-							unBanEmbed(kord, arguments.user, user)
+						embed {
+							unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
 						}
- embed(block)
 					}
 				}
 
@@ -491,9 +489,9 @@ class Sanctions : Extension() {
 
 				arguments.member.timeoutUntil?.let {
 					respond {
-						embed(fun EmbedBuilder.() {
- unMuteEmbed(kord, arguments.member, user)
-})
+						embed {
+							unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
+						}
 					}
 
 					arguments.member.edit {
