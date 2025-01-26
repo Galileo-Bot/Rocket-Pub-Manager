@@ -16,21 +16,24 @@ import java.util.*
 
 
 val logger = KotlinLogging.logger("main")
-val configuration = dotenv()
+val configuration = dotenv {
+	ignoreIfMissing = true
+	systemProperties = true
+}
 
-val debug get() = configuration["AYFRI_ROCKETMANAGER_ENVIRONMENT"] == "development"
-val adsAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS"].toBooleanStrict()
-val endMessageAutomatic get() = configuration["AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE"].toBooleanStrict()
+val debug get() = System.getenv("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
+val adsAutomatic get() = System.getenv("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
+val endMessageAutomatic get() = System.getenv("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE").toBooleanStrict()
 
 lateinit var bot: ExtensibleBot
 
 val dataSource = MysqlConnectionPoolDataSource().apply {
-	serverName = configuration["AYFRI_ROCKETMANAGER_DB_IP"]
-	port = configuration["AYFRI_ROCKETMANAGER_DB_PORT"].toInt()
-	databaseName = configuration["AYFRI_ROCKETMANAGER_DB_NAME"]
-	password = configuration["AYFRI_ROCKETMANAGER_DB_MDP"]
+	serverName = System.getenv("AYFRI_ROCKETMANAGER_DB_IP")
+	port = System.getenv("AYFRI_ROCKETMANAGER_DB_PORT").toInt()
+	databaseName = System.getenv("AYFRI_ROCKETMANAGER_DB_NAME")
+	password = System.getenv("AYFRI_ROCKETMANAGER_DB_MDP")
 	allowMultiQueries = true
-	user = configuration["AYFRI_ROCKETMANAGER_DB_USER"]
+	user = System.getenv("AYFRI_ROCKETMANAGER_DB_USER")
 }.also { logger.debug("Database connection initialized") }
 
 private var oldConnection: Connection? = null
@@ -56,7 +59,7 @@ val ExtensibleBot.kord get() = getKoin().get<Kord>()
 suspend fun main() {
 	TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
 
-	bot = ExtensibleBot(configuration["AYFRI_ROCKETMANAGER_TOKEN"]) {
+	bot = ExtensibleBot(System.getenv("AYFRI_ROCKETMANAGER_TOKEN")) {
 		applicationCommands {
 			slashCommandCheck {
 				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
@@ -66,7 +69,7 @@ suspend fun main() {
 
 		chatCommands {
 			enabled = true
-			defaultPrefix = configuration["AYFRI_ROCKETMANAGER_PREFIX"]
+			defaultPrefix = System.getenv("AYFRI_ROCKETMANAGER_PREFIX")
 		}
 
 		extensions {

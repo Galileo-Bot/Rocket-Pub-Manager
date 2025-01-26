@@ -1,7 +1,6 @@
 package utils
 
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
-import configuration
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
@@ -29,7 +28,7 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 	completeEmbed(
 		message.kord,
 		sanction.reason,
-		sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"])
+		sanction.toString(System.getenv("AYFRI_ROCKETMANAGER_PREFIX"))
 	)
 
 	url = message.getJumpUrl()

@@ -9,7 +9,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import configuration
 import debug
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
@@ -85,7 +84,7 @@ class Verifications : Extension() {
 
 			action {
 				sanctionMessages.find {
-					it.sanction.toString(configuration["AYFRI_ROCKETMANAGER_PREFIX"]).asSafeUsersMentions == event.message.content.asSafeUsersMentions
+					it.sanction.toString(System.getenv("AYFRI_ROCKETMANAGER_PREFIX")).asSafeUsersMentions == event.message.content.asSafeUsersMentions
 				}?.let {
 					sanctionMessages.remove(it)
 					val message = it.sanctionMessage.fetchMessageOrNull() ?: return@let
