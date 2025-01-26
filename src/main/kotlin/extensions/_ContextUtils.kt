@@ -6,7 +6,6 @@ import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
 import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import debug
@@ -34,7 +33,7 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 suspend fun MemberBehavior?.isStaff() = this?.let {
 	if (debug && it.asMemberOrNull()?.hasPermission(Permission.Administrator) == true) return@isStaff true
 	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMemberOrNull()?.hasRole(STAFF_ROLE) == true
-} ?: false
+} == true
 
 suspend fun MessageBehavior.removeComponents() = edit { components = mutableListOf() }
 

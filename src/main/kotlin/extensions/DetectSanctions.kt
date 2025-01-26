@@ -46,7 +46,8 @@ class AutoSanctions : Extension() {
 				}.firstOrNull {
 					it.id.timeMark.elapsedNow() < 10.seconds
 				}?.let { entry ->
-					sanctionedBy = event.guild.getMemberOrNull(entry.userId)
+					if (entry.userId == null) return@let
+					sanctionedBy = event.guild.getMemberOrNull(entry.userId!!)
 				}
 
 				val user = event.user
@@ -75,7 +76,8 @@ class AutoSanctions : Extension() {
 				}.firstOrNull {
 					it.id.timeMark.elapsedNow() < 10.seconds
 				}?.let { entry ->
-					sanctionedBy = event.guild.getMemberOrNull(entry.userId)
+					if (entry.userId == null) return@let
+					sanctionedBy = event.guild.getMemberOrNull(entry.userId!!)
 					reason = entry.reason
 				}
 
@@ -120,6 +122,8 @@ class AutoSanctions : Extension() {
 						entry.id.timeMark.elapsedNow() < 10.seconds && entry.changes.any { it.key == AuditLogChangeKey.CommunicationDisabledUntil }
 					} ?: return@let
 
+					if (log.userId == null) return@let
+
 					val duration = (new.timeoutUntil ?: return@action) - Clock.System.now()
 					Sanction(SanctionType.MUTE, log.reason, new.id, log.userId, duration.inWholeMilliseconds).apply {
 						if (getSanctions(new.id).any { it.equalExceptOwner(this) }) return@action
@@ -130,7 +134,7 @@ class AutoSanctions : Extension() {
 
 					scheduler.schedule(duration, name = "Un-mute Scheduler") {
 						kord.getLogSanctionsChannel().createEmbed {
-							unMuteEmbed(kord, new, kord.getUser(log.userId))
+							unMuteEmbed(kord, new, kord.getUser(log.userId!!))
 						}
 					}
 				}

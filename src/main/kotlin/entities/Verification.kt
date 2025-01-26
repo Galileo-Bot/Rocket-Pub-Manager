@@ -104,7 +104,7 @@ data class Verification(
 	}
 
 	suspend fun MessageCreateBuilder.generateEmbed(adMessage: Message) {
-		val authorUser = adMessage.getAuthorAsMemberOrThrow()
+		val authorUser = adMessage.getAuthorAsMember()
 
 		var invite: Invite? = null
 		val link = findInviteCode(adContent)

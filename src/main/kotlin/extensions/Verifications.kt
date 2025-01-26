@@ -9,7 +9,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.types.respond
 import configuration
 import debug
 import dev.kord.core.event.message.MessageCreateEvent
@@ -27,11 +26,11 @@ class Verifications : Extension() {
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = "verif"
-			description = "Permet de voir les vérifications du staff."
+			description = "Permets de voir les vérifications du staff."
 
 			publicSubCommand {
 				name = "list"
-				description = "Permet de voir les vérifications du staff."
+				description = "Permets de voir les vérifications du staff."
 
 				action {
 					val verificationCount = getVerificationCount()
@@ -60,7 +59,7 @@ class Verifications : Extension() {
 				val type = user.getNextSanctionType()
 				val message = targetMessages.elementAt(0)
 
-				val author = message.getAuthorAsMemberOrThrow()
+				val author = message.getAuthorAsMember()
 				message.delete("Publicité interdite.")
 				Sanction(
 					type,

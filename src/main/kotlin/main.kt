@@ -4,6 +4,7 @@ import com.kotlindiscord.kord.extensions.checks.userFor
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
+import dev.kord.gateway.ALL
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import extensions.*
@@ -61,8 +62,6 @@ suspend fun main() {
 				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
 				pass()
 			}
-
-			syncPermissions = false
 		}
 
 		chatCommands {
@@ -93,7 +92,7 @@ suspend fun main() {
 
 		i18n { defaultLocale = Locale.FRENCH }
 
-		intents { +Intents.all }
+		intents { +Intents.ALL }
 
 		presence {
 			status = PresenceStatus.Idle

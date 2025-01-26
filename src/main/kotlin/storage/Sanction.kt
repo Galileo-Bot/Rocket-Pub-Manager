@@ -7,7 +7,6 @@ import com.kotlindiscord.kord.extensions.events.EventHandler
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
 import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
@@ -20,8 +19,8 @@ import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.builder.message.embed
 import extensions.ModifySanctionValues
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant

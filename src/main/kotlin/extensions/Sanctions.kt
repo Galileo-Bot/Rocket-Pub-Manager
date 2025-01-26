@@ -1,6 +1,7 @@
 package extensions
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
+import com.kotlindiscord.kord.extensions.annotations.AlwaysPublicResponse
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
@@ -11,8 +12,6 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.time.TimestampType
-import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.types.respondingPaginator
 import com.kotlindiscord.kord.extensions.utils.FilterStrategy
 import com.kotlindiscord.kord.extensions.utils.canInteract
 import com.kotlindiscord.kord.extensions.utils.selfMember
@@ -23,7 +22,8 @@ import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.suggestString
 import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.embed
 import kotlinx.coroutines.runBlocking
 import storage.*
 import utils.completeEmbed
@@ -78,7 +78,7 @@ class Sanctions : Extension() {
 
 		val reason by coalescingString {
 			name = "raison"
-			description = "La raison de du ban."
+			description = "La raison du ban."
 			autoComplete {
 				suggestStringMap(sanctions, FilterStrategy.Contains)
 			}
@@ -183,7 +183,7 @@ class Sanctions : Extension() {
 	class UnBanArguments : Arguments() {
 		val user by user {
 			name = "utilisateur"
-			description = "L'utilisateur à dé-bannir."
+			description = "L'utilisateur à débannir."
 		}
 
 		val reason by coalescingDefaultingString {
@@ -213,14 +213,15 @@ class Sanctions : Extension() {
 		}
 	}
 
+	@OptIn(AlwaysPublicResponse::class)
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = "sanctions"
-			description = "Permet de gérer les sanctions du serveur."
+			description = "Permets de gérer les sanctions du serveur."
 
 			publicSubCommand {
 				name = "compte"
-				description = "Permet d'avoir le nombre de sanctions mises par les modérateurs."
+				description = "Permets d'avoir le nombre de sanctions mises par les modérateurs."
 
 				action {
 					val sanctions = getSanctionCount()
@@ -239,7 +240,7 @@ class Sanctions : Extension() {
 
 			publicSubCommand(::ListSanctionsArguments) {
 				name = "liste"
-				description = "Permet d'avoir la liste des sanctions appliquées à un utilisateur."
+				description = "Permets d'avoir la liste des sanctions appliquées à un utilisateur."
 
 				action {
 					val user = arguments.user
@@ -266,7 +267,8 @@ class Sanctions : Extension() {
 											"$getUserTag (`$appliedById`)"
 										} ?: "Automatique ou non trouvé"
 
-										val duration = if (it.durationMS > 0) "**Durée** : ${it.formattedDuration}" else ""
+										val duration =
+											if (it.durationMS > 0) "**Durée** : ${it.formattedDuration}" else ""
 
 										"""
 											> **Cas numéro ${it.id}** ${it.type.emote}
@@ -291,7 +293,8 @@ class Sanctions : Extension() {
 				action {
 					val sanctionId = arguments.id
 					val sanction =
-						getSanction(sanctionId) ?: throw DiscordRelayedException("Aucune sanction avec l'ID `$sanctionId` n'a été trouvée.")
+						getSanction(sanctionId)
+							?: throw DiscordRelayedException("Aucune sanction avec l'ID `$sanctionId` n'a été trouvée.")
 
 					val appliedBy = sanction.appliedBy?.let {
 						val user = this@publicSubCommand.kord.getUser(it) ?: return@let null
@@ -361,13 +364,21 @@ class Sanctions : Extension() {
 				guild?.getBanOrNull(arguments.member.id)?.let {
 					val sanctions = getSanctions(arguments.member.id)
 					sanctions.find { it.type == SanctionType.BAN && it.isActive }?.let {
-						throw DiscordRelayedException("La personne est déjà bannie jusqu'à ${it.toDiscordTimestamp(TimestampType.RelativeTime)}")
+						throw DiscordRelayedException(
+							"La personne est déjà bannie jusqu'à ${
+								it.toDiscordTimestamp(
+									TimestampType.RelativeTime
+								)
+							}"
+						)
 					}
 
 					throw DiscordRelayedException("La personne est déjà bannie.")
 				}
 
-				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()?.canInteract(arguments.member) != true) {
+				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()
+						?.canInteract(arguments.member) != true
+				) {
 					throw DiscordRelayedException("Je ne peux pas bannir avec ce membre, il doit avoir un rôle inférieur au mien.")
 				}
 
@@ -394,7 +405,9 @@ class Sanctions : Extension() {
 			description = "Éjecte un utilisateur du serveur."
 
 			action {
-				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()?.canInteract(arguments.member) != true) {
+				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()
+						?.canInteract(arguments.member) != true
+				) {
 					throw DiscordRelayedException("Je ne peux pas éjecter avec ce membre, il doit avoir un rôle inférieur au mien.")
 				}
 
@@ -417,7 +430,11 @@ class Sanctions : Extension() {
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
 				if (arguments.member.timeoutUntil != null) throw DiscordRelayedException(
-					"La personne est déjà mute et sera unmute ${arguments.member.timeoutUntil!!.toMessageFormat(DiscordTimestampStyle.RelativeTime)}."
+					"La personne est déjà mute et sera unmute ${
+						arguments.member.timeoutUntil!!.toMessageFormat(
+							DiscordTimestampStyle.RelativeTime
+						)
+					}."
 				)
 				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
 				if (duration > 28.days) throw DiscordRelayedException("La durée doit être de moins de 28 jours.")
@@ -451,9 +468,10 @@ class Sanctions : Extension() {
 			action {
 				guild?.getBanOrNull(arguments.user.id)?.let {
 					respond {
-						embed {
-							unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
+						fun EmbedBuilder.() {
+							unBanEmbed(kord, arguments.user, user)
 						}
+ embed(block)
 					}
 				}
 
@@ -464,7 +482,7 @@ class Sanctions : Extension() {
 
 		publicSlashCommand(::UnMuteArguments) {
 			name = "unmute"
-			description = "Permet de retirer le mute d'une personne (garde quand même la sanction)."
+			description = "Permets de retirer le mute d'une personne (garde quand même la sanction)."
 
 			action {
 				if (!guild!!.selfMember().canInteract(arguments.member)) {
@@ -473,9 +491,9 @@ class Sanctions : Extension() {
 
 				arguments.member.timeoutUntil?.let {
 					respond {
-						embed {
-							unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
-						}
+						embed(fun EmbedBuilder.() {
+ unMuteEmbed(kord, arguments.member, user)
+})
 					}
 
 					arguments.member.edit {
@@ -488,7 +506,7 @@ class Sanctions : Extension() {
 
 		publicSlashCommand(::WarnArguments) {
 			name = "warn"
-			description = "Avertit un membre, enregistre cette sanction."
+			description = "Avertis un membre, enregistre cette sanction."
 
 			action {
 				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {

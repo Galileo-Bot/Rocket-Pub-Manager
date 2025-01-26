@@ -27,7 +27,7 @@ repositories {
 
     maven {
         name = "Kotlin Discord"
-        url = uri("https://maven.kotlindiscord.com/repository/maven-public/")
+        url = uri("https://repo.kord.dev/snapshots")
     }
 }
 

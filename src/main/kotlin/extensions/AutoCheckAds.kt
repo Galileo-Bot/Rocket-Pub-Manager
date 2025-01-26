@@ -22,8 +22,7 @@ import dev.kord.core.entity.channel.VoiceChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import storage.Sanction
@@ -33,8 +32,11 @@ import java.util.*
 import kotlin.time.Duration.Companion.days
 
 enum class ChannelAdType(private val translation: String, val sentence: String, val emote: String) : ChoiceEnum {
-	CHANNEL("salon", "liste des salons de publicités", AD_CHANNEL_EMOTE),
-	CATEGORY("catégorie", "liste des catégories de salons de publicités", AD_CATEGORY_CHANNEL_EMOTE);
+	CHANNEL("salon", "liste des salons de publicités", AD_CHANNEL_EMOTE), CATEGORY(
+		"catégorie",
+		"liste des catégories de salons de publicités",
+		AD_CATEGORY_CHANNEL_EMOTE
+	);
 
 	override val readableName get() = translation
 }
@@ -65,6 +67,7 @@ class CheckAds : Extension() {
 	}
 
 	override suspend fun setup() {
+
 		publicSlashCommand(::AddChannelArguments) {
 			name = "add-salon"
 			description = "Ajoute un salon de publicités à la liste des salons de publicités à vérifier."
@@ -75,8 +78,10 @@ class CheckAds : Extension() {
 				val type = arguments.type
 				val isTypeCategory = type == ChannelAdType.CATEGORY
 
-				when (val channel =
-					arguments.channel.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).fetchChannelOrNull()) {
+				when (
+					val channel = arguments.channel.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback)
+						.fetchChannelOrNull()
+				) {
 					is Category -> {
 						val addedChannels = mutableListOf<String>()
 						channel.channels.collect {
@@ -108,6 +113,7 @@ class CheckAds : Extension() {
 			}
 		}
 	}
+
 }
 
 suspend fun TextChannelBehavior.lightSanction(
@@ -123,8 +129,7 @@ suspend fun TextChannelBehavior.lightSanction(
 			"${reason.dropLast(1)}, dans le salon ${it.channel.mention} _(message supprimé)_."
 		} ?: reason
 
-		content =
-			"""
+		content = """
 				<:nope:553265076195295236> $welcome **${member.mention}**, ceci est un avertissement léger pour la raison suivante :
 				> $shownReason.
 				_<a:girorouge:525406076057944096> Merci de relire le règlement pour éviter d'être sanctionné._
@@ -187,7 +192,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			addBinButtonDeleteSimilarAdsWithSanction()
 		}
 	}.also {
-		sanctionMessages.add(SanctionMessage(message.getAuthorAsMemberOrThrow(), it, sanction))
+		sanctionMessages.add(SanctionMessage(message.getAuthorAsMember(), it, sanction))
 	}
 }
 
