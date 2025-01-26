@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
     bot:
         build:
@@ -8,12 +6,16 @@ services:
         restart: unless-stopped
         depends_on:
             - db
+        env_file:
+            - .env
         volumes:
             - ./logs:/app/logs
 
     db:
         image: mysql:8.0
         restart: unless-stopped
+        env_file:
+            - .env
         volumes:
             - mysql_data:/var/lib/mysql
             - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
