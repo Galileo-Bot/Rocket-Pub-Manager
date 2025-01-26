@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+    bot:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        depends_on:
+            - db
+        volumes:
+            - ./logs:/app/logs
+
+    db:
+        image: mysql:8.0
+        restart: unless-stopped
+        environment:
+            - MYSQL_DATABASE=rocket_manager
+            - MYSQL_USER=rocket
+            - MYSQL_PASSWORD=rocket_password
+            - MYSQL_ROOT_PASSWORD=root_password
+        volumes:
+            - mysql_data:/var/lib/mysql
+            - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
+        ports:
+            - '3306:3306'
+
+volumes:
+    mysql_data:
