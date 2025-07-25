@@ -12,15 +12,15 @@ services:
             - ./logs:/app/logs
 
     db:
-        image: mysql:8.0
+        image: mariadb:11.8
         restart: unless-stopped
         env_file:
             - .env
         volumes:
-            - mysql_data:/var/lib/mysql
+            - mariadb_data:/var/lib/mariadb
             - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
         ports:
             - '3306:3306'
 
 volumes:
-    mysql_data:
+    mariadb_data:
