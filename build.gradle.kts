@@ -15,7 +15,6 @@ group = "fr.ayfri"
 version = "1.0"
 
 dependencies {
-	implementation(libs.kord.base)
 	implementation(libs.dotenv)
 
 	implementation(libs.logback)

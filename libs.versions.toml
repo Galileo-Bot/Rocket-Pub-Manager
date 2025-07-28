@@ -6,9 +6,8 @@ ksp = "2.1.21-2.0.1"
 shadow = "8.1.1"
 
 connector = "9.3.0"
-datetime = "0.7.1"
+datetime = "0.6.2"
 dotenv = "6.5.1"
-kord-base = "0.15.0"
 logback = "1.5.18"
 logging = "7.0.7"
 serialization = "1.8.1"
@@ -17,7 +16,6 @@ serialization = "1.8.1"
 connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
 datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
-kord-base = { module = "dev.kord:kord-core", version.ref = "kord-base" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
 serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
