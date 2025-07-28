@@ -5,10 +5,13 @@ import dev.kord.gateway.ALL
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import dev.kordex.core.ExtensibleBot
+import dev.kordex.core.annotations.warnings.ReplacingDefaultErrorResponseBuilder
 import dev.kordex.core.checks.channelFor
 import dev.kordex.core.checks.userFor
+import dev.kordex.core.types.FailureReason
 import dev.kordex.core.utils.env
 import extensions.*
+import fr.ayfri.rocketmanager.i18n.Translations
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
 import utils.enquote
@@ -56,6 +59,7 @@ val connection: Connection
 
 val ExtensibleBot.kord get() = getKoin().get<Kord>()
 
+@OptIn(ReplacingDefaultErrorResponseBuilder::class)
 @PrivilegedIntent
 suspend fun main() {
 	TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
@@ -86,6 +90,38 @@ suspend fun main() {
 			add(::Sanctions)
 			add(::UserContextSanctions)
 			add(::Verifications)
+		}
+
+		errorResponse { message, failureReason ->
+			val userMsg = when (failureReason) {
+				is FailureReason.RelayedFailure -> {
+					if (debug) logger.error { "Relayed failure: ${failureReason.error}" }
+					// Handle relayed failures (errors thrown by the command itself)
+					failureReason.error.message
+				}
+
+				is FailureReason.ProvidedCheckFailure -> {
+					if (debug) logger.error { "Check failure: ${failureReason.error}" }
+					// Handle check failures (permission checks, etc.)
+					Translations.Errors.insufficientPermissions.translate()
+				}
+
+				is FailureReason.ArgumentParsingFailure -> {
+					if (debug) logger.error { "Argument parsing failure: ${failureReason.error.localizedMessage}" }
+					Translations.Errors.argumentParsingError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
+				}
+
+				is FailureReason.OwnPermissionsCheckFailure -> {
+					if (debug) logger.error { "Own permissions check failure: ${failureReason.error.localizedMessage}" }
+					Translations.Errors.insufficientPermissions.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
+				}
+
+				is FailureReason.ExecutionError -> {
+					if (debug) logger.error { "Execution error: ${failureReason.error.localizedMessage}" }
+					Translations.Errors.executionError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
+				}
+			}
+			this.content = userMsg
 		}
 
 		hooks {
