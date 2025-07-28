@@ -95,19 +95,7 @@ suspend fun main() {
 		}
 
 		errorResponse { message, failureReason ->
-			logger.error {
-				"""
-				${failureReason.error.localizedMessage}
-				${failureReason.error.message}
-				${failureReason.error.stackTraceToString()}
-				""".trimIndent()
-			}
-
 			val userMsg = when (failureReason) {
-				is FailureReason.RelayedFailure ->
-					// Handle relayed failures (errors thrown by the command itself)
-					failureReason.error.message
-
 				is FailureReason.ProvidedCheckFailure ->
 					// Handle check failures (permission checks, etc.)
 					Translations.Errors.insufficientPermissions.translate()
@@ -120,7 +108,18 @@ suspend fun main() {
 
 				is FailureReason.ExecutionError ->
 					Translations.Errors.executionError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
+
+				else -> null
 			}
+
+			if (userMsg == null) return@errorResponse
+
+			logger.error {
+				"""
+						${failureReason.error.stackTraceToString()}
+						""".trimIndent()
+			}
+
 			this.content = userMsg
 		}
 
