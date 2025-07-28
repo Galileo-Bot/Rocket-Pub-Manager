@@ -109,15 +109,15 @@ suspend fun main() {
 				is FailureReason.ExecutionError ->
 					Translations.Errors.executionError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
 
-				else -> null
+				else -> message.translate()
 			}
 
-			if (userMsg == null) return@errorResponse
-
-			logger.error {
-				"""
-						${failureReason.error.stackTraceToString()}
-						""".trimIndent()
+			if (failureReason !is FailureReason.RelayedFailure) {
+				logger.error {
+					"""
+					${failureReason.error.stackTraceToString()}
+					""".trimIndent()
+				}
 			}
 
 			this.content = userMsg
