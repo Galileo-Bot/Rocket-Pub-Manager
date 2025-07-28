@@ -4,6 +4,10 @@
 gen
 
 
+# Kotlin files
+.kotlin
+
+
 # Gradle project files
 .gradle
 build
