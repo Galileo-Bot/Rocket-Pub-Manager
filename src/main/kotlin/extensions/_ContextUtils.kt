@@ -18,6 +18,7 @@ import dev.kordex.core.types.EphemeralInteractionContext
 import dev.kordex.core.types.PublicInteractionContext
 import dev.kordex.core.utils.getJumpUrl
 import dev.kordex.core.utils.hasPermission
+import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
 import utils.*
 
@@ -39,11 +40,13 @@ suspend fun MessageBehavior.removeComponents() = edit { components = mutableList
 
 fun updateDeletedMessagesInEmbed(sanctionMessage: Message, vararg messages: Message): List<String> {
 	val oldEmbed = sanctionMessage.embeds[0]
-	val oldMessages = oldEmbed.fields.find { it.name.endsWith("Messages :") }!!.value.split(Regex("\n")).toMutableList()
+	val oldMessages =
+		oldEmbed.fields.find { it.name.endsWith(Translations.Fields.messages.translate()) }!!.value.split(Regex("\n"))
+			.toMutableList()
 	val founds = oldMessages.intersect(messages.map { it.getJumpUrl() }.toSet())
 
 	oldMessages.removeAll(founds)
-	oldMessages.addAll(founds.map { "$it _supprimé_" })
+	oldMessages.addAll(founds.map { "$it ${Translations.Messages.deletedSuffix.translate()}" })
 
 	return oldMessages
 }
@@ -51,10 +54,10 @@ fun updateDeletedMessagesInEmbed(sanctionMessage: Message, vararg messages: Mess
 suspend fun updateMessagesInEmbed(sanctionMessage: Message, vararg messages: Message) = sanctionMessage.edit {
 	embed {
 		fromEmbed(sanctionMessage.embeds[0])
-		fields.removeIf { it.name.endsWith("Messages :") }
+		fields.removeIf { it.name.endsWith(Translations.Fields.messages.translate()) }
 
 		field {
-			name = "<:textuel:658085848092508220> Messages :"
+			name = Translations.Embeds.messagesField.translate()
 			value = updateDeletedMessagesInEmbed(sanctionMessage, *messages).joinToString("\n")
 		}
 	}
@@ -65,7 +68,7 @@ suspend fun setSanctionedBy(message: Message, sanction: Sanction) {
 		embed {
 			autoSanctionEmbed(message, sanction)
 			field {
-				name = "Sanctionnée par :"
+				name = Translations.Fields.sanctionedBy.translate()
 				value = sanction.member.asMention<UserBehavior>()
 			}
 		}

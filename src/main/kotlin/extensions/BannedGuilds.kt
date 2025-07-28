@@ -8,8 +8,10 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.types.Key
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.time.toDiscord
+import fr.ayfri.rocketmanager.i18n.Translations
 import storage.*
 import utils.bannedGuildEmbed
 import utils.completeEmbed
@@ -30,10 +32,10 @@ fun isValidInvitation(value: String) =
 		)
 	)
 
-enum class ModifyGuildValues(val translation: String) : ChoiceEnum {
-	NAME("Nom"),
-	ID("ID"),
-	REASON("Raison");
+enum class ModifyGuildValues(val translation: Key) : ChoiceEnum {
+	NAME(Translations.Fields.name),
+	ID(Translations.Fields.id),
+	REASON(Translations.Fields.reason);
 
 	override val readableName = translation
 }
@@ -46,88 +48,87 @@ class BannedGuilds : Extension() {
 		 * Could be name or Snowflake.
 		 */
 		val guild by string {
-			name = "serveur"
-			description = "Le serveur à bannir."
+			name = Translations.Arguments.Guild.name
+			description = Translations.Arguments.Guild.description
 		}
 
 		val reason by string {
-			name = "raison"
-			description = "La raison de pourquoi ce serveur est à bannir."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
 		}
 	}
 
 	class GetBannedGuildArguments : Arguments() {
 		val guild by string {
-			name = "serveur"
-			description = "Le serveur à récupérer."
+			name = Translations.Arguments.Guild.name
+			description = Translations.Arguments.Guild.description
 		}
 	}
 
 	class RemoveBannedGuildArguments : Arguments() {
 		val guild by string {
-			name = "serveur"
-			description = "Le serveur à débannir."
+			name = Translations.Arguments.Guild.name
+			description = Translations.Arguments.Guild.description
 		}
 	}
 
 	class ModifyBannedGuildArguments : Arguments() {
 		val guild by string {
-			name = "serveur"
-			description = "Le serveur à modifier."
+			name = Translations.Arguments.Guild.name
+			description = Translations.Arguments.Guild.description
 		}
 
 		val value by enumChoice<ModifyGuildValues> {
-			name = "propriété"
-			description = "La propriété à modifier."
-			typeName = "Nom/Id/Raison"
+			name = Translations.Arguments.Property.name
+			description = Translations.Arguments.Property.description
 		}
 
 		val newValue by string {
-			name = "valeur"
-			description = "La nouvelle valeur à utiliser."
+			name = Translations.Arguments.Value.name
+			description = Translations.Arguments.Value.description
 		}
 	}
 
 	@OptIn(AlwaysPublicResponse::class, ExperimentalTime::class)
 	override suspend fun setup() {
 		publicSlashCommand {
-			name = "serveurs"
-			description = "Permet de gérer les serveurs interdits."
+			name = Translations.Commands.BannedGuilds.name
+			description = Translations.Commands.BannedGuilds.description
 
 			publicSubCommand(::AddBannedGuildArguments) {
-				name = "add"
-				description = "Ajoute un serveur à la liste des serveurs interdits."
+				name = Translations.Commands.BannedGuilds.Add.name
+				description = Translations.Commands.BannedGuilds.Add.description
 
 				action {
 					respond {
 						content = when {
 							isValidGuildId(arguments.guild) -> {
 								addBannedGuild(arguments.guild, arguments.reason)
-								"Serveur `${arguments.guild}` ajouté à la liste des serveurs interdits !"
+								Translations.Messages.guildAdded.translateNamed("guild" to arguments.guild)
 							}
 
 							isValidInvitation(arguments.guild) -> {
 								val invitation = this@publicSubCommand.kord.getInviteOrNull(arguments.guild)
 
 								addBannedGuild(arguments.guild, arguments.reason, invitation?.partialGuild?.id)
-								"Serveur `${arguments.guild}` ajouté à la liste des serveurs interdits !"
+								Translations.Messages.guildAdded.translateNamed("guild" to arguments.guild)
 							}
 
-							else -> "Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
+							else -> Translations.Errors.invalidGuildId.translate()
 						}
 					}
 				}
 			}
 
 			publicSubCommand(::GetBannedGuildArguments) {
-				name = "get"
-				description = "Permet d'avoir des informations sur un serveur interdit."
+				name = Translations.Commands.BannedGuilds.Get.name
+				description = Translations.Commands.BannedGuilds.Get.description
 
 				action {
 					respond {
 						searchBannedGuild(arguments.guild)?.let {
 							bannedGuildEmbed(this@publicSlashCommand.kord, it)
-						} ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also {
+						} ?: Translations.Errors.guildNotFound.translate().also {
 							content = it
 						}
 					}
@@ -135,14 +136,14 @@ class BannedGuilds : Extension() {
 			}
 
 			publicSubCommand {
-				name = "list"
-				description = "Permet d'avoir la liste des serveurs interdits."
+				name = Translations.Commands.BannedGuilds.List.name
+				description = Translations.Commands.BannedGuilds.List.description
 
 				action {
 					val bannedGuilds = getAllBannedGuilds()
 
 					if (bannedGuilds.isEmpty()) {
-						respond("Aucun serveur interdit pour le moment.")
+						respond(Translations.Messages.noBannedGuilds.translate())
 						return@action
 					}
 
@@ -159,8 +160,11 @@ class BannedGuilds : Extension() {
 
 								completeEmbed(
 									client = this@publicSubCommand.kord,
-									title = "Liste des serveurs bannis",
-									description = "${list.joinToString("\n")}\n\nFaites `/${this@publicSlashCommand.name} get <id ou nom>` pour avoir plus d'informations sur un serveur."
+									title = Translations.Embeds.BannedGuilds.List.title.translate(),
+									description = Translations.Embeds.BannedGuilds.List.description.translateNamed(
+										"list" to list.joinToString("\n"),
+										"command" to this@publicSlashCommand.name
+									)
 								)
 							}
 						}
@@ -169,8 +173,8 @@ class BannedGuilds : Extension() {
 			}
 
 			publicSubCommand(::ModifyBannedGuildArguments) {
-				name = "modifier"
-				description = "Permet de modifier un serveur interdit."
+				name = Translations.Commands.BannedGuilds.Modify.name
+				description = Translations.Commands.BannedGuilds.Modify.description
 
 				action {
 					respond {
@@ -185,7 +189,7 @@ class BannedGuilds : Extension() {
 							)
 						}
 
-						bannedGuildFound ?: "Ce serveur n'a pas été trouvé dans la liste des serveurs interdits.".also {
+						bannedGuildFound ?: Translations.Errors.guildNotFound.translate().also {
 							content = it
 						}
 					}
@@ -193,16 +197,16 @@ class BannedGuilds : Extension() {
 			}
 
 			publicSubCommand(::RemoveBannedGuildArguments) {
-				name = "remove"
-				description = "Retire un serveur de la liste des serveurs interdits."
+				name = Translations.Commands.BannedGuilds.Remove.name
+				description = Translations.Commands.BannedGuilds.Remove.description
 
 				action {
 					respond {
 						val validGuild = isValidGuildId(arguments.guild)
 
 						content =
-							if (validGuild) "Serveur `${arguments.guild}` retiré de la liste des serveurs interdits !"
-							else "Cela ne semble ni être un ID de guild, ni un nom de guild :eyes:"
+							if (validGuild) Translations.Messages.guildRemoved.translateNamed("guild" to arguments.guild)
+							else Translations.Errors.invalidGuildId.translate()
 
 						if (validGuild) removeBannedGuild(arguments.guild)
 					}

@@ -17,8 +17,10 @@ import dev.kordex.core.commands.converters.builders.ConverterBuilder
 import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.withContext
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.utils.*
+import fr.ayfri.rocketmanager.i18n.Translations
 import kotlinx.coroutines.runBlocking
 import storage.*
 import utils.completeEmbed
@@ -33,18 +35,18 @@ import kotlin.time.toDuration
 
 val sanctions
 	get() = mapOf(
-		"fake pub" to "Spam de faux liens.",
-		"invite reward" to "Publicité pour un serveur invite reward (interdit).",
-		"mauvaise catégorie" to "Publicité dans la mauvaise catégorie.",
-		"mention everyone/here" to "Tentative de mention interdite.",
-		"pub interdite" to "Publicité interdite.",
-		"pub mp" to "Publicité par messages privés.",
-		"pubs à la suite" to "Publicités similaires à la chaîne.",
-		"sans description" to "Publicité sans description.",
-		"spam après warn" to "Spam de publicités après avertissements.",
-		"spam" to "Spam de publicités.",
+		"fake pub" to Translations.Sanctions.fakePub,
+		"invite reward" to Translations.Sanctions.inviteReward,
+		"mauvaise catégorie" to Translations.Sanctions.wrongCategory,
+		"mention everyone/here" to Translations.Sanctions.mentionEveryone,
+		"pub interdite" to Translations.Sanctions.forbiddenAd,
+		"pub mp" to Translations.Sanctions.dmAd,
+		"pubs à la suite" to Translations.Sanctions.consecutiveAds,
+		"sans description" to Translations.Sanctions.noDescription,
+		"spam après warn" to Translations.Sanctions.spamAfterWarn,
+		"spam" to Translations.Sanctions.spam,
 		//		"lien" to "Lien de publicité interdit dans ${channel.mention}.",
-	)
+	).mapValues { (_, value) -> value.translate() }
 
 fun ConverterBuilder<String>.autoCompleteReason() {
 	autoComplete {
@@ -54,12 +56,17 @@ fun ConverterBuilder<String>.autoCompleteReason() {
 	}
 }
 
-enum class DurationUnits(translation: String, val durationUnit: DurationUnit) : ChoiceEnum {
-	DAYS("jours", DurationUnit.DAYS),
-	HOURS("heures", DurationUnit.HOURS),
-	MINUTES("minutes", DurationUnit.MINUTES);
+enum class DurationUnits(val durationUnit: DurationUnit) : ChoiceEnum {
+	DAYS(DurationUnit.DAYS),
+	HOURS(DurationUnit.HOURS),
+	MINUTES(DurationUnit.MINUTES);
 
-	override val readableName = translation
+	override val readableName
+		get() = when (this) {
+			DAYS -> Translations.Units.days
+			HOURS -> Translations.Units.hours
+			MINUTES -> Translations.Units.minutes
+		}
 }
 
 class Sanctions : Extension() {
@@ -67,80 +74,77 @@ class Sanctions : Extension() {
 
 	class BanArguments : Arguments() {
 		val member by member {
-			name = "membre"
-			description = "Le membre à expulser."
+			name = Translations.Arguments.Member.name
+			description = Translations.Arguments.Member.description
 		}
 
 		val reason by coalescingString {
-			name = "raison"
-			description = "La raison du ban."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
 			autoComplete {
 				suggestStringMap(sanctions, FilterStrategy.Contains)
 			}
 		}
 
 		val duration by optionalInt {
-			name = "durée"
-			description = "La durée du ban."
+			name = Translations.Arguments.Duration.name
+			description = Translations.Arguments.Duration.description
 		}
 
 		val deleteDays by optionalInt {
-			name = "suppression"
-			description = "Le nombre de jours auquel supprimer les messages."
+			name = Translations.Arguments.DeleteDays.name
+			description = Translations.Arguments.DeleteDays.description
 
 			maxValue = 7
 			minValue = 1
 		}
 
 		val unit by optionalEnumChoice<DurationUnits> {
-			name = "unité"
-			description = "L'unité de la durée du ban."
-			typeName = "unité"
+			name = Translations.Arguments.Unit.name
+			description = Translations.Arguments.Unit.description
 		}
 	}
 
 	class DeleteSanctionArguments : Arguments() {
 		val id by int {
-			name = "cas"
-			description = "Le numéro de la sanction à supprimer."
+			name = Translations.Arguments.Id.name
+			description = Translations.Arguments.Id.description
 		}
 	}
 
 	class DeleteAllSanctionsArguments : Arguments() {
 		val user by user {
-			name = "utilisateur"
-			description = "L'utilisateur à qui supprimer toutes les sanctions."
+			name = Translations.Arguments.User.name
+			description = Translations.Arguments.User.description
 		}
 
 		val type by optionalEnumChoice<SanctionType> {
-			name = "type"
-			description = "Le type de sanctions à supprimer."
-			typeName = "type"
+			name = Translations.Arguments.Type.name
+			description = Translations.Arguments.Type.description
 		}
 	}
 
 	class ListSanctionsArguments : Arguments() {
 		val user by user {
-			name = "utilisateur"
-			description = "L'utilisateur à qui afficher les sanctions."
+			name = Translations.Arguments.User.name
+			description = Translations.Arguments.User.description
 		}
 
 		val type by optionalEnumChoice<SanctionType> {
-			name = "type"
-			description = "Le type de sanctions à afficher."
-			typeName = "TEST"
+			name = Translations.Arguments.Type.name
+			description = Translations.Arguments.Type.description
 		}
 	}
 
 	class KickArguments : Arguments() {
 		val member by member {
-			name = "membre"
-			description = "Le membre à expulser."
+			name = Translations.Arguments.Member.name
+			description = Translations.Arguments.Member.description
 		}
 
 		val reason by coalescingString {
-			name = "raison"
-			description = "La raison de l'expulsion."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
 			autoComplete {
 				suggestStringMap(
 					sanctions, FilterStrategy.Contains
@@ -151,24 +155,23 @@ class Sanctions : Extension() {
 
 	class MuteArguments : Arguments() {
 		val member by member {
-			name = "membre"
-			description = "Le membre à mute."
+			name = Translations.Arguments.Member.name
+			description = Translations.Arguments.Member.description
 		}
 
 		val duration by int {
-			name = "durée"
-			description = "La durée du mute."
+			name = Translations.Arguments.Duration.name
+			description = Translations.Arguments.Duration.description
 		}
 
 		val unit by enumChoice<DurationUnits> {
-			name = "unité"
-			description = "L'unité de la durée du mute."
-			typeName = "unité"
+			name = Translations.Arguments.Unit.name
+			description = Translations.Arguments.Unit.description
 		}
 
 		val reason by coalescingString {
-			name = "raison"
-			description = "La raison du mute."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
 			autoComplete {
 				suggestStringMap(sanctions, FilterStrategy.Contains)
 			}
@@ -177,33 +180,33 @@ class Sanctions : Extension() {
 
 	class UnBanArguments : Arguments() {
 		val user by user {
-			name = "utilisateur"
-			description = "L'utilisateur à débannir."
+			name = Translations.Arguments.User.name
+			description = Translations.Arguments.User.description
 		}
 
 		val reason by coalescingDefaultingString {
-			name = "raison"
-			description = "La raison du dé-bannissement."
-			defaultValue = "Pas de raison définie."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
+			defaultValue = Translations.Messages.noReason.translate()
 		}
 	}
 
 	class UnMuteArguments : Arguments() {
 		val member by member {
-			name = "membre"
-			description = "Le membre à unmute."
+			name = Translations.Arguments.Member.name
+			description = Translations.Arguments.Member.description
 		}
 	}
 
 	class WarnArguments : Arguments() {
 		val member by member {
-			name = "membre"
-			description = "L'utilisateur à avertir."
+			name = Translations.Arguments.Member.name
+			description = Translations.Arguments.Member.description
 		}
 
 		val reason by coalescingString {
-			name = "raison"
-			description = "Raison de l'avertissement."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
 			autoCompleteReason()
 		}
 	}
@@ -211,12 +214,12 @@ class Sanctions : Extension() {
 	@OptIn(AlwaysPublicResponse::class)
 	override suspend fun setup() {
 		publicSlashCommand {
-			name = "sanctions"
-			description = "Permets de gérer les sanctions du serveur."
+			name = Translations.Commands.Sanctions.name
+			description = Translations.Commands.Sanctions.description
 
 			publicSubCommand {
-				name = "compte"
-				description = "Permets d'avoir le nombre de sanctions mises par les modérateurs."
+				name = Translations.Commands.Sanctions.Count.name
+				description = Translations.Commands.Sanctions.Count.description
 
 				action {
 					val sanctions = getSanctionCount()
@@ -224,9 +227,12 @@ class Sanctions : Extension() {
 					respond {
 						completeEmbed(
 							client = bot.getKoin().get(),
-							title = "Liste des sanctions appliquées.",
+							title = Translations.Embeds.Sanctions.Count.title.translate(),
 							description = sanctions.groupBy { it }.map {
-								"**${guild!!.getMember(it.key).username}** : ${it.value.size} sanctions appliquées."
+								Translations.Embeds.Sanctions.Count.description.translateNamed(
+									"username" to guild!!.getMember(it.key).username,
+									"count" to it.value.size.toString()
+								)
 							}.joinToString("\n\n")
 						)
 					}
@@ -234,22 +240,28 @@ class Sanctions : Extension() {
 			}
 
 			publicSubCommand(::ListSanctionsArguments) {
-				name = "liste"
-				description = "Permets d'avoir la liste des sanctions appliquées à un utilisateur."
+				name = Translations.Commands.Sanctions.List.name
+				description = Translations.Commands.Sanctions.List.description
 
 				action {
 					val user = arguments.user
 					val sanctions = getSanctions(user.id).let { sanctions ->
 						arguments.type?.let { sanctions.filter { it.type == arguments.type } } ?: sanctions
 					}
-					if (sanctions.isEmpty()) throw DiscordRelayedException("Aucune sanction n'a été appliquée à cet utilisateur.")
+					if (sanctions.isEmpty()) throw DiscordRelayedException(Translations.Embeds.Sanctions.List.noSanctions)
 
 					respondingPaginator {
 						sanctions.chunked(10).forEach {
 							page {
 								completeEmbed(
 									client = bot.getKoin().get(),
-									title = "Liste des sanctions ${arguments.type?.let { "du type **${it.translation}** " } ?: ""}appliquées à ${user.username} (${user.id}).",
+									title = Translations.Embeds.Sanctions.List.title
+										.withContext(this@action)
+										.translateNamed(
+											"type" to (arguments.type?.let { "du type **${it.translation}** " } ?: ""),
+											"user" to user.username,
+											"userId" to user.id.toString()
+										),
 									description = it.joinToString("\n\n") {
 										val appliedBy = it.appliedBy?.let { appliedById ->
 											val getUserTag = runBlocking {
@@ -260,18 +272,22 @@ class Sanctions : Extension() {
 											}
 
 											"$getUserTag (`$appliedById`)"
-										} ?: "Automatique ou non trouvé"
+										} ?: Translations.Messages.automaticOrNotFound.translate()
 
 										val duration =
-											if (it.durationMS > 0) "**Durée** : ${it.formattedDuration}" else ""
+											if (it.durationMS > 0) "**${Translations.Fields.duration.translate()}** : ${it.formattedDuration}" else ""
 
 										"""
-											> **Cas numéro ${it.id}** ${it.type.emote}
-											**Appliquée par** : $appliedBy
-											**Date** : ${it.sanctionedAt.toMessageFormat(DiscordTimestampStyle.LongDateTime)}
+											> **${Translations.Fields.caseNumber.translate()} ${it.id}** ${it.type.emote}
+											**${Translations.Fields.appliedBy.translate()}** : $appliedBy
+											**${Translations.Fields.date.translate()}** : ${
+											it.sanctionedAt.toMessageFormat(
+												DiscordTimestampStyle.LongDateTime
+											)
+										}
 											$duration
-											**Raison** : ${it.reason}
-											**Type** : ${it.type.translation}
+											**${Translations.Fields.reason.translate()}** : ${it.reason}
+											**${Translations.Fields.type.translate()}** : ${it.type.translation}
 										""".trimIndent().replace("\n\n", "\n")
 									}
 								)
@@ -282,14 +298,18 @@ class Sanctions : Extension() {
 			}
 
 			publicSubCommand(::DeleteSanctionArguments) {
-				name = "supprimer"
-				description = "Permet de supprimer une sanction via son numéro de cas."
+				name = Translations.Commands.Sanctions.Delete.name
+				description = Translations.Commands.Sanctions.Delete.description
 
 				action {
 					val sanctionId = arguments.id
 					val sanction =
 						getSanction(sanctionId)
-							?: throw DiscordRelayedException("Aucune sanction avec l'ID `$sanctionId` n'a été trouvée.")
+							?: throw DiscordRelayedException(
+								Translations.Embeds.Sanctions.Delete.notFound.withNamedPlaceholders(
+									"id" to sanctionId.toString()
+								)
+							)
 
 					val appliedBy = sanction.appliedBy?.let {
 						val user = this@publicSubCommand.kord.getUser(it) ?: return@let null
@@ -299,16 +319,26 @@ class Sanctions : Extension() {
 					respond {
 						completeEmbed(
 							this@publicSubCommand.kord,
-							"Sanction supprimée.",
-							"La sanction numéro $sanctionId a été supprimée avec succès par ${user.mention}."
+							Translations.Embeds.Sanctions.Delete.title.translate(),
+							Translations.Embeds.Sanctions.Delete.success.translateNamed(
+								"id" to sanctionId.toString(),
+								"user" to user.mention
+							)
 						) {
 							field {
-								name = "Cas numéro : $sanctionId ${sanction.type.emote}"
+								name = Translations.Embeds.Sanctions.Delete.fieldName.translateNamed(
+									"id" to sanctionId.toString(),
+									"emote" to sanction.type.emote
+								)
 								value =
 									"""
-									> **Cas numéro ${sanction.id}** ${sanction.type.emote}
-									**Appliquée par** : $appliedBy
-									**Date** : ${sanction.sanctionedAt.toMessageFormat(DiscordTimestampStyle.LongDateTime)}
+									> **${Translations.Fields.caseNumber.translate()} ${sanction.id}** ${sanction.type.emote}
+									**${Translations.Fields.appliedBy.translate()}** : $appliedBy
+									**${Translations.Fields.date.translate()}** : ${
+										sanction.sanctionedAt.toMessageFormat(
+											DiscordTimestampStyle.LongDateTime
+										)
+									}
 									""".trimIndent()
 							}
 						}
@@ -317,8 +347,8 @@ class Sanctions : Extension() {
 			}
 
 			publicSubCommand(::DeleteAllSanctionsArguments) {
-				name = "supprimer-toutes"
-				description = "Permet de supprimer toutes les sanctions d'un utilisateur."
+				name = Translations.Commands.Sanctions.DeleteAll.name
+				description = Translations.Commands.Sanctions.DeleteAll.description
 
 				action {
 					var sanctions = getSanctions(arguments.user.id)
@@ -326,20 +356,20 @@ class Sanctions : Extension() {
 
 					respond {
 						if (arguments.type != null && sanctions.none { it.type == arguments.type }) {
-							content = "Cet utilisateur n'a pas de sanctions de ce type."
+							content = Translations.Embeds.Sanctions.DeleteAll.noSanctionsType.translate()
 						} else if (sanctions.isEmpty()) {
-							content = "Cet utilisateur n'a déjà aucune sanction."
+							content = Translations.Embeds.Sanctions.DeleteAll.noSanctions.translate()
 						} else {
 							removeSanctions(arguments.user.id, arguments.type?.toString())
 							completeEmbed(
 								this@publicSubCommand.kord,
-								"${sanctions.size} Sanctions supprimées",
-								"Les sanctions de ${arguments.user.mention} ont bien été supprimées avec succès."
+								Translations.Embeds.Sanctions.DeleteAll.title.translateNamed("count" to sanctions.size.toString()),
+								Translations.Embeds.Sanctions.DeleteAll.success.translateNamed("user" to arguments.user.mention)
 							) {
 								field {
-									name = "Types"
+									name = Translations.Fields.types.translate()
 									value = sanctions.groupBy { it.type }
-										.map { "${it.key.translation + "s"} : **${it.value.size}**" }
+										.map { "${it.key.translation.translate() + "s"} : **${it.value.size}**" }
 										.joinToString("\n")
 								}
 							}
@@ -350,8 +380,8 @@ class Sanctions : Extension() {
 		}
 
 		publicSlashCommand(::BanArguments) {
-			name = "ban"
-			description = "Permet de bannir un membre, temporairement ou définitivement."
+			name = Translations.Commands.Sanctions.Ban.name
+			description = Translations.Commands.Sanctions.Ban.description
 
 			action {
 				val duration = arguments.unit?.durationUnit?.let { arguments.duration?.toDuration(it) }
@@ -360,21 +390,19 @@ class Sanctions : Extension() {
 					val sanctions = getSanctions(arguments.member.id)
 					sanctions.find { it.type == SanctionType.BAN && it.isActive }?.let {
 						throw DiscordRelayedException(
-							"La personne est déjà bannie jusqu'à ${
-								it.toDiscordTimestamp(
-									TimestampType.RelativeTime
-								)
-							}"
+							Translations.Errors.alreadyBannedUntil.withNamedPlaceholders(
+								"until" to it.toDiscordTimestamp(TimestampType.RelativeTime)
+							)
 						)
 					}
 
-					throw DiscordRelayedException("La personne est déjà bannie.")
+					throw DiscordRelayedException(Translations.Errors.alreadyBanned)
 				}
 
 				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()
 						?.canInteract(arguments.member) != true
 				) {
-					throw DiscordRelayedException("Je ne peux pas bannir avec ce membre, il doit avoir un rôle inférieur au mien.")
+					throw DiscordRelayedException(Translations.Errors.cannotBanMember)
 				}
 
 				Sanction(
@@ -396,14 +424,14 @@ class Sanctions : Extension() {
 		}
 
 		publicSlashCommand(::KickArguments) {
-			name = "kick"
-			description = "Éjecte un utilisateur du serveur."
+			name = Translations.Commands.Sanctions.Kick.name
+			description = Translations.Commands.Sanctions.Kick.description
 
 			action {
 				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()
 						?.canInteract(arguments.member) != true
 				) {
-					throw DiscordRelayedException("Je ne peux pas éjecter avec ce membre, il doit avoir un rôle inférieur au mien.")
+					throw DiscordRelayedException(Translations.Errors.cannotKickMember)
 				}
 
 				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
@@ -419,23 +447,21 @@ class Sanctions : Extension() {
 		}
 
 		publicSlashCommand(::MuteArguments) {
-			name = "mute"
-			description = "Mute une personne en utilisant les timeout (exclusions) discord."
+			name = Translations.Commands.Sanctions.Mute.name
+			description = Translations.Commands.Sanctions.Mute.description
 
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
 				if (arguments.member.timeoutUntil != null) throw DiscordRelayedException(
-					"La personne est déjà mute et sera unmute ${
-						arguments.member.timeoutUntil!!.toMessageFormat(
-							DiscordTimestampStyle.RelativeTime
-						)
-					}."
+					Translations.Errors.alreadyMuted.withNamedPlaceholders(
+						"until" to arguments.member.timeoutUntil!!.toMessageFormat(DiscordTimestampStyle.RelativeTime)
+					)
 				)
-				if (duration < 2.minutes) throw DiscordRelayedException("La durée doit être d'au moins 2 minutes.")
-				if (duration > 28.days) throw DiscordRelayedException("La durée doit être de moins de 28 jours.")
+				if (duration < 2.minutes) throw DiscordRelayedException(Translations.Errors.muteDurationTooShort)
+				if (duration > 28.days) throw DiscordRelayedException(Translations.Errors.muteDurationTooLong)
 
 				if (!guild!!.selfMember().canInteract(arguments.member)) {
-					throw DiscordRelayedException("Je ne peux pas mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
+					throw DiscordRelayedException(Translations.Errors.cannotMuteMember)
 				}
 
 				Sanction(
@@ -457,8 +483,8 @@ class Sanctions : Extension() {
 		}
 
 		publicSlashCommand(::UnBanArguments) {
-			name = "unban"
-			description = "Permet de débannir quelqu'un."
+			name = Translations.Commands.Sanctions.Unban.name
+			description = Translations.Commands.Sanctions.Unban.description
 
 			action {
 				guild?.getBanOrNull(arguments.user.id)?.let {
@@ -470,17 +496,17 @@ class Sanctions : Extension() {
 				}
 
 				guild?.unban(arguments.user.id, arguments.reason)
-				throw DiscordRelayedException("Le membre **${arguments.user.username}** n'a pas été trouvé dans la liste des bans.")
+				throw DiscordRelayedException(Translations.Errors.userNotFound.withNamedPlaceholders("user" to arguments.user.username))
 			}
 		}
 
 		publicSlashCommand(::UnMuteArguments) {
-			name = "unmute"
-			description = "Permets de retirer le mute d'une personne (garde quand même la sanction)."
+			name = Translations.Commands.Sanctions.Unmute.name
+			description = Translations.Commands.Sanctions.Unmute.description
 
 			action {
 				if (!guild!!.selfMember().canInteract(arguments.member)) {
-					throw DiscordRelayedException("Je ne peux pas retirer le mute cet utilisateur, il doit avoir un rôle inférieur au mien.")
+					throw DiscordRelayedException(Translations.Errors.cannotUnmuteMember)
 				}
 
 				arguments.member.timeoutUntil?.let {
@@ -494,13 +520,13 @@ class Sanctions : Extension() {
 						timeoutUntil = null
 					}
 				}
-				throw DiscordRelayedException("Cette personne n'est pas mute, je ne peux pas l'un-mute voyons...")
+				throw DiscordRelayedException(Translations.Errors.userNotMuted)
 			}
 		}
 
 		publicSlashCommand(::WarnArguments) {
-			name = "warn"
-			description = "Avertis un membre, enregistre cette sanction."
+			name = Translations.Commands.Sanctions.Warn.name
+			description = Translations.Commands.Sanctions.Warn.description
 
 			action {
 				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {

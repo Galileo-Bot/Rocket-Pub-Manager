@@ -5,6 +5,8 @@ import dev.kord.gateway.ALL
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import dev.kordex.core.ExtensibleBot
+import dev.kordex.core.checks.channelFor
+import dev.kordex.core.checks.userFor
 import extensions.*
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -87,11 +89,13 @@ suspend fun main() {
 
 		hooks {
 			extensionAdded {
-				if (debug) logger.info("Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events")
+				if (debug) logger.info { "Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events" }
 			}
 		}
 
-		i18n { defaultLocale = Locale.FRENCH }
+		i18n {
+			defaultLocale = Locale.FRENCH
+		}
 
 		intents { +Intents.ALL }
 

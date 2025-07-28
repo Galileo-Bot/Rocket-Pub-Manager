@@ -15,6 +15,7 @@ import dev.kordex.core.DiscordRelayedException
 import dev.kordex.core.commands.application.slash.PublicSlashCommandContext
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.events.EventHandler
+import dev.kordex.core.i18n.types.Key
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.types.EphemeralInteractionContext
 import dev.kordex.core.types.PublicInteractionContext
@@ -22,6 +23,8 @@ import dev.kordex.core.utils.canInteract
 import dev.kordex.core.utils.selfMember
 import dev.kordex.core.utils.timeoutUntil
 import extensions.ModifySanctionValues
+import fr.ayfri.rocketmanager.i18n.Translations
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import logger
 import utils.asMention
@@ -42,12 +45,12 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toKotlinInstant
 
-enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
-	BAN("Bannissement", "<:ban:498482002601705482>"),
-	KICK("Expulsion", "<:kick:933505066273501184>"),
-	MUTE("Exclusion (mute)", "<:mute:933505777354834021>"),
-	WARN("Avertissement", "⚠️"),
-	LIGHT_WARN("Avertissement léger", "❕");
+enum class SanctionType(val translation: Key, val emote: String) : ChoiceEnum {
+	BAN(Translations.SanctionTypes.ban, "<:ban:498482002601705482>"),
+	KICK(Translations.SanctionTypes.kick, "<:kick:933505066273501184>"),
+	MUTE(Translations.SanctionTypes.mute, "<:mute:933505777354834021>"),
+	WARN(Translations.SanctionTypes.warn, "⚠️"),
+	LIGHT_WARN(Translations.SanctionTypes.lightWarn, "❕");
 
 	override val readableName = translation
 }
@@ -61,7 +64,7 @@ data class Sanction(
 	val id: Int = 0,
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
-	val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
+	@Contextual val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
 ) {
 	constructor(
 		type: SanctionType,
@@ -99,9 +102,9 @@ data class Sanction(
 
 	suspend fun applyToMember(member: MemberBehavior, banDeleteDays: Int? = null) {
 		val user = member.fetchMemberOrNull()
-			?: throw DiscordRelayedException("La sanction ne peut être appliquée car le membre n'a pas été trouvé.")
+			?: throw DiscordRelayedException(Translations.Errors.memberNotFound)
 		if (user.guild.selfMember().fetchMemberOrNull()?.canInteract(user) != true) {
-			throw DiscordRelayedException("La sanction ne peut être appliquée car le bot n'a pas les permissions suffisantes.")
+			throw DiscordRelayedException(Translations.Errors.insufficientPermissions)
 		}
 
 		when (type) {

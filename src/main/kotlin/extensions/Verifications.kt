@@ -14,6 +14,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import entities.Verification
 import entities.findNotValidated
+import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCount
@@ -24,12 +25,12 @@ class Verifications : Extension() {
 
 	override suspend fun setup() {
 		publicSlashCommand {
-			name = "verif"
-			description = "Permets de voir les vérifications du staff."
+			name = Translations.Commands.Verifications.name
+			description = Translations.Commands.Verifications.description
 
 			publicSubCommand {
-				name = "list"
-				description = "Permets de voir les vérifications du staff."
+				name = Translations.Commands.Verifications.List.name
+				description = Translations.Commands.Verifications.List.description
 
 				action {
 					val verificationCount = getVerificationCount()
@@ -41,9 +42,12 @@ class Verifications : Extension() {
 					respond {
 						completeEmbed(
 							client = this@publicSubCommand.kord,
-							title = "Liste des publicités vérifiées.",
+							title = Translations.Embeds.Verifications.List.title.translate(),
 							description = verifications.joinToString("\n\n") {
-								"**${it.first.username}** : ${it.second} publicités vérifiées."
+								Translations.Embeds.Verifications.List.description.translateNamed(
+									"username" to it.first.username,
+									"count" to it.second.toString()
+								)
 							}
 						)
 					}
@@ -52,7 +56,7 @@ class Verifications : Extension() {
 		}
 
 		ephemeralMessageCommand {
-			name = "pub-interdite"
+			name = Translations.Commands.Verifications.ForbiddenAd.name
 			guild(ROCKET_PUB_GUILD)
 
 			action {
@@ -60,15 +64,15 @@ class Verifications : Extension() {
 				val message = targetMessages.elementAt(0)
 
 				val author = message.getAuthorAsMember()
-				message.delete("Publicité interdite.")
+				message.delete(Translations.Messages.forbiddenAd.translate())
 				Sanction(
 					type,
-					"Publicité interdite.",
+					Translations.Messages.forbiddenAd.translate(),
 					author.id,
 					user.fetchUserOrNull()?.id,
 					if (type == SanctionType.MUTE) author.getNextMuteDuration() else 0
 				).apply {
-					respond("${author.mention} a été sanctionné pour avoir publié une publicité interdite.")
+					respond(Translations.Messages.userSanctionedForbiddenAd.translateNamed("user" to author.mention))
 
 					applyToMember(author)
 					sendLog(message.kord)
@@ -139,7 +143,7 @@ class Verifications : Extension() {
 suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
 	publicButton {
 		emoji("\uD83D\uDDD1")
-		label = "Supprimer"
+		label = Translations.Buttons.delete
 
 		action {
 			message.removeComponents()

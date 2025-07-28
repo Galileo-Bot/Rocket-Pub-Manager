@@ -4,6 +4,7 @@ import dev.kord.core.behavior.UserBehavior
 import dev.kordex.core.checks.hasRole
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
+import fr.ayfri.rocketmanager.i18n.Translations
 import utils.STAFF_ROLE
 import utils.asMention
 
@@ -12,8 +13,8 @@ class Errors : Extension() {
 
 	override suspend fun setup() {
 		ephemeralSlashCommand {
-			name = "test"
-			description = "tamer"
+			name = Translations.Commands.Errors.Test.name
+			description = Translations.Commands.Errors.Test.description
 
 			check {
 				hasRole(STAFF_ROLE)

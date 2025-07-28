@@ -15,6 +15,7 @@ import dev.kord.rest.builder.message.embed
 import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import dev.kordex.core.utils.getJumpUrl
 import extensions.ModifyGuildValues
+import fr.ayfri.rocketmanager.i18n.Translations
 import storage.BannedGuild
 import storage.Sanction
 import kotlin.time.Clock
@@ -34,16 +35,16 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 	url = message.getJumpUrl()
 
 	footer {
-		text = "Cliquez sur le titre de l'embed pour aller sur le message."
+		text = Translations.Embeds.autoSanctionFooter.translate()
 	}
 
 	field {
-		name = "<:moderator:933507900092072046> Par :"
+		name = Translations.Embeds.autoSanctionAppliedBy.translate()
 		value = "${message.author!!.username} (`${sanction.member}`)"
 	}
 
 	field {
-		name = "<:textuel:658085848092508220> Messages :"
+		name = Translations.Embeds.autoSanctionMessages.translate()
 		value = messages.joinToString("\n", transform = Message::getJumpUrl)
 	}
 }
@@ -63,24 +64,27 @@ suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	basicEmbed(client)
 
-	title = "Serveur interdit."
-	description = "Voici des informations sur ce serveur interdit."
+	title = Translations.Embeds.BannedGuild.title.translate()
+	description = Translations.Embeds.BannedGuild.description.translate()
 
 	timestamp = Clock.System.now()
 
 	field {
-		name = "Raison :"
+		name = Translations.Fields.reason.translate()
 		value = guild.reason
 	}
 
 	field {
-		name = "Nom/ID :"
-		value = if (guild.name == null) "ID: ${guild.id}" else "Nom: ${guild.name}"
+		name = Translations.Fields.nameId.translate()
+		value =
+			if (guild.name == null) Translations.Fields.idValue.translateNamed("id" to guild.id) else Translations.Fields.nameValue.translateNamed(
+				"name" to guild.name
+			)
 		inline = true
 	}
 
 	field {
-		name = "Depuis :"
+		name = Translations.Fields.since.translate()
 		value = guild.bannedSince.toInstant().toKotlinInstant().toMessageFormat(DiscordTimestampStyle.LongDateTime)
 	}
 }
@@ -140,12 +144,7 @@ suspend fun EmbedBuilder.endAdChannelEmbed(client: Kord, channel: TextChannel) {
 		icon = channel.getGuild().icon?.cdnUrl?.toUrl { format = Image.Format.GIF }
 	}
 
-	description = """**
-			📌 Votre publicité doit respecter les ToS de Discord.
-			<:textuel:658085848092508220> Slowmode de 1h maximum !!
-			<a:girorouge:525406076057944096> Si vous quittez le serveur vos publicités seront supprimée automatiquement !
-		**""".trimIndent()
-
+	description = Translations.Embeds.EndAdChannel.description.translate()
 }
 
 suspend fun EmbedBuilder.modifiedGuildEmbed(
@@ -157,7 +156,11 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 ) {
 	bannedGuildEmbed(client, guild)
 
-	description = "Valeur `${value.translation}` modifiée.\nAvant:$valueBefore \nAprès:$valueAfter"
+	description = Translations.Embeds.ModifiedGuild.description.translateNamed(
+		"value" to value.translation,
+		"before" to valueBefore,
+		"after" to valueAfter
+	)
 }
 
 suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
@@ -165,27 +168,34 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 
 	completeEmbed(
 		kord,
-		"${sanction.type.emote}\n${sanction.type.translation} de ${user.username}",
-		"Nouvelle sanction appliquée à ${user.mention} (`${user.id}`)."
+		Translations.Embeds.Sanction.title.translateNamed(
+			"emote" to sanction.type.emote,
+			"type" to sanction.type.translation,
+			"username" to user.username
+		),
+		Translations.Embeds.Sanction.description.translateNamed(
+			"user" to user.mention,
+			"id" to user.id.toString()
+		)
 	)
 
 	field {
-		name = "\uD83D\uDCC4 Raison :"
+		name = Translations.Fields.reason.translate()
 		value = sanction.reason
 	}
 
 	if (sanction.appliedBy != null) {
 		field {
-			name = "<:moderator:933507900092072046> Par :"
+			name = Translations.Fields.appliedBy.translate()
 			value =
-				if (sanction.appliedBy == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+				if (sanction.appliedBy == kord.selfId) Translations.Messages.botOrDiscordInterface.translate()
 				else "${kord.getUser(sanction.appliedBy)?.username} (`${sanction.appliedBy}`)"
 		}
 	}
 
 	if (sanction.durationMS != 0L) {
 		field {
-			name = ":clock1: Durée :"
+			name = Translations.Fields.duration.translate()
 			value = sanction.formattedDuration
 		}
 	}
@@ -199,20 +209,20 @@ suspend fun EmbedBuilder.unBanEmbed(
 ) {
 	completeEmbed(
 		kord,
-		"🔓\nDé-bannissement de ${user.id}"
+		Translations.Embeds.UnBan.title.translateNamed("id" to user.id.toString())
 	)
 
 	if (unBannedBy != null) {
 		field {
 			val moderator = unBannedBy.fetchUserOrNull() ?: return@field
-			name = "<:moderator:933507900092072046> Par :"
+			name = Translations.Fields.appliedBy.translate()
 			value = "${moderator.username} (`${moderator.id}`)"
 		}
 	}
 
 	if (reason != null) {
 		field {
-			name = "\uD83D\uDCC4 Raison :"
+			name = Translations.Fields.reason.translate()
 			value = reason
 		}
 	}
@@ -221,16 +231,19 @@ suspend fun EmbedBuilder.unBanEmbed(
 suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: UserBehavior? = null) {
 	completeEmbed(
 		kord,
-		"🔉 Dé-mute de ${user.id}",
-		"Le membre ${user.mention} (`${user.id}`) a bien été dé-mute."
+		Translations.Embeds.UnMute.title.translateNamed("id" to user.id.toString()),
+		Translations.Embeds.UnMute.description.translateNamed(
+			"user" to user.mention,
+			"id" to user.id.toString()
+		)
 	)
 
 	if (unMutedBy != null) {
 		field {
 			val moderator = unMutedBy.fetchUserOrNull() ?: return@field
-			name = "<:moderator:933507900092072046> Par :"
+			name = Translations.Fields.appliedBy.translate()
 			value =
-				if (unMutedBy.id == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+				if (unMutedBy.id == kord.selfId) Translations.Messages.botOrDiscordInterface.translate()
 				else "${moderator.username} (`${moderator.id}`)"
 		}
 	}

@@ -17,6 +17,7 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.publicButton
 import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
+import fr.ayfri.rocketmanager.i18n.Translations
 import kord
 import storage.saveVerification
 import utils.*
@@ -164,7 +165,7 @@ data class Verification(
 					publicButton {
 						emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 						style = ButtonStyle.Success
-						label = "Valider"
+						label = Translations.Buttons.validateVerification
 
 						action {
 							verifications.find {
@@ -176,7 +177,7 @@ data class Verification(
 					publicButton {
 						emoji("\uD83D\uDDD1")
 						style = ButtonStyle.Danger
-						label = "Supprimer"
+						label = Translations.Buttons.delete
 
 						action {
 							verifications.find {

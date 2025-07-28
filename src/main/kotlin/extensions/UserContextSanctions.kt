@@ -5,6 +5,7 @@ import dev.kordex.core.checks.inGuild
 import dev.kordex.core.components.forms.ModalForm
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralUserCommand
+import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
 import storage.SanctionType
 import utils.ROCKET_PUB_GUILD
@@ -15,13 +16,13 @@ class UserContextSanctions : Extension() {
 	override val name = "UserContextSanctions"
 
 	inner class ModalArguments : ModalForm() {
-		override var title = "Sanctionner un membre"
+		override var title = Translations.Modal.Sanction.title
 
 		val reason = paragraphText {
-			label = "Raison"
+			label = Translations.Modal.Sanction.reasonLabel
 			maxLength = 500
 			minLength = 3
-			placeholder = "Insulte le staff..."
+			placeholder = Translations.Modal.Sanction.reasonPlaceholder
 			required = true
 		}
 	}
@@ -40,7 +41,7 @@ class UserContextSanctions : Extension() {
 
 				action { modal ->
 					if (modal == null || modal.reason.value.isNullOrBlank()) {
-						respond("Veuillez remplir le formulaire.")
+						respond(Translations.Errors.pleaseFillForm.translate())
 						return@action
 					}
 

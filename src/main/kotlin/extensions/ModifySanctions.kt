@@ -10,6 +10,7 @@ import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.member
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import fr.ayfri.rocketmanager.i18n.Translations
 import storage.SanctionType
 import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
@@ -27,19 +28,19 @@ class ModifySanctions : Extension() {
 
 	abstract class ModifySanction : Arguments() {
 		val id by int {
-			name = "cas"
-			description = "Le numéro de la sanction à modifier."
+			name = Translations.Arguments.Case.name
+			description = Translations.Arguments.Case.description
 		}
 	}
 
 	class ModifyAppliedByArguments : ModifySanction() {
 		val appliedBy by member {
-			name = "modérateur"
-			description = "Par qui la sanction a été appliquée."
+			name = Translations.Arguments.Moderator.name
+			description = Translations.Arguments.Moderator.description
 			requiredGuild = { ROCKET_PUB_GUILD }
 			validate {
 				if (!value.isStaff()) {
-					throw DiscordRelayedException("La personne n'a pas le rôle staff et n'est donc pas modérateur, impossible de l'utiliser.")
+					throw DiscordRelayedException(Translations.Errors.notStaffMember)
 				}
 			}
 		}
@@ -47,34 +48,33 @@ class ModifySanctions : Extension() {
 
 	class ModifyDurationArguments : ModifySanction() {
 		val duration by duration {
-			name = "durée"
-			description = "Durée de la sanction."
+			name = Translations.Arguments.Duration.name
+			description = Translations.Arguments.Duration.description
 		}
 	}
 
 	class ModifyReasonArguments : ModifySanction() {
 		val reason by coalescingString {
-			name = "raison"
-			description = "Raison de la sanction."
+			name = Translations.Arguments.Reason.name
+			description = Translations.Arguments.Reason.description
 		}
 	}
 
 	class ModifySanctionTypeArguments : ModifySanction() {
 		val type by enumChoice<SanctionType> {
-			name = "type"
-			description = "Type de la sanction."
-			typeName = "type"
+			name = Translations.Arguments.Type.name
+			description = Translations.Arguments.Type.description
 		}
 	}
 
 	override suspend fun setup() {
 		publicSlashCommand {
-			name = "modifier"
-			description = "Permet de modifier une sanction."
+			name = Translations.Commands.ModifySanctions.name
+			description = Translations.Commands.ModifySanctions.description
 
 			publicSubCommand(ModifySanctions::ModifyAppliedByArguments) {
-				name = "modérateur"
-				description = "Permet de modifier le modérateur de la sanction."
+				name = Translations.Commands.ModifySanctions.Moderator.name
+				description = Translations.Commands.ModifySanctions.Moderator.description
 
 				action {
 					modifySanction(arguments.id, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.toString())
@@ -82,8 +82,8 @@ class ModifySanctions : Extension() {
 			}
 
 			publicSubCommand(ModifySanctions::ModifyDurationArguments) {
-				name = "durée"
-				description = "Permet de modifier la durée de la sanction."
+				name = Translations.Commands.ModifySanctions.Duration.name
+				description = Translations.Commands.ModifySanctions.Duration.description
 
 				action {
 					modifySanction(arguments.id, ModifySanctionValues.DURATION, arguments.duration.toString())
@@ -91,8 +91,8 @@ class ModifySanctions : Extension() {
 			}
 
 			publicSubCommand(ModifySanctions::ModifyReasonArguments) {
-				name = "raison"
-				description = "Permet de modifier la raison de la sanction."
+				name = Translations.Commands.ModifySanctions.Reason.name
+				description = Translations.Commands.ModifySanctions.Reason.description
 
 				action {
 					modifySanction(arguments.id, ModifySanctionValues.REASON, arguments.reason)
@@ -100,8 +100,8 @@ class ModifySanctions : Extension() {
 			}
 
 			publicSubCommand(ModifySanctions::ModifySanctionTypeArguments) {
-				name = "type"
-				description = "Permet de modifier le type de la sanction."
+				name = Translations.Commands.ModifySanctions.Type.name
+				description = Translations.Commands.ModifySanctions.Type.description
 
 				action {
 					modifySanction(arguments.id, ModifySanctionValues.TYPE, arguments.type.name)

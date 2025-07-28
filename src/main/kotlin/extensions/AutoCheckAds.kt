@@ -22,7 +22,9 @@ import dev.kordex.core.commands.converters.impl.channel
 import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.types.Key
 import dev.kordex.core.utils.deleteIgnoringNotFound
+import fr.ayfri.rocketmanager.i18n.Translations
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import storage.Sanction
@@ -31,10 +33,10 @@ import utils.*
 import java.util.*
 import kotlin.time.Duration.Companion.days
 
-enum class ChannelAdType(private val translation: String, val sentence: String, val emote: String) : ChoiceEnum {
-	CHANNEL("salon", "liste des salons de publicités", AD_CHANNEL_EMOTE), CATEGORY(
-		"catégorie",
-		"liste des catégories de salons de publicités",
+enum class ChannelAdType(private val translation: Key, val sentence: Key, val emote: String) : ChoiceEnum {
+	CHANNEL(Translations.Fields.channel, Translations.Messages.adChannelsList, AD_CHANNEL_EMOTE), CATEGORY(
+		Translations.Fields.category,
+		Translations.Messages.adCategoriesList,
 		AD_CATEGORY_CHANNEL_EMOTE
 	);
 
@@ -48,19 +50,18 @@ class CheckAds : Extension() {
 
 	class AddChannelArguments : Arguments() {
 		val type by enumChoice<ChannelAdType> {
-			name = "type"
-			description = "Le type de salon à ajouter."
-			typeName = "type"
+			name = Translations.Arguments.Type.name
+			description = Translations.Arguments.Type.description
 		}
 
 		val channel by channel {
-			name = "salon"
-			description = "Salon à ajouter à la liste des salons à vérifier."
+			name = Translations.Arguments.Channel.name
+			description = Translations.Arguments.Channel.description
 			requiredGuild = { ROCKET_PUB_GUILD }
 			validate {
 				when (value) {
-					is VoiceChannel, is StageChannel -> throw DiscordRelayedException("Ce salon est un salon vocal, il ne peut pas être utilisé pour la liste des salons à vérifier.")
-					is ThreadChannel -> throw DiscordRelayedException("Ce salon est un thread, il ne peut pas être utilisé pour la liste des salons à vérifier.")
+					is VoiceChannel, is StageChannel -> throw DiscordRelayedException(Translations.Errors.voiceChannelNotAllowed)
+					is ThreadChannel -> throw DiscordRelayedException(Translations.Errors.threadChannelNotAllowed)
 				}
 			}
 		}
@@ -69,8 +70,8 @@ class CheckAds : Extension() {
 	override suspend fun setup() {
 
 		publicSlashCommand(::AddChannelArguments) {
-			name = "add-salon"
-			description = "Ajoute un salon de publicités à la liste des salons de publicités à vérifier."
+			name = Translations.Commands.AutoCheckAds.AddChannel.name
+			description = Translations.Commands.AutoCheckAds.AddChannel.description
 
 			guild(ROCKET_PUB_GUILD)
 
@@ -92,23 +93,39 @@ class CheckAds : Extension() {
 						}
 
 						respond(
-							"""${addedChannels.size} salons de publicités ont été ajoutés à la ${type.sentence} à vérifier :
-							${addedChannels.sorted().joinToString("\n")}
-							""".trimIndent()
+							Translations.Messages.channelsAddedToList.translateNamed(
+								"count" to addedChannels.size.toString(),
+								"list" to type.sentence,
+								"channels" to addedChannels.sorted().joinToString("\n")
+							)
 						)
 					}
 
 					is TextChannel -> when {
-						isTypeCategory && channel.isCategoryChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
-						!isTypeCategory && channel.isAdChannel() -> respond("Ce salon est déjà dans la ${type.sentence} à vérifier.")
+						isTypeCategory && channel.isCategoryChannel() -> respond(
+							Translations.Messages.channelAlreadyInList.translateNamed(
+								"list" to type.sentence
+							)
+						)
+
+						!isTypeCategory && channel.isAdChannel() -> respond(
+							Translations.Messages.channelAlreadyInList.translateNamed(
+								"list" to type.sentence
+							)
+						)
 
 						else -> {
 							channel.edit { topic = "${type.emote} ${channel.topic}" }
-							respond("Le salon ${channel.mention} a été ajouté à la ${type.sentence} à vérifier.")
+							respond(
+								Translations.Messages.channelAddedToList.translateNamed(
+									"channel" to channel.mention,
+									"list" to type.sentence
+								)
+							)
 						}
 					}
 
-					else -> respond("Ce salon n'est pas ajoutable à la ${type.sentence} à vérifier.")
+					else -> respond(Translations.Messages.channelNotAddable.translateNamed("list" to type.sentence.translate()))
 				}
 			}
 		}
@@ -123,17 +140,21 @@ suspend fun TextChannelBehavior.lightSanction(
 ) {
 	createMessage {
 		val actualHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-		val welcome = if (actualHour in 6..18) "Bonjour" else "Bonsoir"
+		val welcome =
+			if (actualHour in 6..18) Translations.Messages.goodMorning.translate() else Translations.Messages.goodEvening.translate()
 
 		val shownReason = message?.let {
-			"${reason.dropLast(1)}, dans le salon ${it.channel.mention} _(message supprimé)_."
+			Translations.Messages.lightWarnReasonWithChannel.translateNamed(
+				"reason" to reason.dropLast(1),
+				"channel" to it.channel.mention
+			)
 		} ?: reason
 
-		content = """
-				<:nope:553265076195295236> $welcome **${member.mention}**, ceci est un avertissement léger pour la raison suivante :
-				> $shownReason.
-				_<a:girorouge:525406076057944096> Merci de relire le règlement pour éviter d'être sanctionné._
-			""".trimIndent()
+		content = Translations.Messages.lightWarnMessage.translateNamed(
+			"welcome" to welcome,
+			"member" to member.mention,
+			"reason" to shownReason
+		)
 
 		allowedMentions {
 			users += member.id
@@ -171,7 +192,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			in 10..Int.MAX_VALUE -> {
 				sanction.type = SanctionType.MUTE
 				sanction.durationMS = messages.size.days.inWholeMilliseconds
-				sanction.reason = "Publicité dans toutes les catégories."
+				sanction.reason = Translations.Messages.adInAllCategories.translate()
 			}
 		}
 

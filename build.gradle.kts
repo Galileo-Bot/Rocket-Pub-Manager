@@ -33,6 +33,11 @@ kordEx {
 		dataCollection(DataCollection.None)
 		mainClass = "fr.ayfri.rocketmanager.MainKt"
 	}
+
+	i18n {
+		classPackage = "fr.ayfri.rocketmanager.i18n"
+		translationBundle = "rocketmanager.strings"
+	}
 }
 
 kotlin {
