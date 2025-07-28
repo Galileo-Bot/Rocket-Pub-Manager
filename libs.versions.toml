@@ -9,16 +9,12 @@ connector = "9.3.0"
 datetime = "0.6.2"
 dotenv = "6.5.1"
 logback = "1.5.18"
-logging = "7.0.7"
-serialization = "1.8.1"
 
 [libraries]
 connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
 datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
