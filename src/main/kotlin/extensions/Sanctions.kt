@@ -291,7 +291,7 @@ class Sanctions : Extension() {
 										}
 											$duration
 											**${Translations.Fields.reason.translate()}** : ${it.reason}
-											**${Translations.Fields.type.translate()}** : ${it.type.translation}
+											**${Translations.Fields.type.translate()}** : ${it.type.translation.translate()}
 										""".trimIndent().replace("\n\n", "\n")
 									}
 								)
