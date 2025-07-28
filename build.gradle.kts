@@ -1,43 +1,23 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import dev.kordex.gradle.plugins.kordex.DataCollection
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	alias(libs.plugins.kotlin)
 	alias(libs.plugins.serialization)
 	alias(libs.plugins.shadow)
+	alias(libs.plugins.ksp)
+	alias(libs.plugins.kordex)
 	application
 }
 
 group = "fr.ayfri"
 version = "1.0"
 
-repositories {
-	mavenCentral()
-
-	maven {
-		name = "Sonatype Releases"
-		url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-	}
-
-	maven {
-		name = "Sonatype Snapshots"
-		url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
-	}
-
-
-	maven {
-		name = "Kotlin Discord"
-		url = uri("https://repo.kord.dev/snapshots")
-	}
-}
-
 dependencies {
-	implementation(libs.kord.extensions)
-	implementation(libs.kord.unsafe)
 	implementation(libs.kord.base)
 	implementation(libs.dotenv)
 
-	implementation(libs.groovy)
 	implementation(libs.logback)
 	implementation(libs.logging)
 
@@ -46,13 +26,22 @@ dependencies {
 	implementation(libs.datetime)
 }
 
-kotlin {
-	jvmToolchain(21)
+kordEx {
+	kordExVersion = libs.versions.kord.extensions.get()
+
+	bot {
+		dataCollection(DataCollection.None)
+		mainClass = "fr.ayfri.rocketmanager.MainKt"
+	}
 }
 
-tasks.withType<KotlinCompile> {
-	kotlinOptions.jvmTarget = "21"
-	kotlinOptions.freeCompilerArgs = listOf("-Xcontext-receivers")
+kotlin {
+	jvmToolchain(21)
+
+	compilerOptions {
+		jvmTarget = JvmTarget.JVM_21
+		freeCompilerArgs = listOf("-Xcontext-receivers")
+	}
 }
 
 tasks.withType<ShadowJar> {

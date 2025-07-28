@@ -1,30 +1,30 @@
 [versions]
-kotlin = "1.9.22"
-shadow = "7.1.2"
+kotlin = "2.1.21"
+kordex = "1.7.1"
+kord-extensions = "2.3.3-SNAPSHOT"
+ksp = "2.1.21-2.0.1"
+shadow = "8.1.1"
 
-connector = "8.1.0"
-datetime = "0.4.0"
-dotenv = "6.4.1"
-groovy = "3.0.14"
-kord-base = "0.12.0"
-kord-extensions = "1.6.0"
-logging = "3.0.5"
-logback = "1.4.8"
-serialization = "1.5.1"
+connector = "9.3.0"
+datetime = "0.7.1"
+dotenv = "6.5.1"
+kord-base = "0.15.0"
+logback = "1.5.18"
+logging = "7.0.7"
+serialization = "1.8.1"
 
 [libraries]
 connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
 datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
-groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
 kord-base = { module = "dev.kord:kord-core", version.ref = "kord-base" }
-kord-extensions = { module = "com.kotlindiscord.kord.extensions:kord-extensions", version.ref = "kord-extensions" }
-kord-unsafe = { module = "com.kotlindiscord.kord.extensions:unsafe", version.ref = "kord-extensions" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "logging" }
+logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logging" }
 serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kordex = { id = "dev.kordex.gradle.kordex", version.ref = "kordex" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
