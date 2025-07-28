@@ -20,7 +20,7 @@ services:
             - mariadb_data:/var/lib/mariadb
             - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
         ports:
-            - '3306:3306'
+            - '${DB_EXPOSED_PORT}:3306'
 
 volumes:
     mariadb_data:
