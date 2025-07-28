@@ -38,7 +38,7 @@ val dataSource = MysqlConnectionPoolDataSource().apply {
 	password = env("AYFRI_ROCKETMANAGER_DB_MDP")
 	allowMultiQueries = true
 	user = env("AYFRI_ROCKETMANAGER_DB_USER")
-}.also { logger.debug("Database connection initialized") }
+}.also { logger.debug { "Database connection initialized" } }
 
 private var oldConnection: Connection? = null
 
@@ -49,7 +49,7 @@ val connection: Connection
 			try {
 				it.createStatement().execute("SELECT 1")
 			} catch (e: Exception) {
-				logger.debug("Connection is closed, creating a new one")
+				logger.debug { "Connection is closed, creating a new one" }
 				oldConnection = dataSource.connection
 			}
 		}
@@ -67,7 +67,9 @@ suspend fun main() {
 	bot = ExtensibleBot(env("AYFRI_ROCKETMANAGER_TOKEN")) {
 		applicationCommands {
 			slashCommandCheck {
-				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
+				val user = userFor(event)
+				val channel = channelFor(event)
+				logger.debug { "Got a slash command from ${user?.id.enquote} in ${(channel?.id?.toString() ?: "dm").enquote}" }
 				pass()
 			}
 		}
@@ -131,7 +133,7 @@ suspend fun main() {
 					removeExtension(it.name)
 				}
 
-				logger.info { "Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events" }
+				logger.debug { "Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events" }
 			}
 		}
 
@@ -147,6 +149,6 @@ suspend fun main() {
 		}
 	}
 
-	if (debug) logger.debug("Debug mode is enabled.")
+	logger.debug { "Debug mode is enabled." }
 	bot.start()
 }
