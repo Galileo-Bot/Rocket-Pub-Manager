@@ -1,10 +1,5 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.checks.inGuild
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
-import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.AuditLogChangeKey
 import dev.kord.common.entity.AuditLogEvent
 import dev.kord.core.behavior.UserBehavior
@@ -15,8 +10,12 @@ import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
+import dev.kordex.core.checks.inGuild
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.utils.scheduling.Scheduler
+import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Clock
 import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
@@ -24,16 +23,16 @@ import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
 import utils.unBanEmbed
 import utils.unMuteEmbed
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 class AutoSanctions : Extension() {
 	override val name = "Detect-Sanctions"
 	private val scheduler = Scheduler()
 
-	@OptIn(ExperimentalTime::class)
+
 	override suspend fun setup() {
 		event<BanAddEvent> {
 			check { inGuild(ROCKET_PUB_GUILD) }

@@ -1,15 +1,13 @@
-import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.checks.channelFor
-import com.kotlindiscord.kord.extensions.checks.userFor
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
 import dev.kord.gateway.ALL
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
+import dev.kordex.core.ExtensibleBot
 import extensions.*
 import io.github.cdimascio.dotenv.dotenv
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import utils.enquote
 import java.sql.Connection
 import java.util.*

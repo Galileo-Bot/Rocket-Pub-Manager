@@ -1,15 +1,16 @@
 package utils
 
-import com.kotlindiscord.kord.extensions.checks.channelFor
-import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.Event
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kordex.core.checks.channelFor
+import dev.kordex.core.checks.types.CheckContext
 
-const val DISCORD_INVITE_LINK_REGEX = "(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
+const val DISCORD_INVITE_LINK_REGEX =
+	"(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
 const val AD_CHANNEL_EMOTE = "<:validate:525405975289659402>"
 
@@ -54,9 +55,14 @@ suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	failIfNot("Channel isn't an ad category channel.") { channel.fetchChannel().isCategoryChannel() }
 }
 
-suspend fun Kord.getVerifChannel() = getChannelOf<TextChannel>(VERIF_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+suspend fun Kord.getVerifChannel() =
+	getChannelOf<TextChannel>(VERIF_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+
 suspend fun Kord.getLogSanctionsChannel() =
 	getChannelOf<TextChannel>(SANCTION_LOGS_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
 
-suspend fun Kord.getVerifLogsChannel() = getChannelOf<TextChannel>(VERIF_LOGS_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
-suspend fun Kord.getRocketPubGuild() = getGuildOrNull(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+suspend fun Kord.getVerifLogsChannel() =
+	getChannelOf<TextChannel>(VERIF_LOGS_CHANNEL, EntitySupplyStrategy.cacheWithCachingRestFallback)!!
+
+suspend fun Kord.getRocketPubGuild() =
+	getGuildOrNull(ROCKET_PUB_GUILD, EntitySupplyStrategy.cacheWithCachingRestFallback)!!

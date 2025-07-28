@@ -1,13 +1,5 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.checks.channelType
-import com.kotlindiscord.kord.extensions.checks.inGuild
-import com.kotlindiscord.kord.extensions.checks.isNotBot
-import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
-import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
-import com.kotlindiscord.kord.extensions.utils.getJumpUrl
-import com.kotlindiscord.kord.extensions.utils.hasPermission
 import debug
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
@@ -17,7 +9,15 @@ import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
+import dev.kordex.core.checks.channelType
+import dev.kordex.core.checks.inGuild
+import dev.kordex.core.checks.isNotBot
+import dev.kordex.core.checks.types.CheckContext
+import dev.kordex.core.types.EphemeralInteractionContext
+import dev.kordex.core.types.PublicInteractionContext
+import dev.kordex.core.utils.getJumpUrl
+import dev.kordex.core.utils.hasPermission
 import storage.Sanction
 import utils.*
 

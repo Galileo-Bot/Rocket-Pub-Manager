@@ -1,10 +1,6 @@
 package entities
 
 import bot
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.publicButton
-import com.kotlindiscord.kord.extensions.components.types.emoji
-import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.UserBehavior
@@ -16,8 +12,11 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
+import dev.kordex.core.components.components
+import dev.kordex.core.components.publicButton
+import dev.kordex.core.components.types.emoji
+import dev.kordex.core.utils.deleteIgnoringNotFound
 import kord
 import storage.saveVerification
 import utils.*

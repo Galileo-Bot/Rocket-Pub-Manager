@@ -1,15 +1,15 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.DiscordRelayedException
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
-import com.kotlindiscord.kord.extensions.commands.converters.impl.int
-import com.kotlindiscord.kord.extensions.commands.converters.impl.member
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import dev.kordex.core.DiscordRelayedException
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.coalescingString
+import dev.kordex.core.commands.converters.impl.duration
+import dev.kordex.core.commands.converters.impl.int
+import dev.kordex.core.commands.converters.impl.member
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import storage.SanctionType
 import storage.modifySanction
 import utils.ROCKET_PUB_GUILD

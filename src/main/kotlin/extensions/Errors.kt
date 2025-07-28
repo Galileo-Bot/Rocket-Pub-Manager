@@ -1,9 +1,9 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.checks.hasRole
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import dev.kord.core.behavior.UserBehavior
+import dev.kordex.core.checks.hasRole
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralSlashCommand
 import utils.STAFF_ROLE
 import utils.asMention
 

@@ -1,14 +1,5 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.DiscordRelayedException
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
-import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import dev.kord.core.behavior.channel.TextChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
@@ -21,8 +12,17 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.VoiceChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.rest.builder.message.create.allowedMentions
+import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.embed
+import dev.kordex.core.DiscordRelayedException
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.converters.impl.channel
+import dev.kordex.core.components.components
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.deleteIgnoringNotFound
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import storage.Sanction

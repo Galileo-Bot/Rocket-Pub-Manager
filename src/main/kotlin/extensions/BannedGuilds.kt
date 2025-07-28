@@ -1,21 +1,22 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.annotations.AlwaysPublicResponse
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.time.TimestampType
-import com.kotlindiscord.kord.extensions.time.toDiscord
-import kotlinx.datetime.toKotlinInstant
+import dev.kordex.core.annotations.AlwaysPublicResponse
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.time.TimestampType
+import dev.kordex.core.time.toDiscord
 import storage.*
 import utils.bannedGuildEmbed
 import utils.completeEmbed
 import utils.cutFormatting
 import utils.modifiedGuildEmbed
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 
 fun isValidGuildId(value: String) =
@@ -87,7 +88,7 @@ class BannedGuilds : Extension() {
 		}
 	}
 
-	@OptIn(AlwaysPublicResponse::class)
+	@OptIn(AlwaysPublicResponse::class, ExperimentalTime::class)
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = "serveurs"
@@ -150,7 +151,8 @@ class BannedGuilds : Extension() {
 							page {
 								val list = bannedGuildListChunk.map { (name, id, reason, bannedSince) ->
 									val date =
-										bannedSince.toInstant().toKotlinInstant().toDiscord(TimestampType.RelativeTime)
+										Instant.fromEpochMilliseconds(bannedSince.time)
+											.toDiscord(TimestampType.RelativeTime)
 									val result = "${name ?: id} ${id?.run { "`($this)`" } ?: ""} $date"
 									"$result - ${reason.cutFormatting(100 - result.length)}"
 								}

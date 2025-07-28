@@ -1,17 +1,17 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.checks.hasRole
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.components.ComponentContainer
-import com.kotlindiscord.kord.extensions.components.publicButton
-import com.kotlindiscord.kord.extensions.components.types.emoji
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import debug
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
+import dev.kordex.core.checks.hasRole
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.components.ComponentContainer
+import dev.kordex.core.components.publicButton
+import dev.kordex.core.components.types.emoji
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralMessageCommand
+import dev.kordex.core.extensions.event
+import dev.kordex.core.extensions.publicSlashCommand
 import entities.Verification
 import entities.findNotValidated
 import storage.Sanction
@@ -33,9 +33,10 @@ class Verifications : Extension() {
 
 				action {
 					val verificationCount = getVerificationCount()
-					val verifications = verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }.map {
-						(guild!!.getMemberOrNull(it.first) ?: return@map null) to it.second
-					}.filterNotNull()
+					val verifications =
+						verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }.map {
+							(guild!!.getMemberOrNull(it.first) ?: return@map null) to it.second
+						}.filterNotNull()
 
 					respond {
 						completeEmbed(
@@ -124,7 +125,8 @@ class Verifications : Extension() {
 					sanctionMessages.find {
 						it.sanction.member == eventMessage.author!!.id && it.sanction.reason == reason
 					}?.let {
-						sanctionMessages.getFromValue(it).sanctionMessage = updateMessagesInEmbed(it.sanctionMessage, eventMessage)
+						sanctionMessages.getFromValue(it).sanctionMessage =
+							updateMessagesInEmbed(it.sanctionMessage, eventMessage)
 					}
 				}
 

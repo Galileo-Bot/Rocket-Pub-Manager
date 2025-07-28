@@ -1,6 +1,5 @@
 package utils
 
-import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
@@ -14,11 +13,12 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
 import dev.kord.rest.builder.message.modify.MessageModifyBuilder
+import dev.kordex.core.utils.getJumpUrl
 import extensions.ModifyGuildValues
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toKotlinInstant
 import storage.BannedGuild
 import storage.Sanction
+import kotlin.time.Clock
+import kotlin.time.toKotlinInstant
 
 suspend fun EmbedBuilder.autoSanctionEmbed(
 	message: Message,
@@ -48,6 +48,7 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 	}
 }
 
+
 suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	val user = client.getSelf(EntitySupplyStrategy.cacheWithRestFallback)
 
@@ -57,6 +58,7 @@ suspend fun EmbedBuilder.basicEmbed(client: Kord) {
 	}
 	timestamp = Clock.System.now()
 }
+
 
 suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	basicEmbed(client)
@@ -83,7 +85,12 @@ suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 	}
 }
 
-suspend fun EmbedBuilder.completeEmbed(client: Kord, title: String, description: String = "", block: EmbedBuilder.() -> Unit = {}) {
+suspend fun EmbedBuilder.completeEmbed(
+	client: Kord,
+	title: String,
+	description: String = "",
+	block: EmbedBuilder.() -> Unit = {}
+) {
 	basicEmbed(client)
 
 	this.title = title
@@ -170,8 +177,9 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	if (sanction.appliedBy != null) {
 		field {
 			name = "<:moderator:933507900092072046> Par :"
-			value = if (sanction.appliedBy == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
-			else "${kord.getUser(sanction.appliedBy)?.username} (`${sanction.appliedBy}`)"
+			value =
+				if (sanction.appliedBy == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+				else "${kord.getUser(sanction.appliedBy)?.username} (`${sanction.appliedBy}`)"
 		}
 	}
 
@@ -183,7 +191,12 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	}
 }
 
-suspend fun EmbedBuilder.unBanEmbed(kord: Kord, user: UserBehavior, unBannedBy: UserBehavior? = null, reason: String? = null) {
+suspend fun EmbedBuilder.unBanEmbed(
+	kord: Kord,
+	user: UserBehavior,
+	unBannedBy: UserBehavior? = null,
+	reason: String? = null
+) {
 	completeEmbed(
 		kord,
 		"🔓\nDé-bannissement de ${user.id}"
@@ -216,13 +229,19 @@ suspend fun EmbedBuilder.unMuteEmbed(kord: Kord, user: UserBehavior, unMutedBy: 
 		field {
 			val moderator = unMutedBy.fetchUserOrNull() ?: return@field
 			name = "<:moderator:933507900092072046> Par :"
-			value = if (unMutedBy.id == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
-			else "${moderator.username} (`${moderator.id}`)"
+			value =
+				if (unMutedBy.id == kord.selfId) "Par le bot ou depuis l'interface discord (membre non récupérable)."
+				else "${moderator.username} (`${moderator.id}`)"
 		}
 	}
 }
 
-suspend fun MessageCreateBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
+suspend fun MessageCreateBuilder.completeEmbed(
+	client: Kord,
+	title: String,
+	description: String,
+	block: EmbedBuilder.() -> Unit = {}
+) =
 	embed {
 		completeEmbed(client, title, description, block)
 	}
@@ -245,7 +264,12 @@ suspend fun MessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) =
 	sanctionEmbed(kord, sanction)
 }
 
-suspend fun MessageModifyBuilder.completeEmbed(client: Kord, title: String, description: String, block: EmbedBuilder.() -> Unit = {}) =
+suspend fun MessageModifyBuilder.completeEmbed(
+	client: Kord,
+	title: String,
+	description: String,
+	block: EmbedBuilder.() -> Unit = {}
+) =
 	embed {
 		completeEmbed(client, title, description, block)
 	}

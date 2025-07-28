@@ -1,10 +1,10 @@
 package extensions
 
-import com.kotlindiscord.kord.extensions.checks.inGuild
-import com.kotlindiscord.kord.extensions.components.forms.ModalForm
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralUserCommand
 import dev.kord.core.behavior.ban
+import dev.kordex.core.checks.inGuild
+import dev.kordex.core.components.forms.ModalForm
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralUserCommand
 import storage.Sanction
 import storage.SanctionType
 import utils.ROCKET_PUB_GUILD
@@ -25,6 +25,7 @@ class UserContextSanctions : Extension() {
 			required = true
 		}
 	}
+
 
 	override suspend fun setup() {
 		val userCommandsSanctionTypes = listOf("ban", "kick", "light_warn", "warn")

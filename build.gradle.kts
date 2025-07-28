@@ -40,7 +40,7 @@ kotlin {
 
 	compilerOptions {
 		jvmTarget = JvmTarget.JVM_21
-		freeCompilerArgs = listOf("-Xcontext-receivers")
+		freeCompilerArgs = listOf("-Xcontext-receivers", "-opt-in=kotlin.time.ExperimentalTime")
 	}
 }
 

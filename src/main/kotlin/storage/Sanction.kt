@@ -1,15 +1,5 @@
 package storage
 
-import com.kotlindiscord.kord.extensions.DiscordRelayedException
-import com.kotlindiscord.kord.extensions.commands.application.slash.PublicSlashCommandContext
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
-import com.kotlindiscord.kord.extensions.events.EventHandler
-import com.kotlindiscord.kord.extensions.time.TimestampType
-import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
-import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
-import com.kotlindiscord.kord.extensions.utils.canInteract
-import com.kotlindiscord.kord.extensions.utils.selfMember
-import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import connection
 import debug
 import dev.kord.common.entity.Snowflake
@@ -21,9 +11,17 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.embed
+import dev.kordex.core.DiscordRelayedException
+import dev.kordex.core.commands.application.slash.PublicSlashCommandContext
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.events.EventHandler
+import dev.kordex.core.time.TimestampType
+import dev.kordex.core.types.EphemeralInteractionContext
+import dev.kordex.core.types.PublicInteractionContext
+import dev.kordex.core.utils.canInteract
+import dev.kordex.core.utils.selfMember
+import dev.kordex.core.utils.timeoutUntil
 import extensions.ModifySanctionValues
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
 import utils.asMention
@@ -38,9 +36,11 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
+import kotlin.time.toKotlinInstant
 
 enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum {
 	BAN("Bannissement", "<:ban:498482002601705482>"),
@@ -52,6 +52,7 @@ enum class SanctionType(val translation: String, val emote: String) : ChoiceEnum
 	override val readableName = translation
 }
 
+
 @Serializable
 data class Sanction(
 	var type: SanctionType,
@@ -60,9 +61,15 @@ data class Sanction(
 	val id: Int = 0,
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
-	val sanctionedAt: kotlinx.datetime.Instant = Clock.System.now(),
+	val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
 ) {
-	constructor(type: SanctionType, reason: String? = null, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long = 0) : this(
+	constructor(
+		type: SanctionType,
+		reason: String? = null,
+		member: Snowflake,
+		appliedBy: Snowflake? = null,
+		durationMS: Long = 0
+	) : this(
 		type, reason ?: DEFAULT_REASON, member, appliedBy = appliedBy, durationMS = durationMS
 	)
 
@@ -88,6 +95,7 @@ data class Sanction(
 			reason == other.reason &&
 			member == other.member &&
 			abs(durationMS - other.durationMS) < 10_000
+
 
 	suspend fun applyToMember(member: MemberBehavior, banDeleteDays: Int? = null) {
 		val user = member.fetchMemberOrNull()
@@ -125,7 +133,7 @@ data class Sanction(
 			content = "||${member.asMention<UserBehavior>()}||"
 		}
 
-		if (debug) logger.debug("Nouvelle sanction sauvegardée : $this")
+		if (debug) logger.debug { "Nouvelle sanction sauvegardée : $this" }
 	}
 
 	suspend fun PublicSlashCommandContext<*, *>.sendLog() = sendLog(this@sendLog.channel.kord)
@@ -191,7 +199,15 @@ fun getSanctions(user: Snowflake): List<Sanction> {
 		}
 		val durationMS = result.getLong("durationMS")
 		val sanctionedAt = LocalDateTime.parse(result.getString("sanctionedAt"), formatter)
-		sanctions += Sanction(type, reason, member, id, appliedBy, durationMS, sanctionedAt.toInstant(offset).toKotlinInstant())
+		sanctions += Sanction(
+			type,
+			reason,
+			member,
+			id,
+			appliedBy,
+			durationMS,
+			sanctionedAt.toInstant(offset).toKotlinInstant()
+		)
 	}
 	return sanctions
 }
@@ -228,13 +244,20 @@ fun removeSanction(id: Int) = connection.createStatement().executeUpdate(
 	""".trimIndent()
 )
 
-fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate("""
+fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate(
+	"""
 	DELETE FROM sanctions
 	WHERE memberID = ${user.enquote}
 	${type?.let { "AND type = ${it.lowercase().enquote}" } ?: ""}
 	""".trimIndent())
 
-fun saveSanction(type: SanctionType, reason: String, member: Snowflake, appliedBy: Snowflake? = null, durationMS: Long? = null): Int {
+fun saveSanction(
+	type: SanctionType,
+	reason: String,
+	member: Snowflake,
+	appliedBy: Snowflake? = null,
+	durationMS: Long? = null
+): Int {
 	val dateTime = formatter.format(Instant.now()).enquote
 	return connection.createStatement().executeUpdate(
 		"""
