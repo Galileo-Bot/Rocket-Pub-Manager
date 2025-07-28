@@ -126,7 +126,12 @@ suspend fun main() {
 
 		hooks {
 			extensionAdded {
-				if (debug) logger.info { "Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events" }
+				// Remove unnecessary default kordex about extension
+				if (it.name == "kordex.about") {
+					removeExtension(it.name)
+				}
+
+				logger.info { "Loaded extension: ${it.name} with ${it.slashCommands.size} slash commands, ${it.chatCommands.size} chat commands and ${it.eventHandlers.size} events" }
 			}
 		}
 
