@@ -95,33 +95,25 @@ suspend fun main() {
 		}
 
 		errorResponse { message, failureReason ->
+			logger.error { failureReason.error.localizedMessage ?: "Unknown error" }
+
 			val userMsg = when (failureReason) {
-				is FailureReason.RelayedFailure -> {
-					if (debug) logger.error { "Relayed failure: ${failureReason.error}" }
+				is FailureReason.RelayedFailure ->
 					// Handle relayed failures (errors thrown by the command itself)
 					failureReason.error.message
-				}
 
-				is FailureReason.ProvidedCheckFailure -> {
-					if (debug) logger.error { "Check failure: ${failureReason.error}" }
+				is FailureReason.ProvidedCheckFailure ->
 					// Handle check failures (permission checks, etc.)
 					Translations.Errors.insufficientPermissions.translate()
-				}
 
-				is FailureReason.ArgumentParsingFailure -> {
-					if (debug) logger.error { "Argument parsing failure: ${failureReason.error.localizedMessage}" }
+				is FailureReason.ArgumentParsingFailure ->
 					Translations.Errors.argumentParsingError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
-				}
 
-				is FailureReason.OwnPermissionsCheckFailure -> {
-					if (debug) logger.error { "Own permissions check failure: ${failureReason.error.localizedMessage}" }
+				is FailureReason.OwnPermissionsCheckFailure ->
 					Translations.Errors.insufficientPermissions.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
-				}
 
-				is FailureReason.ExecutionError -> {
-					if (debug) logger.error { "Execution error: ${failureReason.error.localizedMessage}" }
+				is FailureReason.ExecutionError ->
 					Translations.Errors.executionError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
-				}
 			}
 			this.content = userMsg
 		}
