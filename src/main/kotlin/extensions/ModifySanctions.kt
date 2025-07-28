@@ -64,6 +64,7 @@ class ModifySanctions : Extension() {
 		val type by enumChoice<SanctionType> {
 			name = Translations.Arguments.Type.name
 			description = Translations.Arguments.Type.description
+			typeName = Translations.Arguments.Type.name
 		}
 	}
 

@@ -130,9 +130,9 @@ data class Verification(
 					if (invite != null) {
 						name = "\uD83D\uDCE9 Invitation :"
 						value = """
-							Serveur : ${invite?.partialGuild?.name ?: "Non trouvé."}
-							ID du serveur : ${invite?.partialGuild?.id?.toString() ?: "Non trouvé."}
-							Nombre de membres : ${invite?.approximateMemberCount ?: "Non trouvé."}
+							Serveur : ${invite.partialGuild?.name ?: "Non trouvé."}
+							ID du serveur : ${invite.partialGuild?.id?.toString() ?: "Non trouvé."}
+							Nombre de membres : ${invite.approximateMemberCount ?: "Non trouvé."}
 						""".trimIndent()
 					} else {
 						name = "Invitation :"

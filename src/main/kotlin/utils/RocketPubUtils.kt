@@ -8,6 +8,7 @@ import dev.kord.core.event.Event
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.checks.channelFor
 import dev.kordex.core.checks.types.CheckContext
+import dev.kordex.core.utils.env
 
 const val DISCORD_INVITE_LINK_REGEX =
 	"(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
@@ -24,7 +25,7 @@ val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
 val ROCKET_PUB_GUILD_STAFF = Snowflake("770763755265064980")
 
 /** Salon des logs pour les sanctions */
-val SANCTION_LOGS_CHANNEL = Snowflake(System.getenv("AYFRI_ROCKETMANAGER_CHANNEL_SANCTION_ID"))
+val SANCTION_LOGS_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_SANCTION_ID"))
 
 /** Rôle de staff */
 val STAFF_ROLE = Snowflake("494521544618278934")
@@ -33,10 +34,10 @@ val STAFF_ROLE = Snowflake("494521544618278934")
 val VALID_EMOJI = Snowflake("525405975289659402")
 
 /** Salon des vérifications */
-val VERIF_CHANNEL = Snowflake(System.getenv("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_ID"))
+val VERIF_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_ID"))
 
 /** Salon des logs pour les vérifications */
-val VERIF_LOGS_CHANNEL = Snowflake(System.getenv("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_LOGS_ID"))
+val VERIF_LOGS_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_LOGS_ID"))
 
 fun ChannelBehavior.isAdChannel() = this is TextChannel && topic?.contains(AD_CHANNEL_EMOTE) == true
 fun ChannelBehavior.isCategoryChannel() = this is TextChannel && topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true

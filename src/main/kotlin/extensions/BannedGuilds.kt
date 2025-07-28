@@ -12,13 +12,13 @@ import dev.kordex.core.i18n.types.Key
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.time.toDiscord
 import fr.ayfri.rocketmanager.i18n.Translations
+import kotlinx.datetime.Instant
 import storage.*
 import utils.bannedGuildEmbed
 import utils.completeEmbed
 import utils.cutFormatting
 import utils.modifiedGuildEmbed
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 
 fun isValidGuildId(value: String) =
@@ -81,6 +81,7 @@ class BannedGuilds : Extension() {
 		val value by enumChoice<ModifyGuildValues> {
 			name = Translations.Arguments.Property.name
 			description = Translations.Arguments.Property.description
+			typeName = Translations.Arguments.Property.name
 		}
 
 		val newValue by string {

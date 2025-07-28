@@ -7,6 +7,7 @@ import dev.kord.gateway.PrivilegedIntent
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.checks.channelFor
 import dev.kordex.core.checks.userFor
+import dev.kordex.core.utils.env
 import extensions.*
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -21,19 +22,19 @@ val configuration = dotenv {
 	systemProperties = true
 }
 
-val debug get() = System.getenv("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
-val adsAutomatic get() = System.getenv("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
-val endMessageAutomatic get() = System.getenv("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE").toBooleanStrict()
+val debug get() = env("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
+val adsAutomatic get() = env("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
+val endMessageAutomatic get() = env("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE").toBooleanStrict()
 
 lateinit var bot: ExtensibleBot
 
 val dataSource = MysqlConnectionPoolDataSource().apply {
-	serverName = System.getenv("AYFRI_ROCKETMANAGER_DB_IP")
-	port = System.getenv("AYFRI_ROCKETMANAGER_DB_PORT").toInt()
-	databaseName = System.getenv("AYFRI_ROCKETMANAGER_DB_NAME")
-	password = System.getenv("AYFRI_ROCKETMANAGER_DB_MDP")
+	serverName = env("AYFRI_ROCKETMANAGER_DB_IP")
+	port = env("AYFRI_ROCKETMANAGER_DB_PORT").toInt()
+	databaseName = env("AYFRI_ROCKETMANAGER_DB_NAME")
+	password = env("AYFRI_ROCKETMANAGER_DB_MDP")
 	allowMultiQueries = true
-	user = System.getenv("AYFRI_ROCKETMANAGER_DB_USER")
+	user = env("AYFRI_ROCKETMANAGER_DB_USER")
 }.also { logger.debug("Database connection initialized") }
 
 private var oldConnection: Connection? = null
@@ -59,7 +60,7 @@ val ExtensibleBot.kord get() = getKoin().get<Kord>()
 suspend fun main() {
 	TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
 
-	bot = ExtensibleBot(System.getenv("AYFRI_ROCKETMANAGER_TOKEN")) {
+	bot = ExtensibleBot(env("AYFRI_ROCKETMANAGER_TOKEN")) {
 		applicationCommands {
 			slashCommandCheck {
 				if (debug) logger.info("Got a slash command from ${userFor(event)?.id.enquote} in ${(channelFor(event)?.id?.toString() ?: "dm").enquote}")
@@ -69,7 +70,7 @@ suspend fun main() {
 
 		chatCommands {
 			enabled = true
-			defaultPrefix = System.getenv("AYFRI_ROCKETMANAGER_PREFIX")
+			defaultPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
 		}
 
 		extensions {

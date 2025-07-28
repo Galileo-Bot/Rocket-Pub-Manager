@@ -102,6 +102,7 @@ class Sanctions : Extension() {
 		val unit by optionalEnumChoice<DurationUnits> {
 			name = Translations.Arguments.Unit.name
 			description = Translations.Arguments.Unit.description
+			typeName = Translations.Arguments.Unit.name
 		}
 	}
 
@@ -121,6 +122,7 @@ class Sanctions : Extension() {
 		val type by optionalEnumChoice<SanctionType> {
 			name = Translations.Arguments.Type.name
 			description = Translations.Arguments.Type.description
+			typeName = Translations.Arguments.Type.name
 		}
 	}
 
@@ -133,6 +135,7 @@ class Sanctions : Extension() {
 		val type by optionalEnumChoice<SanctionType> {
 			name = Translations.Arguments.Type.name
 			description = Translations.Arguments.Type.description
+			typeName = Translations.Arguments.Type.name
 		}
 	}
 
@@ -167,6 +170,7 @@ class Sanctions : Extension() {
 		val unit by enumChoice<DurationUnits> {
 			name = Translations.Arguments.Unit.name
 			description = Translations.Arguments.Unit.description
+			typeName = Translations.Arguments.Unit.name
 		}
 
 		val reason by coalescingString {

@@ -34,7 +34,8 @@ import java.util.*
 import kotlin.time.Duration.Companion.days
 
 enum class ChannelAdType(private val translation: Key, val sentence: Key, val emote: String) : ChoiceEnum {
-	CHANNEL(Translations.Fields.channel, Translations.Messages.adChannelsList, AD_CHANNEL_EMOTE), CATEGORY(
+	CHANNEL(Translations.Fields.channel, Translations.Messages.adChannelsList, AD_CHANNEL_EMOTE),
+	CATEGORY(
 		Translations.Fields.category,
 		Translations.Messages.adCategoriesList,
 		AD_CATEGORY_CHANNEL_EMOTE
@@ -52,6 +53,7 @@ class CheckAds : Extension() {
 		val type by enumChoice<ChannelAdType> {
 			name = Translations.Arguments.Type.name
 			description = Translations.Arguments.Type.description
+			typeName = Translations.Arguments.Type.name
 		}
 
 		val channel by channel {

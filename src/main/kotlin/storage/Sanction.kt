@@ -3,6 +3,7 @@ package storage
 import connection
 import debug
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.serialization.InstantInEpochMillisecondsSerializer
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.UserBehavior
@@ -24,7 +25,8 @@ import dev.kordex.core.utils.selfMember
 import dev.kordex.core.utils.timeoutUntil
 import extensions.ModifySanctionValues
 import fr.ayfri.rocketmanager.i18n.Translations
-import kotlinx.serialization.Contextual
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
 import utils.asMention
@@ -39,11 +41,9 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
-import kotlin.time.toKotlinInstant
 
 enum class SanctionType(val translation: Key, val emote: String) : ChoiceEnum {
 	BAN(Translations.SanctionTypes.ban, "<:ban:498482002601705482>"),
@@ -64,7 +64,8 @@ data class Sanction(
 	val id: Int = 0,
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
-	@Contextual val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
+	@Serializable(with = InstantInEpochMillisecondsSerializer::class)
+	val sanctionedAt: kotlinx.datetime.Instant = Clock.System.now(),
 ) {
 	constructor(
 		type: SanctionType,
