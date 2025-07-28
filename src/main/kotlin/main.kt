@@ -95,7 +95,13 @@ suspend fun main() {
 		}
 
 		errorResponse { message, failureReason ->
-			logger.error { failureReason.error.localizedMessage ?: "Unknown error" }
+			logger.error {
+				"""
+				${failureReason.error.localizedMessage}
+				${failureReason.error.message}
+				${failureReason.error.stackTraceToString()}
+				""".trimIndent()
+			}
 
 			val userMsg = when (failureReason) {
 				is FailureReason.RelayedFailure ->
