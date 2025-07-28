@@ -32,7 +32,13 @@ class UserContextSanctions : Extension() {
 		val userCommandsSanctionTypes = listOf("ban", "kick", "light_warn", "warn")
 		userCommandsSanctionTypes.forEach { commandName ->
 			ephemeralUserCommand(::ModalArguments) {
-				name = commandName
+				name = when (commandName) {
+					"ban" -> Translations.Commands.UserContext.Ban.name
+					"kick" -> Translations.Commands.UserContext.Kick.name
+					"light_warn" -> Translations.Commands.UserContext.LightWarn.name
+					"warn" -> Translations.Commands.UserContext.Warn.name
+					else -> throw IllegalArgumentException("Unknown command name: $commandName")
+				}
 				guildId = ROCKET_PUB_GUILD
 
 				check {
