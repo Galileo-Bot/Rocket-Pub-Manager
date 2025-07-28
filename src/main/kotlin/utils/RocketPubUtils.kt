@@ -9,6 +9,7 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.checks.channelFor
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.utils.env
+import fr.ayfri.rocketmanager.i18n.Translations
 
 const val DISCORD_INVITE_LINK_REGEX =
 	"(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
@@ -46,14 +47,14 @@ suspend fun <T : Event> CheckContext<T>.isAdChannel() {
 	if (!passed) return
 	val channel = channelFor(event)
 
-	if (channel == null) fail("Channel is null")
-	failIfNot("Channel isn't an ad channel.") { channel!!.fetchChannel().isAdChannel() }
+	if (channel == null) fail(Translations.Errors.channelIsNull)
+	failIfNot(Translations.Errors.channelNotAdChannel) { channel!!.fetchChannel().isAdChannel() }
 }
 
 suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	if (!passed) return
 	val channel = channelFor(event) ?: return
-	failIfNot("Channel isn't an ad category channel.") { channel.fetchChannel().isCategoryChannel() }
+	failIfNot(Translations.Errors.channelNotAdCategoryChannel) { channel.fetchChannel().isCategoryChannel() }
 }
 
 suspend fun Kord.getVerifChannel() =

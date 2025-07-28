@@ -149,6 +149,6 @@ suspend fun main() {
 		}
 	}
 
-	logger.debug { "Debug mode is enabled." }
+	if (debug) logger.debug { "Debug mode is enabled." }
 	bot.start()
 }
