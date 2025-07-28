@@ -5,7 +5,8 @@ services:
             dockerfile: Dockerfile
         restart: unless-stopped
         depends_on:
-            - db
+            db:
+                condition: service_healthy
         env_file:
             - .env
         volumes:
@@ -21,6 +22,20 @@ services:
             - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
         ports:
             - '${DB_EXPOSED_PORT}:3306'
+        command: >
+            --innodb-buffer-pool-size=256M
+            --innodb-log-file-size=64M
+            --max-connections=100
+            --query-cache-type=1
+            --query-cache-size=32M
+            --skip-name-resolve
+            --innodb-flush-log-at-trx-commit=2
+        healthcheck:
+            test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+            start_period: 10s
+            interval: 10s
+            timeout: 5s
+            retries: 3
 
 volumes:
     mariadb_data:
