@@ -4,16 +4,13 @@ kordex = "1.9.2"
 kordex-i18n = "1.1.1"
 kord-extensions = "2.5.0-SNAPSHOT"
 ksp = "2.3.10"
-shadow = "8.1.1"
 
 connector = "9.7.0"
-datetime = "0.8.0"
 dotenv = "6.5.1"
 logback = "1.6.0"
 
 [libraries]
 connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
@@ -23,4 +20,3 @@ kordex = { id = "dev.kordex.gradle.kordex", version.ref = "kordex" }
 kordex-i18n = { id = "dev.kordex.gradle.i18n", version.ref = "kordex-i18n" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }

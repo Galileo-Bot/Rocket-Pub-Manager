@@ -7,7 +7,6 @@ plugins {
 	alias(libs.plugins.kordex)
 	alias(libs.plugins.kordex.i18n)
 	application
-	distribution
 }
 
 group = "fr.ayfri"
@@ -15,7 +14,6 @@ version = "1.0"
 
 dependencies {
 	implementation(libs.connector)
-	implementation(libs.datetime)
 	implementation(libs.dotenv)
 	implementation(libs.logback)
 }
