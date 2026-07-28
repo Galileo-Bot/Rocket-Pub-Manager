@@ -28,7 +28,12 @@ WORKDIR /app
 
 COPY --from=build /app/build/install/Rocket-Manager/ ./
 
+# The JVM writes a class-data archive on the first boot and reuses it on later starts.
+# It is rebuilt automatically whenever the classpath changes.
+ENV JAVA_OPTS="-XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=/app/cds/app.jsa"
+
 RUN adduser -D appuser && \
+    mkdir -p /app/cds /app/logs && \
     chown -R appuser:appuser /app
 
 USER appuser

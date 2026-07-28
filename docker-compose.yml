@@ -11,6 +11,7 @@ services:
             - .env
         volumes:
             - ./logs:/app/logs
+            - cds_cache:/app/cds
 
     db:
         image: mariadb:11.8
@@ -39,3 +40,4 @@ services:
 
 volumes:
     mariadb_data:
+    cds_cache:
