@@ -5,6 +5,7 @@ plugins {
 	alias(libs.plugins.serialization)
 	alias(libs.plugins.ksp)
 	alias(libs.plugins.kordex)
+	alias(libs.plugins.kordex.i18n)
 	application
 	distribution
 }
@@ -30,24 +31,26 @@ application {
 
 kordEx {
 	kordExVersion = libs.versions.kord.extensions.get()
-	jvmTarget = 21
+	jvmTarget = 25
+
+	// KordEx 2.5.0-SNAPSHOT is built against Kotlin 2.3.10, the project compiles fine on 2.4.10.
+	ignoreIncompatibleKotlinVersion = true
 
 	bot {
 		dataCollection(DataCollection.None)
 		mainClass = "MainKt"
 		voice = false
 	}
+}
 
-	i18n {
-		classPackage = "fr.ayfri.rocketmanager.i18n"
-		translationBundle = "rocketmanager.strings"
-	}
+i18n {
+	bundle("rocketmanager.strings", "fr.ayfri.rocketmanager.i18n")
 }
 
 kotlin {
-	jvmToolchain(21)
+	jvmToolchain(25)
 
 	compilerOptions {
-		freeCompilerArgs = listOf("-Xcontext-receivers", "-opt-in=kotlin.time.ExperimentalTime")
+		freeCompilerArgs = listOf("-opt-in=kotlin.time.ExperimentalTime")
 	}
 }

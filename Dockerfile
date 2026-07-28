@@ -1,5 +1,5 @@
 # Use smaller base image with build cache optimization
-FROM gradle:8.14-jdk21-alpine AS build
+FROM gradle:9.6.1-jdk25-alpine AS build
 WORKDIR /app
 
 # Copy build files
@@ -19,7 +19,7 @@ COPY LICENSE ./
 RUN --mount=type=cache,target=/root/.gradle \
     gradle distTar --no-daemon
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Extract and setup
