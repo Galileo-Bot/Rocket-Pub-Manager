@@ -30,7 +30,7 @@ class Verifications : Extension() {
 		Verification.buttons()
 
 		// Only a convenience for the messages predating the fixed IDs, never worth failing the setup for.
-		runCatching { Verification.registerPendingMessagesButtons() }
+		runCatching { Verification.registerPendingMessagesButtons(kord) }
 			.onFailure { logger.error(it) { "Failed to register the buttons of the pending verifications." } }
 
 		publicSlashCommand {

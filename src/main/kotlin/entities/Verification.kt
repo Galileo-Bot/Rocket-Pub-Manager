@@ -3,6 +3,7 @@ package entities
 import bot
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
@@ -205,10 +206,10 @@ data class Verification(
 		 * TODO: Remove after September 2026, no pending verification message will predate the fixed IDs by
 		 *  then, making this startup REST scan pointless.
 		 */
-		suspend fun registerPendingMessagesButtons() {
-			bot.kord.getVerifChannel().messages
+		suspend fun registerPendingMessagesButtons(kord: Kord) {
+			kord.getVerifChannel().messages
 				.take(PENDING_MESSAGES_TO_RESTORE)
-				.filter { it.author?.id == bot.kord.selfId }
+				.filter { it.author?.id == kord.selfId }
 				.collect { message ->
 					val validateId = message.buttons.find { it.style == ButtonStyle.Success }?.customId
 					val deleteId = message.buttons.find { it.style == ButtonStyle.Danger }?.customId
