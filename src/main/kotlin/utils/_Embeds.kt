@@ -16,8 +16,8 @@ import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import dev.kordex.core.utils.getJumpUrl
 import extensions.ModifyGuildValues
 import fr.ayfri.rocketmanager.i18n.Translations
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Clock
+import kotlin.time.toKotlinInstant
 import storage.BannedGuild
 import storage.Sanction
 

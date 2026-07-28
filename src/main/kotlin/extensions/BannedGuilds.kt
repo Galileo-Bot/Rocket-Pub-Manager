@@ -12,7 +12,7 @@ import dev.kordex.i18n.Key
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.time.toDiscord
 import fr.ayfri.rocketmanager.i18n.Translations
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import storage.*
 import utils.bannedGuildEmbed
 import utils.completeEmbed

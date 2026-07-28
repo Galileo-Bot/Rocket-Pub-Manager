@@ -25,8 +25,8 @@ import dev.kordex.core.utils.selfMember
 import dev.kordex.core.utils.timeoutUntil
 import extensions.ModifySanctionValues
 import fr.ayfri.rocketmanager.i18n.Translations
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toKotlinInstant
+import kotlin.time.Clock
+import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
 import utils.asMention
@@ -65,7 +65,7 @@ data class Sanction(
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
 	@Serializable(with = InstantInEpochMillisecondsSerializer::class)
-	val sanctionedAt: kotlinx.datetime.Instant = Clock.System.now(),
+	val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
 ) {
 	constructor(
 		type: SanctionType,

@@ -16,7 +16,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.scheduling.Scheduler
 import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
