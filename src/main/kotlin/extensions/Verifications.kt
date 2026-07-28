@@ -15,6 +15,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import entities.Verification
 import entities.findNotValidated
 import fr.ayfri.rocketmanager.i18n.Translations
+import logger
 import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCount
@@ -25,8 +26,12 @@ class Verifications : Extension() {
 
 	override suspend fun setup() {
 		// Components only live in the in-memory registry, so the buttons of the verification messages sent
-		// before the last restart are only answered once this registers their (fixed) IDs again.
+		// before the last restart are only answered once this registers their IDs again.
 		Verification.buttons()
+
+		// Only a convenience for the messages predating the fixed IDs, never worth failing the setup for.
+		runCatching { Verification.registerPendingMessagesButtons() }
+			.onFailure { logger.error(it) { "Failed to register the buttons of the pending verifications." } }
 
 		publicSlashCommand {
 			name = Translations.Commands.Verifications.name

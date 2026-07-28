@@ -10,6 +10,8 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
@@ -30,6 +32,7 @@ private const val MESSAGES_FIELD_SUFFIX = "Messages :"
 private const val MESSAGE_LINK_PREFIX = "https://discord.com/channels/"
 private val ID_IN_PARENTHESES_REGEX = Regex("\\((\\d{17,20})\\)")
 private val CHANNEL_MENTION_REGEX = Regex("<#\\d{17,20}>")
+private const val PENDING_MESSAGES_TO_RESTORE = 100
 
 data class VerificationMessage(
 	val id: Snowflake,
@@ -167,9 +170,13 @@ data class Verification(
 		 * shared by every message, so a single registration makes the bot answer the buttons of the messages
 		 * it sent before its last restart too.
 		 */
-		suspend fun buttons(): ComponentContainer = buttonsContainer ?: ComponentContainer {
+		suspend fun buttons(): ComponentContainer =
+			buttonsContainer ?: buttonsWith(VALIDATE_VERIF_BUTTON_ID, DELETE_ALL_ADS_VERIF_BUTTON_ID)
+				.also { buttonsContainer = it }
+
+		private suspend fun buttonsWith(validateId: String, deleteId: String) = ComponentContainer {
 			publicButton {
-				id = VALIDATE_VERIF_BUTTON_ID
+				id = validateId
 				emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
 				style = ButtonStyle.Success
 				label = Translations.Buttons.validateVerification
@@ -180,7 +187,7 @@ data class Verification(
 			}
 
 			publicButton {
-				id = DELETE_ALL_ADS_VERIF_BUTTON_ID
+				id = deleteId
 				emoji("\uD83D\uDDD1")
 				style = ButtonStyle.Danger
 				label = Translations.Buttons.delete
@@ -189,7 +196,33 @@ data class Verification(
 					findOrRestore(message)?.deleteAllAds()
 				}
 			}
-		}.also { buttonsContainer = it }
+		}
+
+		/**
+		 * Registers the random IDs the buttons were given before they were made fixed, so the verification
+		 * messages still pending from an older run of the bot keep working instead of failing silently.
+		 *
+		 * TODO: Remove after September 2026, no pending verification message will predate the fixed IDs by
+		 *  then, making this startup REST scan pointless.
+		 */
+		suspend fun registerPendingMessagesButtons() {
+			bot.kord.getVerifChannel().messages
+				.take(PENDING_MESSAGES_TO_RESTORE)
+				.filter { it.author?.id == bot.kord.selfId }
+				.collect { message ->
+					val validateId = message.buttons.find { it.style == ButtonStyle.Success }?.customId
+					val deleteId = message.buttons.find { it.style == ButtonStyle.Danger }?.customId
+
+					if (validateId == VALIDATE_VERIF_BUTTON_ID && deleteId == DELETE_ALL_ADS_VERIF_BUTTON_ID) return@collect
+					if (validateId == null && deleteId == null) return@collect
+
+					// The container is only built for its registration side effect, the message already exists.
+					buttonsWith(
+						validateId ?: VALIDATE_VERIF_BUTTON_ID,
+						deleteId ?: DELETE_ALL_ADS_VERIF_BUTTON_ID
+					)
+				}
+		}
 
 		suspend fun create(adMessage: Message) = Verification(
 			author = adMessage.author!!.id,
