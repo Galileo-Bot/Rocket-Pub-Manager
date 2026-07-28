@@ -1,6 +1,5 @@
 package storage
 
-import connection
 import debug
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.serialization.InstantInEpochMillisecondsSerializer
@@ -30,15 +29,10 @@ import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
 import logger
 import utils.asMention
-import utils.enquote
 import utils.getLogSanctionsChannel
 import utils.sanctionEmbed
 import java.sql.ResultSet
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.*
+import java.sql.Timestamp
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.days
@@ -84,7 +78,7 @@ data class Sanction(
 
 	val isActive get() = durationMS > 0 && activeUntil > Clock.System.now()
 
-	val activeUntil get() = Clock.System.now() + duration
+	val activeUntil get() = sanctionedAt + duration
 
 	val formattedDuration: String
 		get() = when {
@@ -163,97 +157,38 @@ data class Sanction(
 	}
 }
 
-val offset: ZoneOffset = ZoneOffset.ofHours(1)
-val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH).withZone(offset)
-
-fun containsSanction(id: Int) = connection.createStatement().executeQuery(
-	"SELECT * FROM sanctions WHERE id = $id"
-).use(ResultSet::next)
-
-fun getSanction(id: Int): Sanction? {
-	val query = "SELECT * FROM sanctions WHERE id = $id"
-	val result = connection.createStatement().executeQuery(query)
-
-	return result.takeIf { it.next() }?.let {
-		val type = SanctionType.valueOf(it.getString("type"))
-		val reason = it.getString("reason")
-		val member = Snowflake(it.getString("member"))
-		val durationMS = it.getLong("duration")
-		val appliedBy = Snowflake(it.getString("appliedBy"))
-		val sanctionedAt = Instant.parse(result.getString("sanctionedAt"))
-		Sanction(type, reason, member, id, appliedBy, durationMS, sanctionedAt.toKotlinInstant())
-	}
-}
-
-fun getSanctions(user: Snowflake): List<Sanction> {
-	val sanctions = mutableListOf<Sanction>()
-	val result = connection.createStatement().executeQuery(
-		"""
-		SELECT * FROM sanctions
-		WHERE memberID = ${user.enquote}
-		""".trimIndent()
-	)
-	while (result.next()) {
-		val type = SanctionType.valueOf(result.getString("type").uppercase())
-		val reason = result.getString("reason")
-		val member = Snowflake(result.getString("memberID"))
-		val id = result.getInt("id")
-		val appliedBy = result.getString("appliedByID").let {
-			if (it != "null") Snowflake(it) else null
-		}
-		val durationMS = result.getLong("durationMS")
-		val sanctionedAt = LocalDateTime.parse(result.getString("sanctionedAt"), formatter)
-		sanctions += Sanction(
-			type,
-			reason,
-			member,
-			id,
-			appliedBy,
-			durationMS,
-			sanctionedAt.toInstant(offset).toKotlinInstant()
-		)
-	}
-	return sanctions
-}
-
-fun getSanctionCount(): List<Snowflake> {
-	val sanctions = mutableListOf<Snowflake?>()
-	val result = connection.createStatement().executeQuery(
-		"""
-		SELECT appliedByID FROM sanctions ORDER BY ID
-		""".trimIndent()
-	)
-
-	while (result.next()) {
-		runCatching {
-			val appliedBy = result.getNString("appliedByID")
-			sanctions += appliedBy?.let { Snowflake(it) }
-		}
-	}
-
-	return sanctions.filterNotNull()
-}
-
-fun modifySanction(id: Int, value: ModifySanctionValues, newValue: String) = connection.createStatement().executeUpdate(
-	"""
-	UPDATE sanctions SET ${value.name.lowercase()}=${newValue.enquote}
-	WHERE ID = $id
-	""".trimIndent()
+private fun ResultSet.toSanction() = Sanction(
+	type = SanctionType.valueOf(getString("type").uppercase()),
+	reason = getString("reason"),
+	member = Snowflake(getString("memberID")),
+	id = getInt("id"),
+	appliedBy = getString("appliedByID")?.takeIf { it != "null" }?.let(::Snowflake),
+	durationMS = getLong("durationMS"),
+	sanctionedAt = getTimestamp("sanctionedAt").toInstant().toKotlinInstant()
 )
 
-fun removeSanction(id: Int) = connection.createStatement().executeUpdate(
-	"""
-	DELETE FROM sanctions
-	WHERE ID = ${id.toString().enquote}
-	""".trimIndent()
-)
+fun getSanction(id: Int) = sqlQuery("SELECT * FROM sanctions WHERE id = ?", id) { result ->
+	result.takeIf { it.next() }?.toSanction()
+}
 
-fun removeSanctions(user: Snowflake, type: String? = null) = connection.createStatement().executeUpdate(
-	"""
-	DELETE FROM sanctions
-	WHERE memberID = ${user.enquote}
-	${type?.let { "AND type = ${it.lowercase().enquote}" } ?: ""}
-	""".trimIndent())
+fun getSanctions(user: Snowflake) = sqlQuery(
+	"SELECT * FROM sanctions WHERE memberID = ?",
+	user.toString()
+) { it.mapRows(ResultSet::toSanction) }
+
+fun getSanctionCount() = sqlQuery("SELECT appliedByID FROM sanctions ORDER BY id") { result ->
+	result.mapRows { it.getString("appliedByID") }
+}.mapNotNull { it?.takeIf { id -> id != "null" }?.let(::Snowflake) }
+
+fun modifySanction(id: Int, value: ModifySanctionValues, newValue: String) =
+	sqlUpdate("UPDATE sanctions SET ${value.column} = ? WHERE id = ?", newValue, id)
+
+fun removeSanction(id: Int) = sqlUpdate("DELETE FROM sanctions WHERE id = ?", id)
+
+fun removeSanctions(user: Snowflake, type: String? = null) = when (type) {
+	null -> sqlUpdate("DELETE FROM sanctions WHERE memberID = ?", user.toString())
+	else -> sqlUpdate("DELETE FROM sanctions WHERE memberID = ? AND type = ?", user.toString(), type.lowercase())
+}
 
 fun saveSanction(
 	type: SanctionType,
@@ -261,19 +196,15 @@ fun saveSanction(
 	member: Snowflake,
 	appliedBy: Snowflake? = null,
 	durationMS: Long? = null
-): Int {
-	val dateTime = formatter.format(Instant.now()).enquote
-	return connection.createStatement().executeUpdate(
-		"""
-		INSERT INTO sanctions (reason, memberID, appliedByID, durationMS, type, sanctionedAt)
-		VALUES (
-			${reason.enquote},
-			${member.enquote},
-			${appliedBy.enquote},
-			$durationMS,
-			${type.name.lowercase().enquote},
-			$dateTime
-		)
-		""".trimIndent()
-	)
-}
+) = sqlUpdate(
+	"""
+	INSERT INTO sanctions (reason, memberID, appliedByID, durationMS, type, sanctionedAt)
+	VALUES (?, ?, ?, ?, ?, ?)
+	""".trimIndent(),
+	reason,
+	member.toString(),
+	appliedBy?.toString(),
+	durationMS ?: 0L,
+	type.name.lowercase(),
+	Timestamp.from(java.time.Instant.now())
+)

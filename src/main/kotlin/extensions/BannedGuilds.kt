@@ -32,10 +32,10 @@ fun isValidInvitation(value: String) =
 		)
 	)
 
-enum class ModifyGuildValues(val translation: Key) : ChoiceEnum {
-	NAME(Translations.Fields.name),
-	ID(Translations.Fields.id),
-	REASON(Translations.Fields.reason);
+enum class ModifyGuildValues(val translation: Key, val column: String) : ChoiceEnum {
+	NAME(Translations.Fields.name, "name"),
+	ID(Translations.Fields.id, "id"),
+	REASON(Translations.Fields.reason, "reason");
 
 	override val readableName = translation
 }

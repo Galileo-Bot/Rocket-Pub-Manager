@@ -1,56 +1,23 @@
 package storage
 
-import connection
 import dev.kord.common.entity.Snowflake
-import utils.enquote
-import java.text.SimpleDateFormat
+import java.sql.Timestamp
 import java.time.Instant
-import java.util.*
 
 fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake? = null) {
-	val state = connection.createStatement()
-
-	val dateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date.from(Instant.now())).enquote
-	state.executeUpdate(
-		"""
-		INSERT INTO verifications (staffID, verifiedAt, messageID)
-		VALUES (
-			${verifiedBy.enquote},
-			$dateTime,
-			${messageID.enquote}
-		)
-		"""
+	sqlUpdate(
+		"INSERT INTO verifications (staffID, verifiedAt, messageID) VALUES (?, ?, ?)",
+		verifiedBy.toString(),
+		Timestamp.from(Instant.now()),
+		messageID?.toString()
 	)
 }
 
-fun searchVerificationMessage(messageID: Snowflake): String? {
-	val state = connection.createStatement()
-	val result = state.executeQuery(
-		"""
-			SELECT messageID FROM verifications
-			WHERE messageID = ${messageID.enquote}
-		""".trimIndent()
-	)
-	result.next()
+fun searchVerificationMessage(messageID: Snowflake) = sqlQuery(
+	"SELECT messageID FROM verifications WHERE messageID = ?",
+	messageID.toString()
+) { result -> result.takeIf { it.next() }?.getString("messageID") }
 
-	return runCatching { result.getNString("messageID") }.getOrNull()
-}
-
-fun getVerificationCount(): List<Snowflake> {
-	val verifications = mutableListOf<Snowflake?>()
-	val state = connection.createStatement()
-	val result = state.executeQuery(
-		"""
-		SELECT staffID FROM verifications
-		""".trimIndent()
-	)
-
-	while (result.next()) {
-		runCatching {
-			val appliedBy = result.getNString("staffID")
-			verifications += appliedBy?.let { Snowflake(it) }
-		}
-	}
-
-	return verifications.filterNotNull()
-}
+fun getVerificationCount() = sqlQuery("SELECT staffID FROM verifications") { result ->
+	result.mapRows { it.getString("staffID") }
+}.mapNotNull { it?.let(::Snowflake) }

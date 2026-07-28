@@ -16,11 +16,11 @@ import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
 
 
-enum class ModifySanctionValues {
-	APPLIED_BY,
-	DURATION,
-	REASON,
-	TYPE,
+enum class ModifySanctionValues(val column: String) {
+	APPLIED_BY("appliedByID"),
+	DURATION("durationMS"),
+	REASON("reason"),
+	TYPE("type"),
 }
 
 class ModifySanctions : Extension() {

@@ -29,8 +29,9 @@ inline fun <reified T : KordEntity> Snowflake.asMention() = when (T::class) {
 fun Snowflake.Companion.fromChannelMention(channel: String) = Snowflake(channel.remove("[<>#]"))
 fun Snowflake.Companion.fromUserMention(user: String) = Snowflake(user.remove("[<>@!]"))
 fun Snowflake.Companion.fromRoleMention(role: String) = Snowflake(role.remove("[<>@&]"))
-fun Snowflake.Companion.fromEmojiMention(emoji: String) = Snowflake(emoji.replace("<a?:.+?:(\\d+)>", "$1"))
+fun Snowflake.Companion.fromEmojiMention(emoji: String) = Snowflake(emoji.replace(Regex("<a?:.+?:(\\d+)>"), "$1"))
 
-fun Snowflake.Companion.fromMessageLink(link: String) = Snowflake(link.split("/").dropLast(1).last()) to Snowflake(link.split("/").last())
-
-val Snowflake?.enquote get() = toString().enquote
+fun Snowflake.Companion.fromMessageLink(link: String): Pair<Snowflake, Snowflake> {
+	val parts = link.split("/")
+	return Snowflake(parts[parts.lastIndex - 1]) to Snowflake(parts.last())
+}

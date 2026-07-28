@@ -14,16 +14,11 @@ import extensions.*
 import fr.ayfri.rocketmanager.i18n.Translations
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
-import utils.enquote
 import java.sql.Connection
 import java.util.*
 
 
 val logger = KotlinLogging.logger("main")
-val configuration = dotenv {
-	ignoreIfMissing = true
-	systemProperties = true
-}
 
 val debug get() = env("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
 val adsAutomatic get() = env("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
@@ -40,21 +35,21 @@ val dataSource = MysqlConnectionPoolDataSource().apply {
 	user = env("AYFRI_ROCKETMANAGER_DB_USER")
 }.also { logger.debug { "Database connection initialized" } }
 
-private var oldConnection: Connection? = null
+private var currentConnection: Connection? = null
+private val connectionLock = Any()
 
+/**
+ * The shared database connection, re-opened whenever the server dropped it.
+ *
+ * [Connection.isValid] is used instead of a probe query so no statement is leaked on every access.
+ */
 val connection: Connection
-	get() {
-		if (oldConnection == null) oldConnection = dataSource.connection
-		oldConnection?.let {
-			try {
-				it.createStatement().execute("SELECT 1")
-			} catch (e: Exception) {
-				logger.debug { "Connection is closed, creating a new one" }
-				oldConnection = dataSource.connection
-			}
-		}
+	get() = synchronized(connectionLock) {
+		val existing = currentConnection
+		if (existing != null && runCatching { existing.isValid(2) }.getOrDefault(false)) return@synchronized existing
 
-		return oldConnection!!
+		logger.debug { "Opening a new database connection" }
+		dataSource.connection.also { currentConnection = it }
 	}
 
 val ExtensibleBot.kord get() = getKoin().get<Kord>()
@@ -69,7 +64,7 @@ suspend fun main() {
 			slashCommandCheck {
 				val user = userFor(event)
 				val channel = channelFor(event)
-				logger.debug { "Got a slash command from ${user?.id.enquote} in ${(channel?.id?.toString() ?: "dm").enquote}" }
+				logger.debug { "Got a slash command from ${user?.id} in ${channel?.id ?: "dm"}" }
 				pass()
 			}
 		}
