@@ -16,6 +16,7 @@ services:
     db:
         image: mariadb:11.8
         restart: unless-stopped
+        mem_limit: 300m
         env_file:
             - .env
         volumes:
@@ -24,12 +25,16 @@ services:
         ports:
             - '${DB_EXPOSED_PORT}:3306'
         command: >
-            --innodb-buffer-pool-size=256M
-            --innodb-log-file-size=64M
-            --max-connections=100
-            --query-cache-type=1
-            --query-cache-size=32M
+            --innodb-buffer-pool-size=96M
+            --innodb-log-file-size=32M
+            --innodb-buffer-pool-instances=1
+            --max-connections=20
+            --query-cache-type=0
+            --query-cache-size=0
             --skip-name-resolve
+            --performance-schema=0
+            --table-open-cache=100
+            --thread-cache-size=8
             --innodb-flush-log-at-trx-commit=2
         healthcheck:
             test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
