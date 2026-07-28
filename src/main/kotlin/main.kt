@@ -1,3 +1,4 @@
+
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
@@ -12,7 +13,6 @@ import dev.kordex.core.types.FailureReason
 import dev.kordex.core.utils.env
 import extensions.*
 import fr.ayfri.rocketmanager.i18n.Translations
-import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.sql.Connection
 import java.util.*
@@ -85,6 +85,7 @@ suspend fun main() {
 			add(::ModifySanctions)
 			add(::RemoveAds)
 			add(::Sanctions)
+			add(::Stats)
 			add(::UserContextSanctions)
 			add(::Verifications)
 		}
