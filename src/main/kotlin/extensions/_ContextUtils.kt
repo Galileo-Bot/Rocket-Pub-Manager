@@ -38,11 +38,16 @@ suspend fun MemberBehavior?.isStaff(): Boolean = this?.let {
 
 suspend fun MessageBehavior.removeComponents() = edit { components = mutableListOf() }
 
+/** Name of the embed field listing the sanctioned messages, as written by [utils.autoSanctionEmbed]. */
+private val messagesFieldName get() = Translations.Embeds.autoSanctionMessages.translate()
+
 fun updateDeletedMessagesInEmbed(sanctionMessage: Message, vararg messages: Message): List<String> {
-	val oldEmbed = sanctionMessage.embeds[0]
-	val oldMessages =
-		oldEmbed.fields.find { it.name.endsWith(Translations.Fields.messages.translate()) }!!.value.split(Regex("\n"))
-			.toMutableList()
+	val oldEmbed = sanctionMessage.embeds.firstOrNull() ?: return emptyList()
+	val oldMessages = oldEmbed.fields.find { it.name == messagesFieldName }
+		?.value
+		?.split("\n")
+		?.toMutableList()
+		?: return emptyList()
 	val founds = oldMessages.intersect(messages.map { it.getJumpUrl() }.toSet())
 
 	oldMessages.removeAll(founds)
@@ -53,11 +58,11 @@ fun updateDeletedMessagesInEmbed(sanctionMessage: Message, vararg messages: Mess
 
 suspend fun updateMessagesInEmbed(sanctionMessage: Message, vararg messages: Message) = sanctionMessage.edit {
 	embed {
-		fromEmbed(sanctionMessage.embeds[0])
-		fields.removeIf { it.name.endsWith(Translations.Fields.messages.translate()) }
+		sanctionMessage.embeds.firstOrNull()?.let { fromEmbed(it) }
+		fields.removeIf { it.name == messagesFieldName }
 
 		field {
-			name = Translations.Embeds.messagesField.translate()
+			name = messagesFieldName
 			value = updateDeletedMessagesInEmbed(sanctionMessage, *messages).joinToString("\n")
 		}
 	}

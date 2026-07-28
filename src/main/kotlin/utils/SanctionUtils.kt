@@ -5,6 +5,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
+import fr.ayfri.rocketmanager.i18n.Translations
 import logger
 import storage.Sanction
 import storage.searchBannedGuild
@@ -12,8 +13,8 @@ import storage.searchBannedGuild
 data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
 
 suspend fun getMessagesFromSanctionMessage(message: Message): MutableSet<Message> {
-	val embed = message.embeds[0]
-	val field = embed.fields.find { it.name.endsWith("Messages :") }
+	val embed = message.embeds.firstOrNull() ?: return mutableSetOf()
+	val field = embed.fields.find { it.name == Translations.Embeds.autoSanctionMessages.translate() }
 
 	return field?.value?.split("\n")?.mapNotNull {
 		Snowflake.fromMessageLink(it.substringBefore("_supprimé_")).let { (channelId, messageId) ->
@@ -28,8 +29,8 @@ suspend fun getReasonForMessage(message: Message): String? {
 	val invite = inviteLink?.let { getInvite(message.kord, it) }
 
 	val guild = invite?.partialGuild
-	val isBannedGuild =
-		invite != null && (guild?.id?.let { searchBannedGuild(it) } != null || guild?.name?.let { searchBannedGuild(it) } != null)
+	val isBannedGuild = guild != null &&
+		(searchBannedGuild(guild.id) ?: searchBannedGuild(guild.name)) != null
 
 	return when {
 		!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
