@@ -45,6 +45,37 @@ i18n {
 	bundle("rocketmanager.strings", "fr.ayfri.rocketmanager.i18n")
 }
 
+// The i18n plugin declares no outputs and one non-serializable `@Input`, so Gradle can neither
+// fingerprint nor skip its task: it re-runs on every build and takes ~8s of a ~10s incremental build.
+// Declaring the outputs here makes Gradle fingerprint the broken input and fail, so compare the
+// translation bundles against the generated sources by hand instead.
+tasks.withType<dev.kordex.gradle.plugins.i18n.tasks.GenerationTask>().configureEach {
+	val sources = listOf(
+		layout.projectDirectory.dir("src/main/resources/translations").asFile,
+		layout.projectDirectory.file(".editorconfig").asFile,
+		buildFile
+	)
+	val generated = layout.buildDirectory.dir("generated/kordex/main/kotlin").get().asFile
+
+	// Without declared outputs nothing orders this task after `clean`, which would wipe what it wrote.
+	mustRunAfter(tasks.named("clean"))
+
+	onlyIf {
+		val newestGenerated = generated.walkTopDown().filter { it.isFile }.maxOfOrNull { it.lastModified() }
+		newestGenerated == null || sources.asSequence()
+			.flatMap { it.walkTopDown() }
+			.any { it.isFile && it.lastModified() > newestGenerated }
+	}
+}
+
+// Both compilers read the generated translations, but the plugin never wires the dependency up. It
+// happened to work only because the task above used to run unconditionally on every build.
+val generateTranslations = tasks.withType<dev.kordex.gradle.plugins.i18n.tasks.GenerationTask>()
+
+tasks.matching { it.name == "kspKotlin" || it.name == "compileKotlin" }.configureEach {
+	dependsOn(generateTranslations)
+}
+
 // The KordEx plugin creates its generated source directory while configuring the project. When the
 // configuration cache is reused that step never runs, so a `clean` in the same invocation leaves the
 // directory missing and every task reading the source set fails.
