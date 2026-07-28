@@ -106,7 +106,8 @@ private suspend fun PublicInteractionContext.respondWithChart(
 		}
 
 		// The query only returns days having at least one row, the gaps must be drawn as zeroes.
-		val from = maxOf(since.atZone(ZoneId.systemDefault()).toLocalDate(), data.first().day)
+		// For the ALL period `since` is the epoch, clamp to the first data point instead of drawing zeroes back to 1970.
+		val from = if (since == Instant.EPOCH) data.first().day else since.atZone(ZoneId.systemDefault()).toLocalDate()
 		val to = maxOf(LocalDate.now(), data.last().day)
 		val series = data.fillMissingDays(from, to)
 
