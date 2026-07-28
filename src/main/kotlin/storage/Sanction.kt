@@ -16,7 +16,7 @@ import dev.kordex.core.DiscordRelayedException
 import dev.kordex.core.commands.application.slash.PublicSlashCommandContext
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.events.EventHandler
-import dev.kordex.core.i18n.types.Key
+import dev.kordex.i18n.Key
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.types.EphemeralInteractionContext
 import dev.kordex.core.types.PublicInteractionContext

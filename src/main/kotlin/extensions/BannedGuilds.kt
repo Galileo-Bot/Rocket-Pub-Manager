@@ -8,7 +8,7 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.types.Key
+import dev.kordex.i18n.Key
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.time.toDiscord
 import fr.ayfri.rocketmanager.i18n.Translations
