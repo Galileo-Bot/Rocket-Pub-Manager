@@ -26,12 +26,12 @@ import dev.kordex.i18n.Key
 import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import storage.Sanction
 import storage.SanctionType
 import utils.*
 import java.util.*
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 enum class ChannelAdType(private val translation: Key, val sentence: Key, val emote: String) : ChoiceEnum {
 	CHANNEL(Translations.Fields.channel, Translations.Messages.adChannelsList, AD_CHANNEL_EMOTE),
@@ -89,7 +89,7 @@ class CheckAds : Extension() {
 						val addedChannels = mutableListOf<String>()
 						channel.channels.collect {
 							if (it !is TextChannel) return@collect
-							if ((isTypeCategory && channel.isCategoryChannel()) || (!isTypeCategory && channel.isAdChannel())) return@collect
+							if ((isTypeCategory && it.isCategoryChannel()) || (!isTypeCategory && it.isAdChannel())) return@collect
 							it.edit { topic = "${type.emote} ${it.topic}" }
 							addedChannels.add(it.mention)
 						}
@@ -161,14 +161,12 @@ suspend fun TextChannelBehavior.lightSanction(
 		allowedMentions {
 			users += member.id
 		}
-
-		Sanction(SanctionType.LIGHT_WARN, reason, member.id, appliedBy = kord.selfId).save()
-
-		runBlocking {
-			delay(5000)
-			message?.delete()
-		}
 	}
+
+	Sanction(SanctionType.LIGHT_WARN, reason, member.id, appliedBy = kord.selfId).save()
+
+	delay(5.seconds)
+	message?.delete()
 }
 
 suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?) {
