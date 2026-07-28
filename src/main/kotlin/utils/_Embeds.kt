@@ -157,7 +157,7 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 	bannedGuildEmbed(client, guild)
 
 	description = Translations.Embeds.ModifiedGuild.description.translateNamed(
-		"value" to value.translation,
+		"value" to value.translation.translate(),
 		"before" to valueBefore,
 		"after" to valueAfter
 	)
@@ -170,7 +170,7 @@ suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 		kord,
 		Translations.Embeds.Sanction.title.translateNamed(
 			"emote" to sanction.type.emote,
-			"type" to sanction.type.translation,
+			"type" to sanction.type.translation.translate(),
 			"username" to user.username
 		),
 		Translations.Embeds.Sanction.description.translateNamed(

@@ -97,7 +97,7 @@ class CheckAds : Extension() {
 						respond(
 							Translations.Messages.channelsAddedToList.translateNamed(
 								"count" to addedChannels.size.toString(),
-								"list" to type.sentence,
+								"list" to type.sentence.translate(),
 								"channels" to addedChannels.sorted().joinToString("\n")
 							)
 						)
@@ -106,13 +106,13 @@ class CheckAds : Extension() {
 					is TextChannel -> when {
 						isTypeCategory && channel.isCategoryChannel() -> respond(
 							Translations.Messages.channelAlreadyInList.translateNamed(
-								"list" to type.sentence
+								"list" to type.sentence.translate()
 							)
 						)
 
 						!isTypeCategory && channel.isAdChannel() -> respond(
 							Translations.Messages.channelAlreadyInList.translateNamed(
-								"list" to type.sentence
+								"list" to type.sentence.translate()
 							)
 						)
 
@@ -121,7 +121,7 @@ class CheckAds : Extension() {
 							respond(
 								Translations.Messages.channelAddedToList.translateNamed(
 									"channel" to channel.mention,
-									"list" to type.sentence
+									"list" to type.sentence.translate()
 								)
 							)
 						}
