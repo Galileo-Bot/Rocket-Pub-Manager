@@ -86,6 +86,29 @@ tasks.named<Delete>("clean") {
 	}
 }
 
+// Downloads every artifact the build needs so Docker can cache them in a layer of their own,
+// before the sources are copied in. `dependencies` only resolves metadata, not the jars.
+tasks.register("warmupDependencies") {
+	description = "Resolves all build and runtime artifacts to prime the dependency cache."
+
+	val artifacts = listOf(
+		"compileClasspath",
+		"runtimeClasspath",
+		"kotlinCompilerClasspath",
+		"kotlinCompilerPluginClasspathMain",
+		"kspKotlinProcessorClasspath",
+		"kspPluginClasspath",
+		"kordExI18nConfiguration"
+	).mapNotNull { name ->
+		configurations.findByName(name)?.incoming?.artifactView { isLenient = true }?.files
+	}
+
+	inputs.files(artifacts)
+	doLast {
+		logger.lifecycle("Primed ${artifacts.sumOf { it.count() }} dependency artifacts.")
+	}
+}
+
 kotlin {
 	jvmToolchain(25)
 
