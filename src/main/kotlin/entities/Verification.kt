@@ -11,8 +11,6 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
@@ -22,6 +20,9 @@ import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
 import kord
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.take
+import storage.saveAdEvent
 import storage.saveVerification
 import utils.*
 
@@ -229,6 +230,8 @@ data class Verification(
 			author = adMessage.author!!.id,
 			adContent = adMessage.content,
 		).apply {
+			saveAdEvent(adMessage.author!!.id, adMessage.id, adMessage.channel.id)
+
 			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
 			adMessages += VerificationMessage(adMessage.id, adMessage.channel.id)
 
