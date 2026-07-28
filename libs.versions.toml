@@ -7,11 +7,13 @@ ksp = "2.3.10"
 
 connector = "9.7.0"
 dotenv = "6.5.1"
+kandy = "0.8.3"
 logback = "1.6.0"
 
 [libraries]
 connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
+kandy-letsPlot = { module = "org.jetbrains.kotlinx:kandy-lets-plot", version.ref = "kandy" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 [plugins]
