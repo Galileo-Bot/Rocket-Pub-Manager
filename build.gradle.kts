@@ -45,6 +45,16 @@ i18n {
 	bundle("rocketmanager.strings", "fr.ayfri.rocketmanager.i18n")
 }
 
+// The KordEx plugin creates its generated source directory while configuring the project. When the
+// configuration cache is reused that step never runs, so a `clean` in the same invocation leaves the
+// directory missing and every task reading the source set fails.
+tasks.named<Delete>("clean") {
+	val generatedSources = layout.buildDirectory.dir("generated/kordex/main/kotlin")
+	doLast {
+		generatedSources.get().asFile.mkdirs()
+	}
+}
+
 kotlin {
 	jvmToolchain(25)
 
