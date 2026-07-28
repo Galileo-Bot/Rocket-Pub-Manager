@@ -151,21 +151,26 @@ fun UserBehavior.getNextMuteDuration() = when (getSanctions(id).size) {
 	else -> 27.days
 }.inWholeMilliseconds
 
-fun UserBehavior.getNextSanctionType() = when (getSanctions(id).size) {
-	0 -> SanctionType.LIGHT_WARN
+fun UserBehavior.getNextSanctionType(): SanctionType {
+	val sanctions = getSanctions(id)
+	val types = sanctions.mapTo(mutableSetOf()) { it.type }
 
-	in 1..4 -> when {
-		getSanctions(id).any { it.type == SanctionType.MUTE } -> SanctionType.MUTE
-		getSanctions(id).any { it.type == SanctionType.KICK } -> SanctionType.KICK
-		getSanctions(id).any { it.type == SanctionType.BAN } -> SanctionType.BAN
-		else -> SanctionType.WARN
+	return when (sanctions.size) {
+		0 -> SanctionType.LIGHT_WARN
+
+		in 1..4 -> when {
+			SanctionType.MUTE in types -> SanctionType.MUTE
+			SanctionType.KICK in types -> SanctionType.KICK
+			SanctionType.BAN in types -> SanctionType.BAN
+			else -> SanctionType.WARN
+		}
+
+		in 5..10 -> when {
+			SanctionType.MUTE in types -> SanctionType.KICK
+			SanctionType.KICK in types -> SanctionType.BAN
+			else -> SanctionType.WARN
+		}
+
+		else -> SanctionType.BAN
 	}
-
-	in 5..10 -> when {
-		getSanctions(id).any { it.type == SanctionType.MUTE } -> SanctionType.KICK
-		getSanctions(id).any { it.type == SanctionType.KICK } -> SanctionType.BAN
-		else -> SanctionType.WARN
-	}
-
-	else -> SanctionType.BAN
 }

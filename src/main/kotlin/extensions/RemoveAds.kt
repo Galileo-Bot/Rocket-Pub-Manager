@@ -26,7 +26,7 @@ class RemoveAds : Extension() {
 			action {
 				event.guild.channels.getTextChannels().filter(TextChannel::isAdChannel).collect { channel ->
 					channel.messages.filter {
-						it.author?.fetchUserOrNull() == event.user
+						it.author?.id == event.user.id
 					}.collect {
 						it.deleteIgnoringNotFound()
 					}

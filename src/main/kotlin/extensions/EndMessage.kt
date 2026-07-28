@@ -31,9 +31,10 @@ class EndMessage : Extension() {
 
 			action {
 				val channel = event.message.channel
+				val guildName = event.message.getGuild().name
 				channel.messages.filter {
-					it.author?.isBot == true && (it.embeds[0].author?.name
-						?: return@filter false) in event.message.getGuild().name
+					it.author?.isBot == true && (it.embeds.firstOrNull()?.author?.name
+						?: return@filter false) in guildName
 				}.collect {
 					it.deleteIgnoringNotFound()
 				}
