@@ -21,7 +21,6 @@ import dev.kordex.core.i18n.withContext
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.utils.*
 import fr.ayfri.rocketmanager.i18n.Translations
-import kotlinx.coroutines.runBlocking
 import storage.*
 import utils.completeEmbed
 import utils.sanctionEmbed
@@ -254,6 +253,14 @@ class Sanctions : Extension() {
 					}
 					if (sanctions.isEmpty()) throw DiscordRelayedException(Translations.Embeds.Sanctions.List.noSanctions)
 
+					// Resolved up-front so the page bodies below stay non-suspending.
+					val moderatorNames = sanctions.mapNotNull { it.appliedBy }.distinct().associateWith { appliedById ->
+						this@publicSlashCommand.kord.getUser(
+							appliedById,
+							EntitySupplyStrategy.cacheWithCachingRestFallback
+						)?.username
+					}
+
 					respondingPaginator {
 						sanctions.chunked(10).forEach {
 							page {
@@ -262,20 +269,13 @@ class Sanctions : Extension() {
 									title = Translations.Embeds.Sanctions.List.title
 										.withContext(this@action)
 										.translateNamed(
-											"type" to (arguments.type?.let { "du type **${it.translation}** " } ?: ""),
+											"type" to (arguments.type?.let { "du type **${it.translation.translate()}** " } ?: ""),
 											"user" to user.username,
 											"userId" to user.id.toString()
 										),
 									description = it.joinToString("\n\n") {
 										val appliedBy = it.appliedBy?.let { appliedById ->
-											val getUserTag = runBlocking {
-												this@publicSlashCommand.kord.getUser(
-													appliedById,
-													EntitySupplyStrategy.cacheWithCachingRestFallback
-												)?.username ?: "`$appliedById`"
-											}
-
-											"$getUserTag (`$appliedById`)"
+											"${moderatorNames[appliedById] ?: "`$appliedById`"} (`$appliedById`)"
 										} ?: Translations.Messages.automaticOrNotFound.translate()
 
 										val duration =
@@ -355,8 +355,9 @@ class Sanctions : Extension() {
 				description = Translations.Commands.Sanctions.DeleteAll.description
 
 				action {
-					var sanctions = getSanctions(arguments.user.id)
-					arguments.type?.let { sanctions = sanctions.filter { it.type == arguments.type } }
+					val sanctions = getSanctions(arguments.user.id).let { all ->
+						arguments.type?.let { type -> all.filter { it.type == type } } ?: all
+					}
 
 					respond {
 						if (arguments.type != null && sanctions.none { it.type == arguments.type }) {
@@ -491,16 +492,18 @@ class Sanctions : Extension() {
 			description = Translations.Commands.Sanctions.Unban.description
 
 			action {
-				guild?.getBanOrNull(arguments.user.id)?.let {
-					respond {
-						embed {
-							unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
-						}
-					}
-				}
+				guild?.getBanOrNull(arguments.user.id)
+					?: throw DiscordRelayedException(
+						Translations.Errors.userNotFound.withNamedPlaceholders("user" to arguments.user.username)
+					)
 
 				guild?.unban(arguments.user.id, arguments.reason)
-				throw DiscordRelayedException(Translations.Errors.userNotFound.withNamedPlaceholders("user" to arguments.user.username))
+
+				respond {
+					embed {
+						unBanEmbed(this@publicSlashCommand.kord, arguments.user, user)
+					}
+				}
 			}
 		}
 
@@ -513,18 +516,17 @@ class Sanctions : Extension() {
 					throw DiscordRelayedException(Translations.Errors.cannotUnmuteMember)
 				}
 
-				arguments.member.timeoutUntil?.let {
-					respond {
-						embed {
-							unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
-						}
-					}
+				arguments.member.timeoutUntil ?: throw DiscordRelayedException(Translations.Errors.userNotMuted)
 
-					arguments.member.edit {
-						timeoutUntil = null
+				arguments.member.edit {
+					timeoutUntil = null
+				}
+
+				respond {
+					embed {
+						unMuteEmbed(this@publicSlashCommand.kord, arguments.member, user)
 					}
 				}
-				throw DiscordRelayedException(Translations.Errors.userNotMuted)
 			}
 		}
 
