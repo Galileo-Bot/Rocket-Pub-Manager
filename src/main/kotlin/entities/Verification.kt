@@ -13,7 +13,7 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
-import dev.kordex.core.components.components
+import dev.kordex.core.components.ComponentContainer
 import dev.kordex.core.components.publicButton
 import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
@@ -25,6 +25,11 @@ import utils.*
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
 const val VALIDATE_VERIF_BUTTON_ID = "validate-verif"
 private const val CHANNELS_EMOJI = "<:textuel:658085848092508220>"
+private const val AUTHOR_FIELD_SUFFIX = "Auteur :"
+private const val MESSAGES_FIELD_SUFFIX = "Messages :"
+private const val MESSAGE_LINK_PREFIX = "https://discord.com/channels/"
+private val ID_IN_PARENTHESES_REGEX = Regex("\\((\\d{17,20})\\)")
+private val CHANNEL_MENTION_REGEX = Regex("<#\\d{17,20}>")
 
 data class VerificationMessage(
 	val id: Snowflake,
@@ -53,6 +58,7 @@ data class Verification(
 	var validatedBy: Snowflake? = null,
 ) {
 	lateinit var verificationMessage: Message
+	val hasVerificationMessage get() = ::verificationMessage.isInitialized
 	val isValidated get() = validatedBy != null
 	val messagesFormatted get() = adMessages.joinToString("\n") { it.toString() }
 
@@ -91,6 +97,7 @@ data class Verification(
 			saveVerification(user, verificationMessageId)
 		}
 		verificationMessage.delete()
+		verifications.remove(this)
 	}
 
 	suspend fun updateMessagesFieldInEmbed() {
@@ -151,6 +158,39 @@ data class Verification(
 	companion object {
 		val verifications = ArrayDeque<Verification>(100)
 
+		private var buttonsContainer: ComponentContainer? = null
+
+		/**
+		 * The buttons carried by every verification message.
+		 *
+		 * The IDs are fixed instead of the random UUIDs KordEx generates by default, and the container is
+		 * shared by every message, so a single registration makes the bot answer the buttons of the messages
+		 * it sent before its last restart too.
+		 */
+		suspend fun buttons(): ComponentContainer = buttonsContainer ?: ComponentContainer {
+			publicButton {
+				id = VALIDATE_VERIF_BUTTON_ID
+				emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
+				style = ButtonStyle.Success
+				label = Translations.Buttons.validateVerification
+
+				action {
+					findOrRestore(event.interaction.message)?.validateBy(event.interaction.user.id)
+				}
+			}
+
+			publicButton {
+				id = DELETE_ALL_ADS_VERIF_BUTTON_ID
+				emoji("\uD83D\uDDD1")
+				style = ButtonStyle.Danger
+				label = Translations.Buttons.delete
+
+				action {
+					findOrRestore(message)?.deleteAllAds()
+				}
+			}
+		}.also { buttonsContainer = it }
+
 		suspend fun create(adMessage: Message) = Verification(
 			author = adMessage.author!!.id,
 			adContent = adMessage.content,
@@ -158,38 +198,56 @@ data class Verification(
 			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
 			adMessages += VerificationMessage(adMessage.id, adMessage.channel.id)
 
+			val buttons = buttons()
 			val verificationMessage = verificationChannel.createMessage {
 				generateEmbed(adMessage)
 
-				components {
-					publicButton {
-						emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
-						style = ButtonStyle.Success
-						label = Translations.Buttons.validateVerification
-
-						action {
-							verifications.find {
-								it.verificationMessage.id == event.interaction.message.id
-							}?.validateBy(event.interaction.user.id)
-						}
-					}
-
-					publicButton {
-						emoji("\uD83D\uDDD1")
-						style = ButtonStyle.Danger
-						label = Translations.Buttons.delete
-
-						action {
-							verifications.find {
-								it.verificationMessage.id == message.id
-							}?.deleteAllAds()
-						}
-					}
-				}
+				with(buttons) { applyToMessage() }
 			}
 
 			this.verificationMessage = verificationMessage
 			verifications += this
+		}
+
+		/**
+		 * The verification [message] belongs to, rebuilt from its embed when the bot restarted since it was
+		 * sent and lost the in-memory one.
+		 */
+		suspend fun findOrRestore(message: Message) =
+			verifications.find { it.hasVerificationMessage && it.verificationMessage.id == message.id }
+				?: fromMessage(message)?.also { verifications += it }
+
+		/** Reads back the state [generateEmbed] wrote, so a verification survives a restart. */
+		private fun fromMessage(message: Message): Verification? {
+			val embed = message.embeds.firstOrNull() ?: return null
+
+			val author = embed.fields.find { it.name.endsWith(AUTHOR_FIELD_SUFFIX) }
+				?.let { ID_IN_PARENTHESES_REGEX.find(it.value)?.groupValues?.get(1) }
+				?.let { Snowflake(it) } ?: return null
+
+			val adMessages = embed.fields.find { it.name.endsWith(MESSAGES_FIELD_SUFFIX) }
+				?.value
+				?.lines()
+				?.mapNotNull(::parseAdMessage)
+				.orEmpty()
+
+			return Verification(author, embed.description ?: "", adMessages.toMutableSet()).apply {
+				verificationMessage = message
+			}
+		}
+
+		/** Parses a single line of the `Messages :` field, as formatted by [VerificationMessage.toString]. */
+		private fun parseAdMessage(line: String): VerificationMessage? {
+			val content = line.trim()
+
+			if (content.startsWith(MESSAGE_LINK_PREFIX)) {
+				val (channelId, messageId) = Snowflake.fromMessageLink(content.substringBefore(' '))
+				return VerificationMessage(messageId, channelId)
+			}
+
+			// Deleted messages only keep their channel mention, their ID is gone with the message itself.
+			val channel = CHANNEL_MENTION_REGEX.find(content)?.value ?: return null
+			return VerificationMessage(Snowflake.min, Snowflake.fromChannelMention(channel), deleted = true)
 		}
 	}
 }

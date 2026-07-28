@@ -24,6 +24,10 @@ class Verifications : Extension() {
 	override val name = "Verifications"
 
 	override suspend fun setup() {
+		// Components only live in the in-memory registry, so the buttons of the verification messages sent
+		// before the last restart are only answered once this registers their (fixed) IDs again.
+		Verification.buttons()
+
 		publicSlashCommand {
 			name = Translations.Commands.Verifications.name
 			description = Translations.Commands.Verifications.description
