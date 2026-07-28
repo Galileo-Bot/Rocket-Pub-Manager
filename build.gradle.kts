@@ -22,7 +22,12 @@ application {
 	mainClass = "MainKt"
 	applicationDefaultJvmArgs = listOf(
 		"-XX:+UseContainerSupport",
-		"-XX:MaxRAMPercentage=80.0",
+		"-Xms64m",
+		"-Xmx192m",
+		"-XX:+UseSerialGC",
+		"-XX:+UseCompactObjectHeaders",
+		"-XX:MaxMetaspaceSize=128m",
+		"-XX:ReservedCodeCacheSize=64m",
 		"-XX:+ExitOnOutOfMemoryError"
 	)
 }
