@@ -31,7 +31,7 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	isAdChannel()
 }
 
-suspend fun MemberBehavior?.isStaff() = this?.let {
+suspend fun MemberBehavior?.isStaff(): Boolean = this?.let {
 	if (debug && it.asMemberOrNull()?.hasPermission(Permission.Administrator) == true) return@isStaff true
 	!it.asUser().isBot && it.guild.id == ROCKET_PUB_GUILD && it.asMemberOrNull()?.hasRole(STAFF_ROLE) == true
 } == true
