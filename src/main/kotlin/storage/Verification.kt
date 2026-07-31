@@ -3,6 +3,7 @@ package storage
 import dev.kord.common.entity.Snowflake
 import java.sql.Timestamp
 import java.time.Instant
+import java.time.LocalDate
 
 fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake? = null) {
 	sqlUpdate(
@@ -25,4 +26,4 @@ fun getVerificationCount() = sqlQuery("SELECT staffID FROM verifications") { res
 fun getVerificationCountsByDay(since: Instant) = sqlQuery(
 	"SELECT DATE(verifiedAt) d, COUNT(*) c FROM verifications WHERE verifiedAt >= ? GROUP BY d ORDER BY d",
 	Timestamp.from(since)
-) { result -> result.mapRows { DailyCount(it.getDate("d").toLocalDate(), it.getInt("c")) } }
+) { result -> result.mapRows { DailyCount(LocalDate.parse(it.getString("d")), it.getInt("c")) } }

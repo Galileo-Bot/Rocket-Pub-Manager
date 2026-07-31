@@ -18,4 +18,4 @@ fun saveAdEvent(author: Snowflake, messageID: Snowflake, channelID: Snowflake) =
 fun getAdCountsByDay(since: Instant) = sqlQuery(
 	"SELECT DATE(postedAt) d, COUNT(*) c FROM ad_events WHERE postedAt >= ? GROUP BY d ORDER BY d",
 	Timestamp.from(since)
-) { result -> result.mapRows { DailyCount(it.getDate("d").toLocalDate(), it.getInt("c")) } }
+) { result -> result.mapRows { DailyCount(LocalDate.parse(it.getString("d")), it.getInt("c")) } }
