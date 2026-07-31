@@ -29,6 +29,7 @@ application {
 		"-XX:+UseCompactObjectHeaders",
 		"-XX:MaxMetaspaceSize=128m",
 		"-XX:ReservedCodeCacheSize=64m",
+		"-XX:MaxDirectMemorySize=32m",
 		"-XX:+ExitOnOutOfMemoryError"
 	)
 }

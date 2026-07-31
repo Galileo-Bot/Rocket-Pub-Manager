@@ -2,6 +2,9 @@
 FROM gradle:9.6.1-jdk25-alpine AS build
 WORKDIR /app
 
+# gradle.properties is sized for a dev machine, these override it for a constrained builder.
+ENV GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx1600m -XX:MaxMetaspaceSize=512m -XX:+UseParallelGC -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2"
+
 # Copy build files
 COPY gradle/ gradle/
 COPY *.gradle.kts gradle.properties libs.versions.toml ./
