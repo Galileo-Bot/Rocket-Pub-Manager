@@ -7,7 +7,7 @@ ENV GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx1600m -XX:MaxMetaspaceSize=512m -XX:+U
 
 # Copy build files
 COPY gradle/ gradle/
-COPY *.gradle.kts gradle.properties libs.versions.toml ./
+COPY *.gradle.kts gradle.properties libs.versions.toml .editorconfig ./
 
 # Copy minimal resources for KordEx
 COPY src/main/resources/translations/ src/main/resources/translations/
