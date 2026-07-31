@@ -15,3 +15,9 @@ out
 
 # configuration project files
 .env
+
+# local SQLite database
+data
+*.db
+*.db-shm
+*.db-wal
