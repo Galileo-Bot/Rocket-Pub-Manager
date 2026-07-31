@@ -1,8 +1,8 @@
 
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
-import dev.kord.gateway.ALL
-import dev.kord.gateway.Intents
+import dev.kord.core.cache.lruCache
+import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.annotations.warnings.ReplacingDefaultErrorResponseBuilder
@@ -65,6 +65,19 @@ suspend fun main() {
 				val channel = channelFor(event)
 				logger.debug { "Got a slash command from ${user?.id} in ${channel?.id ?: "dm"}" }
 				pass()
+			}
+		}
+
+		// Kord caches every entity type unbounded by default, anything missing here falls back to REST.
+		cache {
+			cachedMessages = 0
+
+			kord {
+				emojis(none())
+				members(lruCache(500))
+				presences(none())
+				users(lruCache(500))
+				voiceState(none())
 			}
 		}
 
@@ -133,7 +146,14 @@ suspend fun main() {
 			defaultLocale = Locale.FRENCH
 		}
 
-		intents { +Intents.ALL }
+		// Only what the event handlers need, presences would ship every member of every guild at startup.
+		intents(addDefaultIntents = false) {
+			+Intent.Guilds
+			+Intent.GuildMembers
+			+Intent.GuildModeration
+			+Intent.GuildMessages
+			+Intent.MessageContent
+		}
 
 		presence {
 			status = PresenceStatus.Idle
