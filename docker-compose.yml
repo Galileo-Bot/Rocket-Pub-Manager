@@ -12,8 +12,6 @@ services:
         volumes:
             - ./logs:/app/logs
             - bot_data:/app/data
-            - cds_cache:/app/cds
 
 volumes:
     bot_data:
-    cds_cache:
