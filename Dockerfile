@@ -12,10 +12,12 @@ COPY *.gradle.kts gradle.properties libs.versions.toml .editorconfig ./
 # Copy minimal resources for KordEx
 COPY src/main/resources/translations/ src/main/resources/translations/
 
-# Download dependencies, jars included, so they land in their own cached layer
+# Download dependencies, jars included, so they land in their own cached layer. The dry run stores a
+# configuration cache entry for the real build below, which needs no sources to be configured.
 RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
     --mount=type=cache,target=/app/.gradle,sharing=locked \
-    gradle warmupDependencies --no-daemon
+    gradle warmupDependencies --no-daemon && \
+    gradle installDist --dry-run --no-daemon
 
 # Copy source and build
 COPY src/ src/
