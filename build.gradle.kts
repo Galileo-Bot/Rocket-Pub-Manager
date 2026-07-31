@@ -30,6 +30,7 @@ application {
 		"-XX:MaxMetaspaceSize=128m",
 		"-XX:ReservedCodeCacheSize=64m",
 		"-XX:MaxDirectMemorySize=32m",
+		"-Djava.awt.headless=true",
 		"-XX:+ExitOnOutOfMemoryError"
 	)
 }
