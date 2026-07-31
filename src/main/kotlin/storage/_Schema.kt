@@ -1,0 +1,27 @@
+package storage
+
+import logger
+import java.sql.Connection
+
+private const val SCHEMA_RESOURCE = "/schema.sql"
+
+/** Creates the tables and indexes if they are missing, replacing the MariaDB image's init hook. */
+fun Connection.applySchema() {
+	val schema = checkNotNull(object {}.javaClass.getResource(SCHEMA_RESOURCE)) {
+		"Missing $SCHEMA_RESOURCE on the classpath"
+	}.readText()
+
+	val statements = schema.lineSequence()
+		.filterNot { it.trimStart().startsWith("--") }
+		.joinToString("\n")
+		.split(';')
+		.map(String::trim)
+		.filter(String::isNotEmpty)
+
+	createStatement().use { statement ->
+		statements.forEach(statement::addBatch)
+		statement.executeBatch()
+	}
+
+	logger.debug { "Schema applied (${statements.size} statements)" }
+}
