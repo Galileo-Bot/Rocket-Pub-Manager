@@ -5,45 +5,15 @@ services:
             dockerfile: Dockerfile
         restart: unless-stopped
         mem_limit: 320m
-        depends_on:
-            db:
-                condition: service_healthy
         env_file:
             - .env
+        environment:
+            AYFRI_ROCKETMANAGER_DB_PATH: /app/data/rocketmanager.db
         volumes:
             - ./logs:/app/logs
+            - bot_data:/app/data
             - cds_cache:/app/cds
 
-    db:
-        image: mariadb:11.8
-        restart: unless-stopped
-        mem_limit: 300m
-        env_file:
-            - .env
-        volumes:
-            - mariadb_data:/var/lib/mariadb
-            - ./dump.sql:/docker-entrypoint-initdb.d/init.sql
-        ports:
-            - '${DB_EXPOSED_PORT}:3306'
-        command: >
-            --innodb-buffer-pool-size=96M
-            --innodb-log-file-size=32M
-            --innodb-buffer-pool-instances=1
-            --max-connections=20
-            --query-cache-type=0
-            --query-cache-size=0
-            --skip-name-resolve
-            --performance-schema=0
-            --table-open-cache=100
-            --thread-cache-size=8
-            --innodb-flush-log-at-trx-commit=2
-        healthcheck:
-            test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
-            start_period: 10s
-            interval: 10s
-            timeout: 5s
-            retries: 3
-
 volumes:
-    mariadb_data:
+    bot_data:
     cds_cache:

@@ -32,8 +32,9 @@ COPY --from=build /app/build/install/Rocket-Manager/ ./
 # It is rebuilt automatically whenever the classpath changes.
 ENV JAVA_OPTS="-XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=/app/cds/app.jsa"
 
+# Creating /app/data here makes Docker carry its ownership over to the mounted volume.
 RUN adduser -D appuser && \
-    mkdir -p /app/cds /app/logs && \
+    mkdir -p /app/cds /app/data /app/logs && \
     chown -R appuser:appuser /app
 
 USER appuser
