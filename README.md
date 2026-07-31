@@ -33,7 +33,7 @@ Le bot couvre l'ensemble de la modération du serveur :
 - **Kotlin** 2.4.10 sur **Java** 25
 - **[KordEx](https://github.com/Kord-Extensions/kord-extensions)** 2.5.0-SNAPSHOT (basé sur [Kord](https://github.com/kordlib/kord)) pour l'interaction avec l'API Discord
 - **Gradle** avec les plugins `dev.kordex.gradle.kordex`, `dev.kordex.gradle.i18n` et KSP
-- **MySQL Connector/J** pour l'accès à la base de données
+- **SQLite** via `sqlite-jdbc`, embarqué dans le process du bot
 - **dotenv-kotlin** pour le chargement de la configuration via `.env`
 - **Logback** pour les logs
 
@@ -62,11 +62,14 @@ Les traductions se trouvent dans `src/main/resources/translations/rocketmanager/
 
 ## Base de données
 
-Le bot utilise **MariaDB**. Le schéma est défini dans `dump.sql` et chargé automatiquement au démarrage du conteneur `db`. Trois tables principales :
+Le bot utilise **SQLite**, embarqué dans son propre process : il n'y a pas de serveur de base de données à faire tourner. Le schéma est défini dans `src/main/resources/schema.sql` et appliqué au démarrage, ce qui crée le fichier s'il n'existe pas. Quatre tables :
 
 - `banned_guilds` : serveurs blacklistés (nom, identifiant, raison, date de bannissement)
 - `sanctions` : sanctions appliquées (raison, membre, modérateur, durée, type, date)
 - `verifications` : suivi des vérifications de publicités (modérateur, date, message)
+- `ad_events` : publicités postées, pour les commandes de statistiques
+
+Les tables sont `STRICT` : SQLite refuse une valeur qui ne correspond pas au type déclaré au lieu de la convertir en silence. Les dates sont du texte au format `YYYY-MM-DD HH:MM:SS` en heure locale, seul format que `DATE()` sait grouper.
 
 ## Configuration
 
@@ -82,19 +85,15 @@ Le bot se configure via un fichier `.env` à la racine du projet, avec toutes le
 | `CHANNEL_SANCTION_ID` | Salon de log des sanctions |
 | `CHANNEL_VERIF_ID` | Salon de vérification des publicités |
 | `CHANNEL_VERIF_LOGS_ID` | Salon de log des vérifications |
-| `DB_MDP` | Mot de passe de la base de données |
-| `DB_IP` | Adresse de la base de données |
-| `DB_USER` | Utilisateur de la base de données |
-| `DB_PORT` | Port de la base de données |
-| `DB_NAME` | Nom de la base de données |
+| `DB_PATH` | Chemin du fichier SQLite |
 
-En plus de ces variables, `docker-compose.yml` a besoin de `DB_EXPOSED_PORT` pour exposer le port de MariaDB sur l'hôte.
+`.env.template` sert de point de départ. Avec Docker, `DB_PATH` est surchargé vers `/app/data/rocketmanager.db`.
 
 ## Lancer le bot
 
 ### Avec Gradle (développement local)
 
-Nécessite une instance MariaDB accessible et un fichier `.env` complet.
+Nécessite seulement un fichier `.env` complet : la base est créée au premier démarrage.
 
 ```bash
 ./gradlew run
@@ -111,12 +110,9 @@ Autres tâches utiles :
 docker compose up --build
 ```
 
-Cela démarre deux services :
+Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.6.1-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`.
 
-- `db` : MariaDB 11.8, initialisée avec `dump.sql`
-- `bot` : le bot, buildé en multi-stage à partir de `gradle:9.6.1-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`
-
-Les logs sont montés dans `./logs`.
+Les logs sont montés dans `./logs`, et la base vit dans le volume `bot_data`.
 
 ## Contribuer
 
