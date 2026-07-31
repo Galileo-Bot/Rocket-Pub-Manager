@@ -180,7 +180,8 @@ fun getSanctionCount() = sqlQuery("SELECT appliedByID FROM sanctions ORDER BY id
 	result.mapRows { it.getString("appliedByID") }
 }.mapNotNull { it?.takeIf { id -> id != "null" }?.let(::Snowflake) }
 
-fun modifySanction(id: Int, value: ModifySanctionValues, newValue: String) =
+/** [newValue] is untyped because `durationMS` is an integer column and the tables are STRICT. */
+fun modifySanction(id: Int, value: ModifySanctionValues, newValue: Any?) =
 	sqlUpdate("UPDATE sanctions SET ${value.column} = ? WHERE id = ?", newValue, id)
 
 fun removeSanction(id: Int) = sqlUpdate("DELETE FROM sanctions WHERE id = ?", id)

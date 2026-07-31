@@ -11,6 +11,9 @@ import dev.kordex.core.commands.converters.impl.member
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import fr.ayfri.rocketmanager.i18n.Translations
+import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import storage.SanctionType
 import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
@@ -87,7 +90,12 @@ class ModifySanctions : Extension() {
 				description = Translations.Commands.ModifySanctions.Duration.description
 
 				action {
-					modifySanction(arguments.id, ModifySanctionValues.DURATION, arguments.duration.toString())
+					// The converter yields a calendar period, so it has to be resolved against a date to
+					// give a number of milliseconds.
+					val now = Clock.System.now()
+					val durationMS = (now.plus(arguments.duration, TimeZone.currentSystemDefault()) - now)
+
+					modifySanction(arguments.id, ModifySanctionValues.DURATION, durationMS.inWholeMilliseconds)
 				}
 			}
 
@@ -105,7 +113,8 @@ class ModifySanctions : Extension() {
 				description = Translations.Commands.ModifySanctions.Type.description
 
 				action {
-					modifySanction(arguments.id, ModifySanctionValues.TYPE, arguments.type.name)
+					// Types are stored lowercase, and `removeSanctions` filters on that form.
+					modifySanction(arguments.id, ModifySanctionValues.TYPE, arguments.type.name.lowercase())
 				}
 			}
 		}
