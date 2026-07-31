@@ -1,5 +1,4 @@
 
-import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
 import dev.kord.gateway.ALL
@@ -14,8 +13,13 @@ import dev.kordex.core.utils.env
 import extensions.*
 import fr.ayfri.rocketmanager.i18n.Translations
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.sqlite.SQLiteConfig
+import storage.applySchema
 import java.sql.Connection
 import java.util.*
+import kotlin.io.path.Path
+import kotlin.io.path.absolute
+import kotlin.io.path.createDirectories
 
 
 val logger = KotlinLogging.logger("main")
@@ -26,31 +30,26 @@ val endMessageAutomatic get() = env("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE")
 
 lateinit var bot: ExtensibleBot
 
-val dataSource = MysqlConnectionPoolDataSource().apply {
-	serverName = env("AYFRI_ROCKETMANAGER_DB_IP")
-	port = env("AYFRI_ROCKETMANAGER_DB_PORT").toInt()
-	databaseName = env("AYFRI_ROCKETMANAGER_DB_NAME")
-	password = env("AYFRI_ROCKETMANAGER_DB_MDP")
-	allowMultiQueries = true
-	user = env("AYFRI_ROCKETMANAGER_DB_USER")
-}.also { logger.debug { "Database connection initialized" } }
+/** `date_class = TEXT` stores timestamps as [DATE_FORMAT] instead of epoch millis, which SQLite's `DATE()` needs. */
+private val sqliteConfig = SQLiteConfig().apply {
+	setDateClass(SQLiteConfig.DateClass.TEXT.value)
+	setDateStringFormat(DATE_FORMAT)
+	setJournalMode(SQLiteConfig.JournalMode.WAL)
+	setSynchronous(SQLiteConfig.SynchronousMode.NORMAL)
+	setBusyTimeout(5_000)
+}
 
-private var currentConnection: Connection? = null
-private val connectionLock = Any()
+const val DATE_FORMAT = "yyyy-MM-dd HH:mm:ss"
 
-/**
- * The shared database connection, re-opened whenever the server dropped it.
- *
- * [Connection.isValid] is used instead of a probe query so no statement is leaked on every access.
- */
-val connection: Connection
-	get() = synchronized(connectionLock) {
-		val existing = currentConnection
-		if (existing != null && runCatching { existing.isValid(2) }.getOrDefault(false)) return@synchronized existing
+val connection: Connection by lazy {
+	val path = Path(env("AYFRI_ROCKETMANAGER_DB_PATH")).absolute()
+	logger.info { "Opening the SQLite database at $path" }
 
-		logger.debug { "Opening a new database connection" }
-		dataSource.connection.also { currentConnection = it }
-	}
+	// SQLite creates the file but not the directories leading to it.
+	path.parent?.createDirectories()
+
+	sqliteConfig.createConnection("jdbc:sqlite:$path").also { it.applySchema() }
+}
 
 val ExtensibleBot.kord get() = getKoin().get<Kord>()
 
