@@ -1,0 +1,15 @@
+.git/
+.github/
+.idea/
+.vscode/
+.claude/
+build/
+.gradle/
+.kotlin/
+data/
+logs/
+scripts/
+.env
+*.db
+*.db-shm
+*.db-wal
