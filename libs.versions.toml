@@ -5,16 +5,16 @@ kordex-i18n = "1.1.1"
 kord-extensions = "2.5.0-SNAPSHOT"
 ksp = "2.3.10"
 
-connector = "9.7.0"
 dotenv = "6.5.1"
 kandy = "0.8.3"
 logback = "1.6.0"
+sqlite = "3.53.2.1"
 
 [libraries]
-connector = { module = "com.mysql:mysql-connector-j", version.ref = "connector" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 kandy-letsPlot = { module = "org.jetbrains.kotlinx:kandy-lets-plot", version.ref = "kandy" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
