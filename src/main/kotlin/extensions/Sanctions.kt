@@ -419,13 +419,13 @@ class Sanctions : Extension() {
 					durationMS = duration?.inWholeMilliseconds ?: 0,
 					appliedBy = user.id
 				).apply {
-					respond {
-						applyToMember(arguments.member, arguments.deleteDays)
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-
+					applyToMember(arguments.member, arguments.deleteDays)
 					save()
 					sendLog()
+
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
+					}
 				}
 			}
 		}
@@ -442,13 +442,13 @@ class Sanctions : Extension() {
 				}
 
 				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
-					respond {
-						applyToMember(arguments.member)
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-
+					applyToMember(arguments.member)
 					save()
 					sendLog()
+
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
+					}
 				}
 			}
 		}
@@ -478,13 +478,13 @@ class Sanctions : Extension() {
 					durationMS = duration.inWholeMilliseconds,
 					appliedBy = user.id
 				).apply {
-					respond {
-						applyToMember(arguments.member)
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-
+					applyToMember(arguments.member)
 					save()
 					sendLog()
+
+					respond {
+						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
+					}
 				}
 			}
 		}
