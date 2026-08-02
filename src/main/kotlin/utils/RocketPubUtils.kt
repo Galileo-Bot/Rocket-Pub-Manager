@@ -10,11 +10,15 @@ import dev.kordex.core.checks.channelFor
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.utils.env
 import fr.ayfri.rocketmanager.i18n.Translations
+import kotlin.time.Duration.Companion.minutes
 
 const val DISCORD_INVITE_LINK_REGEX =
 	"(?:https?:\\/\\/)?(?:\\w+\\.)?discord(?:(?:app)?\\.com\\/invite|\\.gg)\\/([A-Za-z\\d-]+)"
 const val AD_CATEGORY_CHANNEL_EMOTE = "🔗"
 const val AD_CHANNEL_EMOTE = "<:validate:525405975289659402>"
+
+/** Window during which new ad messages from the same author are grouped into the same pending [entities.Verification], even if their content differs across channels. */
+val AD_GROUPING_WINDOW = 10.minutes
 
 /** Salon où les erreurs du bot sont envoyées */
 val ERROR_CHANNEL = Snowflake("864756196539105290")

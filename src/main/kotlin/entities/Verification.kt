@@ -20,6 +20,8 @@ import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
 import kord
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import storage.saveAdEvent
@@ -41,6 +43,7 @@ data class VerificationMessage(
 	val id: Snowflake,
 	val channelId: Snowflake,
 	var deleted: Boolean = false,
+	val content: String = "",
 ) {
 	val jumpUrl get() = "https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id}"
 
@@ -64,14 +67,19 @@ data class Verification(
 	var validatedBy: Snowflake? = null,
 ) {
 	lateinit var verificationMessage: Message
+	var lastActivityAt: Instant = Clock.System.now()
 	val hasVerificationMessage get() = ::verificationMessage.isInitialized
 	val isValidated get() = validatedBy != null
 	val messagesFormatted get() = adMessages.joinToString("\n") { it.toString() }
 
+	/** Only messages carrying their own content (i.e. not restored from a pre-restart embed) are compared. */
+	val contentDiffers get() = adMessages.any { it.content.isNotBlank() && it.content != adContent }
+
 	suspend fun addAdMessage(message: Message) {
 		if (adMessages.any { it.channelId == message.channelId }) return
 
-		adMessages += VerificationMessage(message.id, message.channelId)
+		adMessages += VerificationMessage(message.id, message.channelId, content = message.content)
+		lastActivityAt = Clock.System.now()
 		updateMessagesFieldInEmbed()
 	}
 
@@ -128,7 +136,15 @@ data class Verification(
 			embed {
 				fromEmbed(verificationMessage.embeds[0])
 
+				title = Translations.Embeds.Verifications.NewAd.title.translateNamed("count" to adMessages.size.toString())
 				fields.find { it.name.endsWith("Messages :") }?.value = messagesFormatted
+
+				if (contentDiffers && fields.none { it.name == Translations.Fields.warning.translate() }) {
+					field {
+						name = Translations.Fields.warning.translate()
+						value = Translations.Embeds.Verifications.contentDiffers.translate()
+					}
+				}
 			}
 		}
 	}
@@ -144,7 +160,11 @@ data class Verification(
 			}
 		}
 
-		completeEmbed(bot.kord, "Nouvelle publicité à valider.", adContent) {
+		completeEmbed(
+			bot.kord,
+			Translations.Embeds.Verifications.NewAd.title.translateNamed("count" to adMessages.size.toString()),
+			adContent
+		) {
 			author {
 				name = "${authorUser.username} | ${authorUser.effectiveName}"
 				icon = (authorUser.avatar ?: authorUser.defaultAvatar).cdnUrl.toUrl { size = Image.Size.Size512 }
@@ -158,7 +178,7 @@ data class Verification(
 			if (link != null) {
 				field {
 					if (invite != null) {
-						name = "\uD83D\uDCE9 Invitation :"
+						name = "📩 Invitation :"
 						value = """
 							Serveur : ${invite.partialGuild?.name ?: "Non trouvé."}
 							ID du serveur : ${invite.partialGuild?.id?.toString() ?: "Non trouvé."}
@@ -208,7 +228,7 @@ data class Verification(
 
 			publicButton {
 				id = deleteId
-				emoji("\uD83D\uDDD1")
+				emoji("🗑")
 				style = ButtonStyle.Danger
 				label = Translations.Buttons.delete
 
@@ -219,7 +239,7 @@ data class Verification(
 
 			publicButton {
 				id = ignoreId
-				emoji("\uD83D\uDEAB")
+				emoji("🚫")
 				style = ButtonStyle.Secondary
 				label = Translations.Buttons.ignore
 
@@ -268,7 +288,7 @@ data class Verification(
 			saveAdEvent(adMessage.author!!.id, adMessage.id, adMessage.channel.id)
 
 			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
-			adMessages += VerificationMessage(adMessage.id, adMessage.channel.id)
+			adMessages += VerificationMessage(adMessage.id, adMessage.channel.id, content = adMessage.content)
 
 			val buttons = buttons()
 			val verificationMessage = verificationChannel.createMessage {
@@ -325,5 +345,5 @@ data class Verification(
 }
 
 fun List<Verification>.findNotValidated(adMessage: Message) = find {
-	it.adContent == adMessage.content && it.author == adMessage.author!!.id && !it.isValidated
+	it.author == adMessage.author!!.id && !it.isValidated && it.adMessages.any { m -> m.id == adMessage.id }
 }

@@ -15,6 +15,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import entities.Verification
 import entities.findNotValidated
 import fr.ayfri.rocketmanager.i18n.Translations
+import kotlin.time.Clock
 import logger
 import storage.Sanction
 import storage.SanctionType
@@ -118,7 +119,10 @@ class Verifications : Extension() {
 				}
 
 				Verification.verifications.find {
-					it.adContent == event.message.content && it.author == event.message.author!!.id
+					it.author == event.message.author!!.id &&
+						!it.isValidated &&
+						it.adMessages.none { m -> m.channelId == event.message.channelId } &&
+						(it.adContent == event.message.content || Clock.System.now() - it.lastActivityAt < AD_GROUPING_WINDOW)
 				}?.let {
 					it.addAdMessage(event.message)
 					return@action
