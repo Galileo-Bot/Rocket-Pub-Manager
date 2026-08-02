@@ -20,12 +20,16 @@ import dev.kordex.core.components.forms.ModalForm
 import dev.kordex.core.components.publicButton
 import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
+import extensions.getNextMuteDuration
+import extensions.getNextSanctionType
 import fr.ayfri.rocketmanager.i18n.Translations
 import kord
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
+import storage.Sanction
+import storage.SanctionType
 import storage.getAdEventCount
 import storage.getSanctions
 import storage.saveAdEvent
@@ -35,6 +39,7 @@ import utils.*
 
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
 const val IGNORE_VERIF_BUTTON_ID = "ignore-verif"
+const val SANCTION_VERIF_BUTTON_ID = "sanction-verif"
 const val VALIDATE_VERIF_BUTTON_ID = "validate-verif"
 private const val CHANNELS_EMOJI = "<:textuel:658085848092508220>"
 private const val AUTHOR_FIELD_SUFFIX = "Auteur :"
@@ -138,6 +143,27 @@ data class Verification(
 
 		verificationMessage.delete()
 		verifications.remove(this)
+	}
+
+	/** Deletes every pending ad and sanctions the author, using the same escalation as the manual "forbidden ad" command. */
+	suspend fun sanctionAuthor(staffId: Snowflake) {
+		deleteAllAds()
+
+		val kord = verificationMessage.kord
+		val member = kord.getRocketPubGuild().getMemberOrNull(author) ?: return
+
+		val type = member.getNextSanctionType()
+		Sanction(
+			type,
+			Translations.Messages.forbiddenAd.translate(),
+			author,
+			staffId,
+			if (type == SanctionType.MUTE) member.getNextMuteDuration() else 0
+		).apply {
+			applyToMember(member)
+			sendLog(kord)
+			save()
+		}
 	}
 
 	suspend fun setDeletedMessage(channelId: Snowflake) {
@@ -270,43 +296,59 @@ data class Verification(
 		 * it sent before its last restart too.
 		 */
 		suspend fun buttons(): ComponentContainer =
-			buttonsContainer ?: buttonsWith(VALIDATE_VERIF_BUTTON_ID, DELETE_ALL_ADS_VERIF_BUTTON_ID, IGNORE_VERIF_BUTTON_ID)
-				.also { buttonsContainer = it }
+			buttonsContainer ?: buttonsWith(
+				VALIDATE_VERIF_BUTTON_ID,
+				DELETE_ALL_ADS_VERIF_BUTTON_ID,
+				IGNORE_VERIF_BUTTON_ID,
+				SANCTION_VERIF_BUTTON_ID
+			).also { buttonsContainer = it }
 
-		private suspend fun buttonsWith(validateId: String, deleteId: String, ignoreId: String) = ComponentContainer {
-			publicButton {
-				id = validateId
-				emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
-				style = ButtonStyle.Success
-				label = Translations.Buttons.validateVerification
+		private suspend fun buttonsWith(validateId: String, deleteId: String, ignoreId: String, sanctionId: String) =
+			ComponentContainer {
+				publicButton {
+					id = validateId
+					emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
+					style = ButtonStyle.Success
+					label = Translations.Buttons.validateVerification
 
-				action {
-					findOrRestore(event.interaction.message)?.validateBy(event.interaction.user.id)
+					action {
+						findOrRestore(event.interaction.message)?.validateBy(event.interaction.user.id)
+					}
+				}
+
+				publicButton {
+					id = deleteId
+					emoji("🗑")
+					style = ButtonStyle.Danger
+					label = Translations.Buttons.delete
+
+					action {
+						findOrRestore(message)?.deleteAllAds()
+					}
+				}
+
+				publicButton {
+					id = sanctionId
+					emoji("⚠️")
+					style = ButtonStyle.Primary
+					label = Translations.Buttons.sanction
+
+					action {
+						findOrRestore(message)?.sanctionAuthor(event.interaction.user.id)
+					}
+				}
+
+				publicButton(::IgnoreReasonModal) {
+					id = ignoreId
+					emoji("🚫")
+					style = ButtonStyle.Secondary
+					label = Translations.Buttons.ignore
+
+					action { modal ->
+						findOrRestore(message)?.ignore(event.interaction.user.id, modal?.reason?.value)
+					}
 				}
 			}
-
-			publicButton {
-				id = deleteId
-				emoji("🗑")
-				style = ButtonStyle.Danger
-				label = Translations.Buttons.delete
-
-				action {
-					findOrRestore(message)?.deleteAllAds()
-				}
-			}
-
-			publicButton(::IgnoreReasonModal) {
-				id = ignoreId
-				emoji("🚫")
-				style = ButtonStyle.Secondary
-				label = Translations.Buttons.ignore
-
-				action { modal ->
-					findOrRestore(message)?.ignore(event.interaction.user.id, modal?.reason?.value)
-				}
-			}
-		}
 
 		/**
 		 * Registers the random IDs the buttons were given before they were made fixed, so the verification
@@ -323,11 +365,13 @@ data class Verification(
 					val validateId = message.buttons.find { it.style == ButtonStyle.Success }?.customId
 					val deleteId = message.buttons.find { it.style == ButtonStyle.Danger }?.customId
 					val ignoreId = message.buttons.find { it.style == ButtonStyle.Secondary }?.customId
+					val sanctionId = message.buttons.find { it.style == ButtonStyle.Primary }?.customId
 
 					if (
 						validateId == VALIDATE_VERIF_BUTTON_ID &&
 						deleteId == DELETE_ALL_ADS_VERIF_BUTTON_ID &&
-						ignoreId == IGNORE_VERIF_BUTTON_ID
+						ignoreId == IGNORE_VERIF_BUTTON_ID &&
+						(sanctionId == SANCTION_VERIF_BUTTON_ID || sanctionId == null)
 					) return@collect
 					if (validateId == null && deleteId == null && ignoreId == null) return@collect
 
@@ -335,7 +379,8 @@ data class Verification(
 					buttonsWith(
 						validateId ?: VALIDATE_VERIF_BUTTON_ID,
 						deleteId ?: DELETE_ALL_ADS_VERIF_BUTTON_ID,
-						ignoreId ?: IGNORE_VERIF_BUTTON_ID
+						ignoreId ?: IGNORE_VERIF_BUTTON_ID,
+						sanctionId ?: SANCTION_VERIF_BUTTON_ID
 					)
 				}
 		}
