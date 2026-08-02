@@ -1,4 +1,4 @@
-package extensions
+package extensions.sanctions
 
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum

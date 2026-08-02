@@ -1,4 +1,4 @@
-package extensions
+package extensions.sanctions
 
 import dev.kord.common.entity.AuditLogChangeKey
 import dev.kord.common.entity.AuditLogEvent

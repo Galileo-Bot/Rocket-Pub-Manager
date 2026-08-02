@@ -5,7 +5,6 @@ import dev.kord.common.serialization.InstantInEpochMillisecondsSerializer
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.i18n.Key
 import dev.kordex.core.time.TimestampType
-import extensions.ModifySanctionValues
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import kotlin.time.toKotlinInstant
@@ -28,6 +27,14 @@ enum class SanctionType(val translation: Key, val emote: String) : ChoiceEnum {
 
 	/** The `type` column holds the lowercase name, every query filtering on it must use this form. */
 	val storedName get() = name.lowercase()
+}
+
+/** The columns of `sanctions` an existing row may be edited on. */
+enum class ModifySanctionValues(val column: String) {
+	APPLIED_BY("appliedByID"),
+	DURATION("durationMS"),
+	REASON("reason"),
+	TYPE("type"),
 }
 
 

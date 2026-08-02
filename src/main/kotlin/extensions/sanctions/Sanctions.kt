@@ -1,4 +1,4 @@
-package extensions
+package extensions.sanctions
 
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat

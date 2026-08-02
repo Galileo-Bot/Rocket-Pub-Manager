@@ -11,6 +11,7 @@ import dev.kordex.core.checks.userFor
 import dev.kordex.core.types.FailureReason
 import dev.kordex.core.utils.env
 import extensions.*
+import extensions.sanctions.*
 import fr.ayfri.rocketmanager.i18n.Translations
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.sqlite.SQLiteConfig
