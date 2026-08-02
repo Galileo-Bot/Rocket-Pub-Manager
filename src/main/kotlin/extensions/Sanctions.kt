@@ -22,8 +22,9 @@ import dev.kordex.core.time.TimestampType
 import dev.kordex.core.utils.*
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.*
+import utils.applySanction
 import utils.completeEmbed
-import utils.sanctionEmbed
+import utils.ensureCanInteract
 import utils.unBanEmbed
 import utils.unMuteEmbed
 import kotlin.time.Duration.Companion.days
@@ -406,27 +407,19 @@ class Sanctions : Extension() {
 					throw DiscordRelayedException(Translations.Errors.alreadyBanned)
 				}
 
-				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()
-						?.canInteract(arguments.member) != true
-				) {
-					throw DiscordRelayedException(Translations.Errors.cannotBanMember)
-				}
+				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotBanMember)
 
-				Sanction(
-					SanctionType.BAN,
-					arguments.reason,
-					arguments.member.id,
-					durationMS = duration?.inWholeMilliseconds ?: 0,
-					appliedBy = user.id
-				).apply {
-					applyToMember(arguments.member, arguments.deleteDays)
-					save()
-					sendLog()
-
-					respond {
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-				}
+				applySanction(
+					Sanction(
+						SanctionType.BAN,
+						arguments.reason,
+						arguments.member.id,
+						durationMS = duration?.inWholeMilliseconds ?: 0,
+						appliedBy = user.id
+					),
+					arguments.member,
+					arguments.deleteDays
+				)
 			}
 		}
 
@@ -435,21 +428,12 @@ class Sanctions : Extension() {
 			description = Translations.Commands.Sanctions.Kick.description
 
 			action {
-				if (guild?.fetchGuildOrNull()?.selfMember()?.fetchMemberOrNull()
-						?.canInteract(arguments.member) != true
-				) {
-					throw DiscordRelayedException(Translations.Errors.cannotKickMember)
-				}
+				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotKickMember)
 
-				Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
-					applyToMember(arguments.member)
-					save()
-					sendLog()
-
-					respond {
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-				}
+				applySanction(
+					Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id),
+					arguments.member
+				)
 			}
 		}
 
@@ -467,25 +451,18 @@ class Sanctions : Extension() {
 				if (duration < 2.minutes) throw DiscordRelayedException(Translations.Errors.muteDurationTooShort)
 				if (duration > 28.days) throw DiscordRelayedException(Translations.Errors.muteDurationTooLong)
 
-				if (!guild!!.selfMember().canInteract(arguments.member)) {
-					throw DiscordRelayedException(Translations.Errors.cannotMuteMember)
-				}
+				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotMuteMember)
 
-				Sanction(
-					SanctionType.MUTE,
-					arguments.reason,
-					arguments.member.id,
-					durationMS = duration.inWholeMilliseconds,
-					appliedBy = user.id
-				).apply {
-					applyToMember(arguments.member)
-					save()
-					sendLog()
-
-					respond {
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-				}
+				applySanction(
+					Sanction(
+						SanctionType.MUTE,
+						arguments.reason,
+						arguments.member.id,
+						durationMS = duration.inWholeMilliseconds,
+						appliedBy = user.id
+					),
+					arguments.member
+				)
 			}
 		}
 
@@ -514,9 +491,7 @@ class Sanctions : Extension() {
 			description = Translations.Commands.Sanctions.Unmute.description
 
 			action {
-				if (!guild!!.selfMember().canInteract(arguments.member)) {
-					throw DiscordRelayedException(Translations.Errors.cannotUnmuteMember)
-				}
+				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotUnmuteMember)
 
 				arguments.member.timeoutUntil ?: throw DiscordRelayedException(Translations.Errors.userNotMuted)
 
@@ -537,14 +512,7 @@ class Sanctions : Extension() {
 			description = Translations.Commands.Sanctions.Warn.description
 
 			action {
-				Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id).apply {
-					save()
-					sendLog()
-
-					respond {
-						sanctionEmbed(this@publicSlashCommand.kord, this@apply)
-					}
-				}
+				applySanction(Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id))
 			}
 		}
 	}

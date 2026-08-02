@@ -10,6 +10,8 @@ import storage.Sanction
 import storage.SanctionType
 import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
+import utils.replyWithSanctionEmbed
+import utils.sendLog
 import kotlin.time.Duration.Companion.days
 
 class UserContextSanctions : Extension() {
@@ -59,7 +61,7 @@ class UserContextSanctions : Extension() {
 					Sanction(sanctionType, reason, target.id, appliedBy = author.id).apply {
 						val kord = this@ephemeralUserCommand.kord
 
-						replyWithSanctionEmbed()
+						replyWithSanctionEmbed(this)
 						save()
 						sendLog(kord)
 

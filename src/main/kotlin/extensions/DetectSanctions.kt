@@ -2,7 +2,6 @@ package extensions
 
 import dev.kord.common.entity.AuditLogChangeKey
 import dev.kord.common.entity.AuditLogEvent
-import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.getAuditLogEntries
 import dev.kord.core.entity.User
@@ -22,10 +21,9 @@ import storage.SanctionType
 import storage.getSanctions
 import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
+import utils.sendLog
 import utils.unBanEmbed
 import utils.unMuteEmbed
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 class AutoSanctions : Extension() {
@@ -57,7 +55,7 @@ class AutoSanctions : Extension() {
 						if (getSanctions(user.id).any { it.equalExceptOwner(this) }) return@action
 
 						save()
-						sendLog()
+						sendLog(kord)
 					}
 				}
 			}
@@ -101,7 +99,7 @@ class AutoSanctions : Extension() {
 						if (getSanctions(event.user.id).any { it.equalExceptOwner(this) }) return@action
 
 						save()
-						sendLog()
+						sendLog(kord)
 					}
 				}
 			}
@@ -128,7 +126,7 @@ class AutoSanctions : Extension() {
 						if (getSanctions(new.id).any { it.equalExceptOwner(this) }) return@action
 
 						save()
-						sendLog()
+						sendLog(kord)
 					}
 
 					scheduler.schedule(duration, name = "Un-mute Scheduler") {
@@ -139,38 +137,5 @@ class AutoSanctions : Extension() {
 				}
 			}
 		}
-	}
-}
-
-fun UserBehavior.getNextMuteDuration() = when (getSanctions(id).size) {
-	0 -> 0.seconds
-	in 1..2 -> 6.hours
-	in 3..4 -> 1.days
-	in 5..6 -> 5.days
-	in 7..8 -> 14.days
-	else -> 27.days
-}.inWholeMilliseconds
-
-fun UserBehavior.getNextSanctionType(): SanctionType {
-	val sanctions = getSanctions(id)
-	val types = sanctions.mapTo(mutableSetOf()) { it.type }
-
-	return when (sanctions.size) {
-		0 -> SanctionType.LIGHT_WARN
-
-		in 1..4 -> when {
-			SanctionType.MUTE in types -> SanctionType.MUTE
-			SanctionType.KICK in types -> SanctionType.KICK
-			SanctionType.BAN in types -> SanctionType.BAN
-			else -> SanctionType.WARN
-		}
-
-		in 5..10 -> when {
-			SanctionType.MUTE in types -> SanctionType.KICK
-			SanctionType.KICK in types -> SanctionType.BAN
-			else -> SanctionType.WARN
-		}
-
-		else -> SanctionType.BAN
 	}
 }

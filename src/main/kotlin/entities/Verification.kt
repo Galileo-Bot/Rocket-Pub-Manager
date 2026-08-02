@@ -20,8 +20,6 @@ import dev.kordex.core.components.forms.ModalForm
 import dev.kordex.core.components.publicButton
 import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
-import extensions.getNextMuteDuration
-import extensions.getNextSanctionType
 import fr.ayfri.rocketmanager.i18n.Translations
 import kord
 import kotlin.time.Clock
