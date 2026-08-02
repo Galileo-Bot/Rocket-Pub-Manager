@@ -233,7 +233,7 @@ class Sanctions : Extension() {
 							title = Translations.Embeds.Sanctions.Count.title.translate(),
 							description = sanctions.groupBy { it }.map {
 								Translations.Embeds.Sanctions.Count.description.translateNamed(
-									"username" to guild!!.getMember(it.key).username,
+									"username" to (guild?.getMemberOrNull(it.key)?.username ?: it.key.toString()),
 									"count" to it.value.size.toString()
 								)
 							}.joinToString("\n\n")
