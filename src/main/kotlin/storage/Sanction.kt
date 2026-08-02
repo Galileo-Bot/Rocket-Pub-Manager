@@ -30,6 +30,18 @@ enum class SanctionType(val translation: Key, val emote: String) : ChoiceEnum {
 	val storedName get() = name.lowercase()
 }
 
+/** Rounded, human sized rendering of a duration, prefixed with a space and empty when there is no duration. */
+fun formatDurationMS(durationMS: Long): String {
+	val duration = durationMS.toDuration(DurationUnit.MILLISECONDS)
+
+	return when {
+		duration.toDouble(DurationUnit.MILLISECONDS) == 0.0 -> ""
+		duration.toDouble(DurationUnit.HOURS) > 24 -> " ${duration.toDouble(DurationUnit.DAYS).roundToInt()}d"
+		duration.toDouble(DurationUnit.HOURS) < 1 -> " ${duration.toDouble(DurationUnit.MINUTES).roundToInt()}m"
+		else -> " ${duration.toDouble(DurationUnit.HOURS).roundToInt()}h"
+	}
+}
+
 /** The columns of `sanctions` an existing row may be edited on. */
 enum class ModifySanctionValues(val column: String, val translation: Key) {
 	APPLIED_BY("appliedByID", Translations.Fields.appliedBy),
@@ -71,13 +83,7 @@ data class Sanction(
 
 	val activeUntil get() = sanctionedAt + duration
 
-	val formattedDuration: String
-		get() = when {
-			duration.toDouble(DurationUnit.MILLISECONDS) == 0.0 -> ""
-			duration.toDouble(DurationUnit.HOURS) > 24 -> " ${duration.toDouble(DurationUnit.DAYS).roundToInt()}d"
-			duration.toDouble(DurationUnit.HOURS) < 1 -> " ${duration.toDouble(DurationUnit.MINUTES).roundToInt()}m"
-			else -> " ${duration.toDouble(DurationUnit.HOURS).roundToInt()}h"
-		}
+	val formattedDuration get() = formatDurationMS(durationMS)
 
 	fun equalExceptOwner(other: Sanction) =
 		type == other.type &&

@@ -157,6 +157,10 @@ class ListSanctionsArguments : Arguments() {
 	val type by optionalSanctionType()
 }
 
+class SanctionInfoArguments : Arguments() {
+	val user by sanctionUser()
+}
+
 class SearchSanctionsArguments : Arguments() {
 	val user by optionalUser {
 		name = Translations.Arguments.User.name

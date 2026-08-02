@@ -19,6 +19,8 @@ import storage.*
 import utils.applySanction
 import utils.completeEmbed
 import utils.ensureCanInteract
+import utils.getNextMuteDuration
+import utils.getNextSanctionType
 import utils.toDetailedString
 import utils.unBanEmbed
 import utils.unMuteEmbed
@@ -101,6 +103,66 @@ class Sanctions : Extension() {
 							),
 						sanctions
 					)
+				}
+			}
+
+			publicSubCommand(::SanctionInfoArguments) {
+				name = Translations.Commands.Sanctions.Info.name
+				description = Translations.Commands.Sanctions.Info.description
+
+				action {
+					val target = arguments.user
+					val sanctions = getSanctions(target.id)
+					val nextType = target.getNextSanctionType()
+					val nextDuration = if (nextType == SanctionType.MUTE) target.getNextMuteDuration() else 0
+
+					respond {
+						completeEmbed(
+							client = this@publicSubCommand.kord,
+							title = Translations.Embeds.Sanctions.Info.title.translateNamed("username" to target.username),
+							description = Translations.Embeds.Sanctions.Info.description.translateNamed(
+								"user" to target.mention,
+								"id" to target.id.toString(),
+								"count" to sanctions.size.toString(),
+								"ads" to getAdEventCount(target.id).toString()
+							)
+						) {
+							field {
+								name = Translations.Fields.types.translate()
+								value = sanctions.groupingBy { it.type }.eachCount()
+									.map { (type, count) -> "${type.emote} ${type.translation.translate()} : **$count**" }
+									.joinToString("\n")
+									.ifEmpty { Translations.Embeds.Sanctions.Info.noSanctions.translate() }
+							}
+
+							sanctions.find { it.isActive }?.let { active ->
+								field {
+									name = Translations.Fields.activeSanction.translate()
+									value = Translations.Embeds.Sanctions.Info.activeUntil.translateNamed(
+										"emote" to active.type.emote,
+										"type" to active.type.translation.translate(),
+										"until" to active.activeUntil.toMessageFormat(DiscordTimestampStyle.RelativeTime)
+									)
+								}
+							}
+
+							sanctions.lastOrNull()?.let { last ->
+								field {
+									name = Translations.Fields.lastSanction.translate()
+									value = last.toDetailedString()
+								}
+							}
+
+							field {
+								name = Translations.Fields.nextSanction.translate()
+								value = Translations.Embeds.Sanctions.Info.nextSanction.translateNamed(
+									"emote" to nextType.emote,
+									"type" to nextType.translation.translate(),
+									"duration" to formatDurationMS(nextDuration)
+								)
+							}
+						}
+					}
 				}
 			}
 
