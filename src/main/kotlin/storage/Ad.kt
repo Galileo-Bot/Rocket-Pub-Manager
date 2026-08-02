@@ -19,3 +19,8 @@ fun getAdCountsByDay(since: Instant) = sqlQuery(
 	"SELECT DATE(postedAt) d, COUNT(*) c FROM ad_events WHERE postedAt >= ? GROUP BY d ORDER BY d",
 	Timestamp.from(since)
 ) { result -> result.mapRows { DailyCount(LocalDate.parse(it.getString("d")), it.getInt("c")) } }
+
+fun getAdEventCount(author: Snowflake) = sqlQuery(
+	"SELECT COUNT(*) c FROM ad_events WHERE authorID = ?",
+	author.toString()
+) { result -> result.takeIf { it.next() }?.getInt("c") ?: 0 }

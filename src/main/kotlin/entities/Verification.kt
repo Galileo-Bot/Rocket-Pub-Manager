@@ -1,6 +1,7 @@
 package entities
 
 import bot
+import dev.kord.common.Color
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -24,8 +25,11 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
+import storage.getAdEventCount
+import storage.getSanctions
 import storage.saveAdEvent
 import storage.saveVerification
+import storage.searchBannedGuild
 import utils.*
 
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
@@ -38,6 +42,7 @@ private const val MESSAGE_LINK_PREFIX = "https://discord.com/channels/"
 private val ID_IN_PARENTHESES_REGEX = Regex("\\((\\d{17,20})\\)")
 private val CHANNEL_MENTION_REGEX = Regex("<#\\d{17,20}>")
 private const val PENDING_MESSAGES_TO_RESTORE = 100
+private val BANNED_GUILD_COLOR = Color(0xED4245)
 
 data class VerificationMessage(
 	val id: Snowflake,
@@ -160,11 +165,17 @@ data class Verification(
 			}
 		}
 
+		val bannedGuild = invite?.partialGuild?.id?.let(::searchBannedGuild)
+		val sanctionsCount = getSanctions(author).size
+		val adsCount = getAdEventCount(author)
+
 		completeEmbed(
 			bot.kord,
 			Translations.Embeds.Verifications.NewAd.title.translateNamed("count" to adMessages.size.toString()),
 			adContent
 		) {
+			if (bannedGuild != null) color = BANNED_GUILD_COLOR
+
 			author {
 				name = "${authorUser.username} | ${authorUser.effectiveName}"
 				icon = (authorUser.avatar ?: authorUser.defaultAvatar).cdnUrl.toUrl { size = Image.Size.Size512 }
@@ -173,6 +184,21 @@ data class Verification(
 			field {
 				name = "<:user:933508955722899477> Auteur :"
 				value = "${authorUser.mention} (${authorUser.id})"
+			}
+
+			field {
+				name = Translations.Fields.history.translate()
+				value = Translations.Embeds.Verifications.history.translateNamed(
+					"sanctions" to sanctionsCount.toString(),
+					"ads" to adsCount.toString()
+				)
+			}
+
+			if (bannedGuild != null) {
+				field {
+					name = Translations.Fields.bannedGuildWarning.translate()
+					value = bannedGuild.reason
+				}
 			}
 
 			if (link != null) {
