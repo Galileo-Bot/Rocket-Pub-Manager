@@ -10,11 +10,13 @@ import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.member
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.types.PublicInteractionContext
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import storage.SanctionType
+import storage.getSanction
 import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
 
@@ -81,7 +83,7 @@ class ModifySanctions : Extension() {
 				description = Translations.Commands.ModifySanctions.Moderator.description
 
 				action {
-					modifySanction(arguments.id, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.toString())
+					applyModification(arguments.id, ModifySanctionValues.APPLIED_BY, arguments.appliedBy.id.toString())
 				}
 			}
 
@@ -95,7 +97,7 @@ class ModifySanctions : Extension() {
 					val now = Clock.System.now()
 					val durationMS = (now.plus(arguments.duration, TimeZone.currentSystemDefault()) - now)
 
-					modifySanction(arguments.id, ModifySanctionValues.DURATION, durationMS.inWholeMilliseconds)
+					applyModification(arguments.id, ModifySanctionValues.DURATION, durationMS.inWholeMilliseconds)
 				}
 			}
 
@@ -104,7 +106,7 @@ class ModifySanctions : Extension() {
 				description = Translations.Commands.ModifySanctions.Reason.description
 
 				action {
-					modifySanction(arguments.id, ModifySanctionValues.REASON, arguments.reason)
+					applyModification(arguments.id, ModifySanctionValues.REASON, arguments.reason)
 				}
 			}
 
@@ -114,9 +116,21 @@ class ModifySanctions : Extension() {
 
 				action {
 					// Types are stored lowercase, and `removeSanctions` filters on that form.
-					modifySanction(arguments.id, ModifySanctionValues.TYPE, arguments.type.name.lowercase())
+					applyModification(arguments.id, ModifySanctionValues.TYPE, arguments.type.name.lowercase())
 				}
 			}
 		}
+	}
+}
+
+/** Rejects unknown case numbers, since the bare UPDATE silently matches no row. */
+private suspend fun PublicInteractionContext.applyModification(id: Int, value: ModifySanctionValues, newValue: Any?) {
+	getSanction(id) ?: throw DiscordRelayedException(
+		Translations.Errors.sanctionNotFound.withNamedPlaceholders("id" to id.toString())
+	)
+
+	modifySanction(id, value, newValue)
+	respond {
+		content = Translations.Messages.sanctionModified.translateNamed("id" to id.toString())
 	}
 }
