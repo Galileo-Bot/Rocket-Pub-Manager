@@ -7,6 +7,7 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.DiscordRelayedException
 import dev.kordex.core.annotations.AlwaysPublicResponse
+import dev.kordex.core.commands.application.slash.PublicSlashCommandContext
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
@@ -21,12 +22,36 @@ import utils.ensureCanInteract
 import utils.toDetailedString
 import utils.unBanEmbed
 import utils.unMuteEmbed
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toDuration
 
 /** Sanctions are listed ten per page, the embed description cannot hold much more. */
 private const val SANCTIONS_PER_PAGE = 10
+
+/** The paginated listing shared by the listing and search subcommands. */
+private suspend fun PublicSlashCommandContext<*, *>.respondWithSanctions(title: String, sanctions: List<Sanction>) {
+	val kord = interactionResponse.kord
+
+	// Resolved up-front so the page bodies below stay non-suspending.
+	val moderatorNames = sanctions.mapNotNull { it.appliedBy }.distinct().associateWith { appliedById ->
+		kord.getUser(appliedById, EntitySupplyStrategy.cacheWithCachingRestFallback)?.username
+	}
+
+	respondingPaginator {
+		sanctions.chunked(SANCTIONS_PER_PAGE).forEach { chunk ->
+			page {
+				completeEmbed(
+					client = kord,
+					title = title,
+					description = chunk.joinToString("\n\n") { it.toDetailedString(moderatorNames[it.appliedBy]) }
+				)
+			}
+		}
+	}.send()
+}
 
 class Sanctions : Extension() {
 	override val name = "Sanctions"
@@ -66,33 +91,39 @@ class Sanctions : Extension() {
 					val sanctions = getSanctions(user.id, arguments.type)
 					if (sanctions.isEmpty()) throw DiscordRelayedException(Translations.Embeds.Sanctions.List.noSanctions)
 
-					// Resolved up-front so the page bodies below stay non-suspending.
-					val moderatorNames = sanctions.mapNotNull { it.appliedBy }.distinct().associateWith { appliedById ->
-						this@publicSlashCommand.kord.getUser(
-							appliedById,
-							EntitySupplyStrategy.cacheWithCachingRestFallback
-						)?.username
-					}
+					respondWithSanctions(
+						Translations.Embeds.Sanctions.List.title
+							.withContext(this@action)
+							.translateNamed(
+								"type" to (arguments.type?.let { "du type **${it.translation.translate()}** " } ?: ""),
+								"user" to user.username,
+								"userId" to user.id.toString()
+							),
+						sanctions
+					)
+				}
+			}
 
-					respondingPaginator {
-						sanctions.chunked(SANCTIONS_PER_PAGE).forEach { page ->
-							page {
-								completeEmbed(
-									client = this@publicSlashCommand.kord,
-									title = Translations.Embeds.Sanctions.List.title
-										.withContext(this@action)
-										.translateNamed(
-											"type" to (arguments.type?.let { "du type **${it.translation.translate()}** " } ?: ""),
-											"user" to user.username,
-											"userId" to user.id.toString()
-										),
-									description = page.joinToString("\n\n") {
-										it.toDetailedString(moderatorNames[it.appliedBy])
-									}
-								)
-							}
-						}
-					}.send()
+			publicSubCommand(::SearchSanctionsArguments) {
+				name = Translations.Commands.Sanctions.Search.name
+				description = Translations.Commands.Sanctions.Search.description
+
+				action {
+					val since = arguments.period?.days?.let { Instant.now().minus(it, ChronoUnit.DAYS) }
+					val sanctions = searchSanctions(
+						member = arguments.user?.id,
+						appliedBy = arguments.moderator?.id,
+						type = arguments.type,
+						since = since,
+						reason = arguments.reason
+					)
+
+					if (sanctions.isEmpty()) throw DiscordRelayedException(Translations.Embeds.Sanctions.Search.noResults)
+
+					respondWithSanctions(
+						Translations.Embeds.Sanctions.Search.title.translateNamed("count" to sanctions.size.toString()),
+						sanctions
+					)
 				}
 			}
 

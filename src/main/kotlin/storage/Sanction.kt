@@ -11,6 +11,7 @@ import kotlin.time.toKotlinInstant
 import kotlinx.serialization.Serializable
 import java.sql.ResultSet
 import java.sql.Timestamp
+import java.time.Instant
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
@@ -135,6 +136,37 @@ fun modifySanction(id: Int, value: ModifySanctionValues, newValue: Any?) =
 	sqlUpdate("UPDATE sanctions SET ${value.column} = ? WHERE id = ?", newValue, id)
 
 fun removeSanction(id: Int) = sqlUpdate("DELETE FROM sanctions WHERE id = ?", id)
+
+/**
+ * The sanctions matching every filter that was given, the most recent first.
+ *
+ * [reason] is matched as a substring, the `%` and `_` of a LIKE pattern staying usable on purpose.
+ */
+fun searchSanctions(
+	member: Snowflake? = null,
+	appliedBy: Snowflake? = null,
+	type: SanctionType? = null,
+	since: Instant? = null,
+	reason: String? = null,
+	limit: Int = 100,
+): List<Sanction> {
+	val conditions = mutableListOf<String>()
+	val params = mutableListOf<Any?>()
+
+	member?.let { conditions += "memberID = ?"; params += it.toString() }
+	appliedBy?.let { conditions += "appliedByID = ?"; params += it.toString() }
+	type?.let { conditions += "type = ?"; params += it.storedName }
+	since?.let { conditions += "sanctionedAt >= ?"; params += Timestamp.from(it) }
+	reason?.let { conditions += "reason LIKE ?"; params += "%$it%" }
+
+	val where = if (conditions.isEmpty()) "" else "WHERE ${conditions.joinToString(" AND ")} "
+	params += limit
+
+	return sqlQuery(
+		"SELECT * FROM sanctions ${where}ORDER BY id DESC LIMIT ?",
+		*params.toTypedArray()
+	) { it.mapRows(ResultSet::toSanction) }
+}
 
 /** Temporary bans that have not been lifted yet, the ones a restart has to pick up again. */
 fun getPendingTemporaryBans() = sqlQuery(

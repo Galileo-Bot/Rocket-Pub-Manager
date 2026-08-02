@@ -9,9 +9,12 @@ import dev.kordex.core.commands.converters.impl.coalescingString
 import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.member
 import dev.kordex.core.commands.converters.impl.optionalInt
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.optionalUser
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.utils.FilterStrategy
 import dev.kordex.core.utils.suggestStringMap
+import extensions.StatsPeriod
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.SanctionType
 import kotlin.time.DurationUnit
@@ -152,4 +155,30 @@ class DeleteAllSanctionsArguments : Arguments() {
 class ListSanctionsArguments : Arguments() {
 	val user by sanctionUser()
 	val type by optionalSanctionType()
+}
+
+class SearchSanctionsArguments : Arguments() {
+	val user by optionalUser {
+		name = Translations.Arguments.User.name
+		description = Translations.Arguments.User.description
+	}
+
+	val moderator by optionalUser {
+		name = Translations.Arguments.Moderator.name
+		description = Translations.Arguments.Moderator.description
+	}
+
+	val type by optionalSanctionType()
+
+	val period by optionalEnumChoice<StatsPeriod> {
+		name = Translations.Arguments.Period.name
+		description = Translations.Arguments.Period.description
+		typeName = Translations.Arguments.Period.name
+	}
+
+	val reason by optionalString {
+		name = Translations.Arguments.Reason.name
+		description = Translations.Arguments.Reason.description
+		autoComplete { suggestStringMap(sanctionReasons, FilterStrategy.Contains) }
+	}
 }
