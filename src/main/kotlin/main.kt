@@ -89,9 +89,9 @@ suspend fun main() {
 		extensions {
 			sentry { enable = false }
 
-			add(::AutoSanctions)
 			add(::BannedGuilds)
 			add(::CheckAds)
+			add(::DetectSanctions)
 			add(::EndMessage)
 			add(::Errors)
 			add(::ModifySanctions)
