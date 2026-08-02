@@ -24,4 +24,21 @@ fun Connection.applySchema() {
 	}
 
 	logger.debug { "Schema applied (${statements.size} statements)" }
+
+	// Columns added after the first release, for the databases created before they existed.
+	addMissingColumn("sanctions", "liftedAt", "TEXT NULL")
+}
+
+/** `CREATE TABLE IF NOT EXISTS` leaves existing tables alone, and SQLite has no `ADD COLUMN IF NOT EXISTS`. */
+private fun Connection.addMissingColumn(table: String, column: String, definition: String) {
+	val columns = createStatement().use { statement ->
+		statement.executeQuery("PRAGMA table_info($table)").use { result ->
+			buildList { while (result.next()) add(result.getString("name")) }
+		}
+	}
+
+	if (column in columns) return
+
+	createStatement().use { it.executeUpdate("ALTER TABLE $table ADD COLUMN $column $definition") }
+	logger.info { "Added the missing $column column to $table" }
 }

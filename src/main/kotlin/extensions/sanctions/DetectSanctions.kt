@@ -21,6 +21,7 @@ import kotlin.time.Clock
 import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
+import storage.liftActiveBans
 import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
 import utils.sendLog
@@ -75,6 +76,8 @@ class DetectSanctions : Extension() {
 			action {
 				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberBanRemove)
 				val unBannedBy = entry?.userId?.let { event.guild.getMemberOrNull(it) }
+
+				liftActiveBans(event.user.id)
 
 				kord.getLogSanctionsChannel().createEmbed {
 					unBanEmbed(event.kord, event.user, unBannedBy, entry?.reason)

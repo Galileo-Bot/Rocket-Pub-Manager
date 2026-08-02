@@ -3,7 +3,7 @@
 -- Snowflakes are TEXT, durations are INTEGER milliseconds, and timestamps are TEXT in
 -- 'YYYY-MM-DD HH:MM:SS' local time, the only format SQLite's DATE() can group on.
 -- Bump user_version whenever a change here needs a data migration.
-PRAGMA user_version = 1;
+PRAGMA user_version = 2;
 
 -- A guild is identified by its name, its snowflake, or both.
 CREATE TABLE IF NOT EXISTS banned_guilds
@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS sanctions
 	type         TEXT    NOT NULL,
 	reason       TEXT    NOT NULL,
 	durationMS   INTEGER NOT NULL DEFAULT 0,
-	sanctionedAt TEXT    NOT NULL
+	sanctionedAt TEXT    NOT NULL,
+	-- Set once a temporary sanction stopped applying, either on expiry or on a manual unban.
+	liftedAt     TEXT    NULL
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS sanctions_memberID_index ON sanctions (memberID);

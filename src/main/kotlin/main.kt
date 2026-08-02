@@ -99,6 +99,7 @@ suspend fun main() {
 			add(::RemoveAds)
 			add(::Sanctions)
 			add(::Stats)
+			add(::TempBans)
 			add(::UserContextSanctions)
 			add(::Verifications)
 		}

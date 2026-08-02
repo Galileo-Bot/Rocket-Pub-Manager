@@ -48,6 +48,8 @@ data class Sanction(
 	var durationMS: Long = 0,
 	@Serializable(with = InstantInEpochMillisecondsSerializer::class)
 	val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
+	@Serializable(with = InstantInEpochMillisecondsSerializer::class)
+	val liftedAt: kotlin.time.Instant? = null,
 ) {
 	constructor(
 		type: SanctionType,
@@ -64,7 +66,7 @@ data class Sanction(
 
 	fun toDiscordTimestamp(type: TimestampType) = type.format(durationMS)
 
-	val isActive get() = durationMS > 0 && activeUntil > Clock.System.now()
+	val isActive get() = durationMS > 0 && liftedAt == null && activeUntil > Clock.System.now()
 
 	val activeUntil get() = sanctionedAt + duration
 
@@ -98,7 +100,8 @@ private fun ResultSet.toSanction() = Sanction(
 	id = getInt("id"),
 	appliedBy = getString("appliedByID")?.takeIf { it != "null" }?.let(::Snowflake),
 	durationMS = getLong("durationMS"),
-	sanctionedAt = getTimestamp("sanctionedAt").toInstant().toKotlinInstant()
+	sanctionedAt = getTimestamp("sanctionedAt").toInstant().toKotlinInstant(),
+	liftedAt = getTimestamp("liftedAt")?.toInstant()?.toKotlinInstant()
 )
 
 fun getSanction(id: Int) = sqlQuery("SELECT * FROM sanctions WHERE id = ?", id) { result ->
@@ -132,6 +135,26 @@ fun modifySanction(id: Int, value: ModifySanctionValues, newValue: Any?) =
 	sqlUpdate("UPDATE sanctions SET ${value.column} = ? WHERE id = ?", newValue, id)
 
 fun removeSanction(id: Int) = sqlUpdate("DELETE FROM sanctions WHERE id = ?", id)
+
+/** Temporary bans that have not been lifted yet, the ones a restart has to pick up again. */
+fun getPendingTemporaryBans() = sqlQuery(
+	"SELECT * FROM sanctions WHERE type = ? AND durationMS > 0 AND liftedAt IS NULL",
+	SanctionType.BAN.storedName
+) { it.mapRows(ResultSet::toSanction) }
+
+fun markSanctionLifted(id: Int) = sqlUpdate(
+	"UPDATE sanctions SET liftedAt = ? WHERE id = ? AND liftedAt IS NULL",
+	Timestamp.from(java.time.Instant.now()),
+	id
+)
+
+/** Stops every ban of [user] from counting as active, after the ban was lifted outside of the expiry sweep. */
+fun liftActiveBans(user: Snowflake) = sqlUpdate(
+	"UPDATE sanctions SET liftedAt = ? WHERE memberID = ? AND type = ? AND liftedAt IS NULL",
+	Timestamp.from(java.time.Instant.now()),
+	user.toString(),
+	SanctionType.BAN.storedName
+)
 
 fun removeSanctions(user: Snowflake, type: SanctionType? = null) = when (type) {
 	null -> sqlUpdate("DELETE FROM sanctions WHERE memberID = ?", user.toString())
