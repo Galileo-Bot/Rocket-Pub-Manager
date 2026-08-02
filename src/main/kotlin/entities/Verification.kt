@@ -16,6 +16,7 @@ import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.components.ComponentContainer
+import dev.kordex.core.components.forms.ModalForm
 import dev.kordex.core.components.publicButton
 import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
@@ -43,6 +44,17 @@ private val ID_IN_PARENTHESES_REGEX = Regex("\\((\\d{17,20})\\)")
 private val CHANNEL_MENTION_REGEX = Regex("<#\\d{17,20}>")
 private const val PENDING_MESSAGES_TO_RESTORE = 100
 private val BANNED_GUILD_COLOR = Color(0xED4245)
+
+class IgnoreReasonModal : ModalForm() {
+	override var title = Translations.Modal.IgnoreReason.title
+
+	val reason = paragraphText {
+		label = Translations.Modal.IgnoreReason.reasonLabel
+		maxLength = 500
+		placeholder = Translations.Modal.IgnoreReason.reasonPlaceholder
+		required = false
+	}
+}
 
 data class VerificationMessage(
 	val id: Snowflake,
@@ -102,7 +114,28 @@ data class Verification(
 		}
 	}
 
-	suspend fun ignore() {
+	suspend fun ignore(staffId: Snowflake, reason: String?) {
+		val verificationMessageId = verificationMessage.id
+		verificationMessage.kord.getVerifLogsChannel().createMessage {
+			embed {
+				fromEmbed(verificationMessage.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
+
+				title = Translations.Embeds.Verifications.ignoredTitle.translate()
+
+				field {
+					name = Translations.Fields.ignoredBy.translate()
+					value = "${staffId.asMention<UserBehavior>()} (${staffId})"
+				}
+
+				if (!reason.isNullOrBlank()) {
+					field {
+						name = Translations.Fields.reason.translate()
+						value = reason
+					}
+				}
+			}
+		}
+
 		verificationMessage.delete()
 		verifications.remove(this)
 	}
@@ -263,14 +296,14 @@ data class Verification(
 				}
 			}
 
-			publicButton {
+			publicButton(::IgnoreReasonModal) {
 				id = ignoreId
 				emoji("🚫")
 				style = ButtonStyle.Secondary
 				label = Translations.Buttons.ignore
 
-				action {
-					findOrRestore(message)?.ignore()
+				action { modal ->
+					findOrRestore(message)?.ignore(event.interaction.user.id, modal?.reason?.value)
 				}
 			}
 		}
