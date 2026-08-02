@@ -30,11 +30,11 @@ enum class SanctionType(val translation: Key, val emote: String) : ChoiceEnum {
 }
 
 /** The columns of `sanctions` an existing row may be edited on. */
-enum class ModifySanctionValues(val column: String) {
-	APPLIED_BY("appliedByID"),
-	DURATION("durationMS"),
-	REASON("reason"),
-	TYPE("type"),
+enum class ModifySanctionValues(val column: String, val translation: Key) {
+	APPLIED_BY("appliedByID", Translations.Fields.appliedBy),
+	DURATION("durationMS", Translations.Fields.duration),
+	REASON("reason", Translations.Fields.reason),
+	TYPE("type", Translations.Fields.type),
 }
 
 

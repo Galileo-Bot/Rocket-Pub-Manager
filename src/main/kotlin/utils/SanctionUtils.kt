@@ -22,6 +22,7 @@ import dev.kordex.i18n.Key
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import logger
+import storage.ModifySanctionValues
 import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
@@ -83,6 +84,16 @@ fun Sanction.toDetailedString(moderatorName: String? = null): String {
 		**${Translations.Fields.reason.translate()}** : $reason
 		**${Translations.Fields.type.translate()}** : ${type.translation.translate()}
 	""".trimIndent()
+}
+
+/** The current value of the column [column] points at, rendered the way the sanction embeds show it. */
+fun Sanction.displayValue(column: ModifySanctionValues) = when (column) {
+	ModifySanctionValues.APPLIED_BY -> appliedBy?.let { "${it.asMention<UserBehavior>()} (`$it`)" }
+		?: Translations.Messages.automaticOrNotFound.translate()
+
+	ModifySanctionValues.DURATION -> formattedDuration.trim().ifEmpty { "0" }
+	ModifySanctionValues.REASON -> reason
+	ModifySanctionValues.TYPE -> "${type.emote} ${type.translation.translate()}"
 }
 
 /** Fails the command when the bot cannot moderate [member], with a message naming the sanction that was refused. */

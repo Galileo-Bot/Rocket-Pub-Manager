@@ -10,7 +10,8 @@ import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.member
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.types.PublicInteractionContext
+import dev.kord.core.behavior.channel.createMessage
+import dev.kordex.core.commands.application.slash.PublicSlashCommandContext
 import extensions.isStaff
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
@@ -21,6 +22,9 @@ import storage.SanctionType
 import storage.getSanction
 import storage.modifySanction
 import utils.ROCKET_PUB_GUILD
+import utils.displayValue
+import utils.getLogSanctionsChannel
+import utils.modifiedSanctionEmbed
 
 
 class ModifySanctions : Extension() {
@@ -118,14 +122,32 @@ class ModifySanctions : Extension() {
 	}
 }
 
-/** Rejects unknown case numbers, since the bare UPDATE silently matches no row. */
-private suspend fun PublicInteractionContext.applyModification(id: Int, value: ModifySanctionValues, newValue: Any?) {
-	getSanction(id) ?: throw DiscordRelayedException(
+/**
+ * Applies the edit and reports it, both to the moderator and to the sanction logs.
+ *
+ * Unknown case numbers are rejected up-front, since the bare UPDATE silently matches no row.
+ */
+private suspend fun PublicSlashCommandContext<*, *>.applyModification(
+	id: Int,
+	column: ModifySanctionValues,
+	newValue: Any?,
+) {
+	val before = getSanction(id) ?: throw DiscordRelayedException(
 		Translations.Errors.sanctionNotFound.withNamedPlaceholders("id" to id.toString())
 	)
 
-	modifySanction(id, value, newValue)
+	modifySanction(id, column, newValue)
+
+	val kord = interactionResponse.kord
+	val after = getSanction(id) ?: return
+	val valueBefore = before.displayValue(column)
+	val valueAfter = after.displayValue(column)
+
 	respond {
-		content = Translations.Messages.sanctionModified.translateNamed("id" to id.toString())
+		modifiedSanctionEmbed(kord, after, column, valueBefore, valueAfter, user.id)
+	}
+
+	kord.getLogSanctionsChannel().createMessage {
+		modifiedSanctionEmbed(kord, after, column, valueBefore, valueAfter, user.id)
 	}
 }

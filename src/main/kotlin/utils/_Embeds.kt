@@ -1,6 +1,7 @@
 package utils
 
 import dev.kord.common.DiscordTimestampStyle
+import dev.kord.common.entity.Snowflake
 import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
@@ -19,6 +20,7 @@ import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import kotlin.time.toKotlinInstant
 import storage.BannedGuild
+import storage.ModifySanctionValues
 import storage.Sanction
 
 suspend fun EmbedBuilder.autoSanctionEmbed(
@@ -163,6 +165,35 @@ suspend fun EmbedBuilder.modifiedGuildEmbed(
 	)
 }
 
+suspend fun EmbedBuilder.modifiedSanctionEmbed(
+	kord: Kord,
+	sanction: Sanction,
+	column: ModifySanctionValues,
+	valueBefore: String,
+	valueAfter: String,
+	modifiedBy: Snowflake,
+) {
+	completeEmbed(
+		kord,
+		Translations.Embeds.ModifiedSanction.title.translateNamed("id" to sanction.id.toString()),
+		Translations.Embeds.ModifiedSanction.description.translateNamed(
+			"value" to column.translation.translate(),
+			"before" to valueBefore,
+			"after" to valueAfter
+		)
+	)
+
+	field {
+		name = Translations.Fields.modifiedBy.translate()
+		value = "${modifiedBy.asMention<UserBehavior>()} (`$modifiedBy`)"
+	}
+
+	field {
+		name = Translations.Fields.sanction.translate()
+		value = sanction.toDetailedString()
+	}
+}
+
 suspend fun EmbedBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) {
 	val user = kord.getUser(sanction.member)!!
 
@@ -275,6 +306,17 @@ suspend fun MessageCreateBuilder.modifiedGuildEmbed(
 
 suspend fun MessageCreateBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) = embed {
 	sanctionEmbed(kord, sanction)
+}
+
+suspend fun MessageCreateBuilder.modifiedSanctionEmbed(
+	kord: Kord,
+	sanction: Sanction,
+	column: ModifySanctionValues,
+	valueBefore: String,
+	valueAfter: String,
+	modifiedBy: Snowflake,
+) = embed {
+	modifiedSanctionEmbed(kord, sanction, column, valueBefore, valueAfter, modifiedBy)
 }
 
 suspend fun MessageModifyBuilder.completeEmbed(
