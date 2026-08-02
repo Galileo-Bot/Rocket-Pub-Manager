@@ -320,6 +320,8 @@ class Sanctions : Extension() {
 						"${user.username} (`${user.id}`)"
 					}
 
+					removeSanction(sanctionId)
+
 					respond {
 						completeEmbed(
 							this@publicSubCommand.kord,
