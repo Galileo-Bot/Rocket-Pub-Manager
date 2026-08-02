@@ -1,6 +1,8 @@
 package utils
 
 import debug
+import dev.kord.common.DiscordTimestampStyle
+import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
@@ -65,6 +67,22 @@ suspend fun Sanction.sendLog(kord: Kord) {
 	}
 
 	if (debug) logger.debug { "Nouvelle sanction sauvegardée : $this" }
+}
+
+/** The multi-line detail block shared by the listing, deletion and summary embeds. */
+fun Sanction.toDetailedString(moderatorName: String? = null): String {
+	val moderator = appliedBy?.let { "${moderatorName ?: "`$it`"} (`$it`)" }
+		?: Translations.Messages.automaticOrNotFound.translate()
+	val durationLine =
+		if (durationMS > 0) "\n**${Translations.Fields.duration.translate()}** :$formattedDuration" else ""
+
+	return """
+		> **${Translations.Fields.caseNumber.translate()} $id** ${type.emote}
+		**${Translations.Fields.appliedBy.translate()}** : $moderator
+		**${Translations.Fields.date.translate()}** : ${sanctionedAt.toMessageFormat(DiscordTimestampStyle.LongDateTime)}$durationLine
+		**${Translations.Fields.reason.translate()}** : $reason
+		**${Translations.Fields.type.translate()}** : ${type.translation.translate()}
+	""".trimIndent()
 }
 
 /** Fails the command when the bot cannot moderate [member], with a message naming the sanction that was refused. */

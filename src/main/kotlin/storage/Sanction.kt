@@ -25,6 +25,9 @@ enum class SanctionType(val translation: Key, val emote: String) : ChoiceEnum {
 	LIGHT_WARN(Translations.SanctionTypes.lightWarn, "❕");
 
 	override val readableName = translation
+
+	/** The `type` column holds the lowercase name, every query filtering on it must use this form. */
+	val storedName get() = name.lowercase()
 }
 
 
@@ -95,14 +98,27 @@ fun getSanction(id: Int) = sqlQuery("SELECT * FROM sanctions WHERE id = ?", id) 
 	result.takeIf { it.next() }?.toSanction()
 }
 
-fun getSanctions(user: Snowflake) = sqlQuery(
-	"SELECT * FROM sanctions WHERE memberID = ?",
-	user.toString()
-) { it.mapRows(ResultSet::toSanction) }
+fun getSanctions(user: Snowflake, type: SanctionType? = null) = when (type) {
+	null -> sqlQuery(
+		"SELECT * FROM sanctions WHERE memberID = ? ORDER BY id",
+		user.toString()
+	) { it.mapRows(ResultSet::toSanction) }
 
-fun getSanctionCount() = sqlQuery("SELECT appliedByID FROM sanctions ORDER BY id") { result ->
-	result.mapRows { it.getString("appliedByID") }
-}.mapNotNull { it?.takeIf { id -> id != "null" }?.let(::Snowflake) }
+	else -> sqlQuery(
+		"SELECT * FROM sanctions WHERE memberID = ? AND type = ? ORDER BY id",
+		user.toString(),
+		type.storedName
+	) { it.mapRows(ResultSet::toSanction) }
+}
+
+/** How many sanctions each moderator applied, the busiest first. Rows predating nullable moderators hold `'null'`. */
+fun getSanctionCounts() = sqlQuery(
+	"""
+	SELECT appliedByID, COUNT(*) count FROM sanctions
+	WHERE appliedByID IS NOT NULL AND appliedByID != 'null'
+	GROUP BY appliedByID ORDER BY count DESC
+	""".trimIndent()
+) { result -> result.mapRows { Snowflake(it.getString("appliedByID")) to it.getInt("count") } }
 
 /** [newValue] is untyped because `durationMS` is an integer column and the tables are STRICT. */
 fun modifySanction(id: Int, value: ModifySanctionValues, newValue: Any?) =
@@ -110,9 +126,9 @@ fun modifySanction(id: Int, value: ModifySanctionValues, newValue: Any?) =
 
 fun removeSanction(id: Int) = sqlUpdate("DELETE FROM sanctions WHERE id = ?", id)
 
-fun removeSanctions(user: Snowflake, type: String? = null) = when (type) {
+fun removeSanctions(user: Snowflake, type: SanctionType? = null) = when (type) {
 	null -> sqlUpdate("DELETE FROM sanctions WHERE memberID = ?", user.toString())
-	else -> sqlUpdate("DELETE FROM sanctions WHERE memberID = ? AND type = ?", user.toString(), type.lowercase())
+	else -> sqlUpdate("DELETE FROM sanctions WHERE memberID = ? AND type = ?", user.toString(), type.storedName)
 }
 
 fun saveSanction(
@@ -130,6 +146,6 @@ fun saveSanction(
 	member.toString(),
 	appliedBy?.toString(),
 	durationMS ?: 0L,
-	type.name.lowercase(),
+	type.storedName,
 	Timestamp.from(java.time.Instant.now())
 )

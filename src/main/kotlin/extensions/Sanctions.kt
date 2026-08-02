@@ -3,18 +3,11 @@ package extensions
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.toMessageFormat
 import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.interaction.suggestString
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.DiscordRelayedException
 import dev.kordex.core.annotations.AlwaysPublicResponse
-import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
-import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
-import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
-import dev.kordex.core.commands.converters.builders.ConverterBuilder
-import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.withContext
@@ -25,195 +18,18 @@ import storage.*
 import utils.applySanction
 import utils.completeEmbed
 import utils.ensureCanInteract
+import utils.toDetailedString
 import utils.unBanEmbed
 import utils.unMuteEmbed
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-
-val sanctions
-	get() = mapOf(
-		"fake pub" to Translations.Sanctions.fakePub,
-		"invite reward" to Translations.Sanctions.inviteReward,
-		"mauvaise catégorie" to Translations.Sanctions.wrongCategory,
-		"mention everyone/here" to Translations.Sanctions.mentionEveryone,
-		"pub interdite" to Translations.Sanctions.forbiddenAd,
-		"pub mp" to Translations.Sanctions.dmAd,
-		"pubs à la suite" to Translations.Sanctions.consecutiveAds,
-		"sans description" to Translations.Sanctions.noDescription,
-		"spam après warn" to Translations.Sanctions.spamAfterWarn,
-		"spam" to Translations.Sanctions.spam,
-		//		"lien" to "Lien de publicité interdit dans ${channel.mention}.",
-	).mapValues { (_, value) -> value.translate() }
-
-fun ConverterBuilder<String>.autoCompleteReason() {
-	autoComplete {
-		suggestString {
-			sanctions.forEach { (key, value) -> choice(key, value) }
-		}
-	}
-}
-
-enum class DurationUnits(val durationUnit: DurationUnit) : ChoiceEnum {
-	DAYS(DurationUnit.DAYS),
-	HOURS(DurationUnit.HOURS),
-	MINUTES(DurationUnit.MINUTES);
-
-	override val readableName
-		get() = when (this) {
-			DAYS -> Translations.Units.days
-			HOURS -> Translations.Units.hours
-			MINUTES -> Translations.Units.minutes
-		}
-}
+/** Sanctions are listed ten per page, the embed description cannot hold much more. */
+private const val SANCTIONS_PER_PAGE = 10
 
 class Sanctions : Extension() {
 	override val name = "Sanctions"
-
-	class BanArguments : Arguments() {
-		val member by member {
-			name = Translations.Arguments.Member.name
-			description = Translations.Arguments.Member.description
-		}
-
-		val reason by coalescingString {
-			name = Translations.Arguments.Reason.name
-			description = Translations.Arguments.Reason.description
-			autoComplete {
-				suggestStringMap(sanctions, FilterStrategy.Contains)
-			}
-		}
-
-		val duration by optionalInt {
-			name = Translations.Arguments.Duration.name
-			description = Translations.Arguments.Duration.description
-		}
-
-		val deleteDays by optionalInt {
-			name = Translations.Arguments.DeleteDays.name
-			description = Translations.Arguments.DeleteDays.description
-
-			maxValue = 7
-			minValue = 1
-		}
-
-		val unit by optionalEnumChoice<DurationUnits> {
-			name = Translations.Arguments.Unit.name
-			description = Translations.Arguments.Unit.description
-			typeName = Translations.Arguments.Unit.name
-		}
-	}
-
-	class DeleteSanctionArguments : Arguments() {
-		val id by int {
-			name = Translations.Arguments.Id.name
-			description = Translations.Arguments.Id.description
-		}
-	}
-
-	class DeleteAllSanctionsArguments : Arguments() {
-		val user by user {
-			name = Translations.Arguments.User.name
-			description = Translations.Arguments.User.description
-		}
-
-		val type by optionalEnumChoice<SanctionType> {
-			name = Translations.Arguments.Type.name
-			description = Translations.Arguments.Type.description
-			typeName = Translations.Arguments.Type.name
-		}
-	}
-
-	class ListSanctionsArguments : Arguments() {
-		val user by user {
-			name = Translations.Arguments.User.name
-			description = Translations.Arguments.User.description
-		}
-
-		val type by optionalEnumChoice<SanctionType> {
-			name = Translations.Arguments.Type.name
-			description = Translations.Arguments.Type.description
-			typeName = Translations.Arguments.Type.name
-		}
-	}
-
-	class KickArguments : Arguments() {
-		val member by member {
-			name = Translations.Arguments.Member.name
-			description = Translations.Arguments.Member.description
-		}
-
-		val reason by coalescingString {
-			name = Translations.Arguments.Reason.name
-			description = Translations.Arguments.Reason.description
-			autoComplete {
-				suggestStringMap(
-					sanctions, FilterStrategy.Contains
-				)
-			}
-		}
-	}
-
-	class MuteArguments : Arguments() {
-		val member by member {
-			name = Translations.Arguments.Member.name
-			description = Translations.Arguments.Member.description
-		}
-
-		val duration by int {
-			name = Translations.Arguments.Duration.name
-			description = Translations.Arguments.Duration.description
-		}
-
-		val unit by enumChoice<DurationUnits> {
-			name = Translations.Arguments.Unit.name
-			description = Translations.Arguments.Unit.description
-			typeName = Translations.Arguments.Unit.name
-		}
-
-		val reason by coalescingString {
-			name = Translations.Arguments.Reason.name
-			description = Translations.Arguments.Reason.description
-			autoComplete {
-				suggestStringMap(sanctions, FilterStrategy.Contains)
-			}
-		}
-	}
-
-	class UnBanArguments : Arguments() {
-		val user by user {
-			name = Translations.Arguments.User.name
-			description = Translations.Arguments.User.description
-		}
-
-		val reason by coalescingDefaultingString {
-			name = Translations.Arguments.Reason.name
-			description = Translations.Arguments.Reason.description
-			defaultValue = Translations.Messages.noReason.translate()
-		}
-	}
-
-	class UnMuteArguments : Arguments() {
-		val member by member {
-			name = Translations.Arguments.Member.name
-			description = Translations.Arguments.Member.description
-		}
-	}
-
-	class WarnArguments : Arguments() {
-		val member by member {
-			name = Translations.Arguments.Member.name
-			description = Translations.Arguments.Member.description
-		}
-
-		val reason by coalescingString {
-			name = Translations.Arguments.Reason.name
-			description = Translations.Arguments.Reason.description
-			autoCompleteReason()
-		}
-	}
 
 	@OptIn(AlwaysPublicResponse::class)
 	override suspend fun setup() {
@@ -226,16 +42,14 @@ class Sanctions : Extension() {
 				description = Translations.Commands.Sanctions.Count.description
 
 				action {
-					val sanctions = getSanctionCount()
-
 					respond {
 						completeEmbed(
-							client = bot.getKoin().get(),
+							client = this@publicSlashCommand.kord,
 							title = Translations.Embeds.Sanctions.Count.title.translate(),
-							description = sanctions.groupBy { it }.map {
+							description = getSanctionCounts().map { (moderator, count) ->
 								Translations.Embeds.Sanctions.Count.description.translateNamed(
-									"username" to (guild?.getMemberOrNull(it.key)?.username ?: it.key.toString()),
-									"count" to it.value.size.toString()
+									"username" to (guild?.getMemberOrNull(moderator)?.username ?: moderator.toString()),
+									"count" to count.toString()
 								)
 							}.joinToString("\n\n")
 						)
@@ -249,9 +63,7 @@ class Sanctions : Extension() {
 
 				action {
 					val user = arguments.user
-					val sanctions = getSanctions(user.id).let { sanctions ->
-						arguments.type?.let { sanctions.filter { it.type == arguments.type } } ?: sanctions
-					}
+					val sanctions = getSanctions(user.id, arguments.type)
 					if (sanctions.isEmpty()) throw DiscordRelayedException(Translations.Embeds.Sanctions.List.noSanctions)
 
 					// Resolved up-front so the page bodies below stay non-suspending.
@@ -263,10 +75,10 @@ class Sanctions : Extension() {
 					}
 
 					respondingPaginator {
-						sanctions.chunked(10).forEach {
+						sanctions.chunked(SANCTIONS_PER_PAGE).forEach { page ->
 							page {
 								completeEmbed(
-									client = bot.getKoin().get(),
+									client = this@publicSlashCommand.kord,
 									title = Translations.Embeds.Sanctions.List.title
 										.withContext(this@action)
 										.translateNamed(
@@ -274,26 +86,8 @@ class Sanctions : Extension() {
 											"user" to user.username,
 											"userId" to user.id.toString()
 										),
-									description = it.joinToString("\n\n") {
-										val appliedBy = it.appliedBy?.let { appliedById ->
-											"${moderatorNames[appliedById] ?: "`$appliedById`"} (`$appliedById`)"
-										} ?: Translations.Messages.automaticOrNotFound.translate()
-
-										val duration =
-											if (it.durationMS > 0) "**${Translations.Fields.duration.translate()}** : ${it.formattedDuration}" else ""
-
-										"""
-											> **${Translations.Fields.caseNumber.translate()} ${it.id}** ${it.type.emote}
-											**${Translations.Fields.appliedBy.translate()}** : $appliedBy
-											**${Translations.Fields.date.translate()}** : ${
-											it.sanctionedAt.toMessageFormat(
-												DiscordTimestampStyle.LongDateTime
-											)
-										}
-											$duration
-											**${Translations.Fields.reason.translate()}** : ${it.reason}
-											**${Translations.Fields.type.translate()}** : ${it.type.translation.translate()}
-										""".trimIndent().replace("\n\n", "\n")
+									description = page.joinToString("\n\n") {
+										it.toDetailedString(moderatorNames[it.appliedBy])
 									}
 								)
 							}
@@ -308,18 +102,11 @@ class Sanctions : Extension() {
 
 				action {
 					val sanctionId = arguments.id
-					val sanction =
-						getSanction(sanctionId)
-							?: throw DiscordRelayedException(
-								Translations.Embeds.Sanctions.Delete.notFound.withNamedPlaceholders(
-									"id" to sanctionId.toString()
-								)
-							)
+					val sanction = getSanction(sanctionId) ?: throw DiscordRelayedException(
+						Translations.Embeds.Sanctions.Delete.notFound.withNamedPlaceholders("id" to sanctionId.toString())
+					)
 
-					val appliedBy = sanction.appliedBy?.let {
-						val user = this@publicSubCommand.kord.getUser(it) ?: return@let null
-						"${user.username} (`${user.id}`)"
-					}
+					val moderatorName = sanction.appliedBy?.let { this@publicSubCommand.kord.getUser(it)?.username }
 
 					removeSanction(sanctionId)
 
@@ -337,16 +124,7 @@ class Sanctions : Extension() {
 									"id" to sanctionId.toString(),
 									"emote" to sanction.type.emote
 								)
-								value =
-									"""
-									> **${Translations.Fields.caseNumber.translate()} ${sanction.id}** ${sanction.type.emote}
-									**${Translations.Fields.appliedBy.translate()}** : $appliedBy
-									**${Translations.Fields.date.translate()}** : ${
-										sanction.sanctionedAt.toMessageFormat(
-											DiscordTimestampStyle.LongDateTime
-										)
-									}
-									""".trimIndent()
+								value = sanction.toDetailedString(moderatorName)
 							}
 						}
 					}
@@ -358,28 +136,28 @@ class Sanctions : Extension() {
 				description = Translations.Commands.Sanctions.DeleteAll.description
 
 				action {
-					val sanctions = getSanctions(arguments.user.id).let { all ->
-						arguments.type?.let { type -> all.filter { it.type == type } } ?: all
-					}
+					val sanctions = getSanctions(arguments.user.id, arguments.type)
 
 					respond {
-						if (arguments.type != null && sanctions.none { it.type == arguments.type }) {
-							content = Translations.Embeds.Sanctions.DeleteAll.noSanctionsType.translate()
-						} else if (sanctions.isEmpty()) {
-							content = Translations.Embeds.Sanctions.DeleteAll.noSanctions.translate()
-						} else {
-							removeSanctions(arguments.user.id, arguments.type?.toString())
-							completeEmbed(
-								this@publicSubCommand.kord,
-								Translations.Embeds.Sanctions.DeleteAll.title.translateNamed("count" to sanctions.size.toString()),
-								Translations.Embeds.Sanctions.DeleteAll.success.translateNamed("user" to arguments.user.mention)
-							) {
-								field {
-									name = Translations.Fields.types.translate()
-									value = sanctions.groupBy { it.type }
-										.map { "${it.key.translation.translate() + "s"} : **${it.value.size}**" }
-										.joinToString("\n")
-								}
+						if (sanctions.isEmpty()) {
+							content = when (arguments.type) {
+								null -> Translations.Embeds.Sanctions.DeleteAll.noSanctions.translate()
+								else -> Translations.Embeds.Sanctions.DeleteAll.noSanctionsType.translate()
+							}
+							return@respond
+						}
+
+						removeSanctions(arguments.user.id, arguments.type)
+						completeEmbed(
+							this@publicSubCommand.kord,
+							Translations.Embeds.Sanctions.DeleteAll.title.translateNamed("count" to sanctions.size.toString()),
+							Translations.Embeds.Sanctions.DeleteAll.success.translateNamed("user" to arguments.user.mention)
+						) {
+							field {
+								name = Translations.Fields.types.translate()
+								value = sanctions.groupBy { it.type }
+									.map { "${it.key.translation.translate() + "s"} : **${it.value.size}**" }
+									.joinToString("\n")
 							}
 						}
 					}
@@ -395,8 +173,7 @@ class Sanctions : Extension() {
 				val duration = arguments.unit?.durationUnit?.let { arguments.duration?.toDuration(it) }
 
 				guild?.getBanOrNull(arguments.member.id)?.let {
-					val sanctions = getSanctions(arguments.member.id)
-					sanctions.find { it.type == SanctionType.BAN && it.isActive }?.let {
+					getSanctions(arguments.member.id, SanctionType.BAN).find { it.isActive }?.let {
 						throw DiscordRelayedException(
 							Translations.Errors.alreadyBannedUntil.withNamedPlaceholders(
 								"until" to it.toDiscordTimestamp(TimestampType.RelativeTime)
