@@ -27,6 +27,7 @@ import storage.saveVerification
 import utils.*
 
 const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
+const val IGNORE_VERIF_BUTTON_ID = "ignore-verif"
 const val VALIDATE_VERIF_BUTTON_ID = "validate-verif"
 private const val CHANNELS_EMOJI = "<:textuel:658085848092508220>"
 private const val AUTHOR_FIELD_SUFFIX = "Auteur :"
@@ -74,7 +75,24 @@ data class Verification(
 		updateMessagesFieldInEmbed()
 	}
 
-	suspend fun deleteAllAds() = adMessages.forEach { it.delete() }
+	/** Deletes the ad messages one channel at a time, updating the embed as it goes so staff can see progress. */
+	suspend fun deleteAllAds() {
+		adMessages.filterNot { it.deleted }.forEach {
+			it.delete()
+			it.deleted = true
+			updateMessagesFieldInEmbed()
+		}
+
+		if (adMessages.all { it.deleted }) {
+			verificationMessage.edit { components = mutableListOf() }
+			verifications.remove(this)
+		}
+	}
+
+	suspend fun ignore() {
+		verificationMessage.delete()
+		verifications.remove(this)
+	}
 
 	suspend fun setDeletedMessage(channelId: Snowflake) {
 		adMessages.find { it.channelId == channelId }?.deleted = true
@@ -173,10 +191,10 @@ data class Verification(
 		 * it sent before its last restart too.
 		 */
 		suspend fun buttons(): ComponentContainer =
-			buttonsContainer ?: buttonsWith(VALIDATE_VERIF_BUTTON_ID, DELETE_ALL_ADS_VERIF_BUTTON_ID)
+			buttonsContainer ?: buttonsWith(VALIDATE_VERIF_BUTTON_ID, DELETE_ALL_ADS_VERIF_BUTTON_ID, IGNORE_VERIF_BUTTON_ID)
 				.also { buttonsContainer = it }
 
-		private suspend fun buttonsWith(validateId: String, deleteId: String) = ComponentContainer {
+		private suspend fun buttonsWith(validateId: String, deleteId: String, ignoreId: String) = ComponentContainer {
 			publicButton {
 				id = validateId
 				emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
@@ -198,6 +216,17 @@ data class Verification(
 					findOrRestore(message)?.deleteAllAds()
 				}
 			}
+
+			publicButton {
+				id = ignoreId
+				emoji("\uD83D\uDEAB")
+				style = ButtonStyle.Secondary
+				label = Translations.Buttons.ignore
+
+				action {
+					findOrRestore(message)?.ignore()
+				}
+			}
 		}
 
 		/**
@@ -214,14 +243,20 @@ data class Verification(
 				.collect { message ->
 					val validateId = message.buttons.find { it.style == ButtonStyle.Success }?.customId
 					val deleteId = message.buttons.find { it.style == ButtonStyle.Danger }?.customId
+					val ignoreId = message.buttons.find { it.style == ButtonStyle.Secondary }?.customId
 
-					if (validateId == VALIDATE_VERIF_BUTTON_ID && deleteId == DELETE_ALL_ADS_VERIF_BUTTON_ID) return@collect
-					if (validateId == null && deleteId == null) return@collect
+					if (
+						validateId == VALIDATE_VERIF_BUTTON_ID &&
+						deleteId == DELETE_ALL_ADS_VERIF_BUTTON_ID &&
+						ignoreId == IGNORE_VERIF_BUTTON_ID
+					) return@collect
+					if (validateId == null && deleteId == null && ignoreId == null) return@collect
 
 					// The container is only built for its registration side effect, the message already exists.
 					buttonsWith(
 						validateId ?: VALIDATE_VERIF_BUTTON_ID,
-						deleteId ?: DELETE_ALL_ADS_VERIF_BUTTON_ID
+						deleteId ?: DELETE_ALL_ADS_VERIF_BUTTON_ID,
+						ignoreId ?: IGNORE_VERIF_BUTTON_ID
 					)
 				}
 		}
