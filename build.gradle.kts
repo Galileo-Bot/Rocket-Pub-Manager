@@ -1,3 +1,4 @@
+import dev.kordex.gradle.plugins.i18n.tasks.GenerationTask
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
@@ -38,8 +39,7 @@ application {
 kordEx {
 	kordExVersion = libs.versions.kord.extensions.get()
 	jvmTarget = 25
-
-	// KordEx 2.5.0-SNAPSHOT is built against Kotlin 2.3.10, the project compiles fine on 2.4.10.
+	/** KordEx 2.5.0-SNAPSHOT targets Kotlin 2.3.10, the project compiles fine on 2.4.10. */
 	ignoreIncompatibleKotlinVersion = true
 
 	bot {
@@ -53,49 +53,34 @@ i18n {
 	bundle("rocketmanager.strings", "fr.ayfri.rocketmanager.i18n")
 }
 
-// The i18n plugin declares no outputs and one non-serializable `@Input`, so Gradle can neither
-// fingerprint nor skip its task: it re-runs on every build and takes ~8s of a ~10s incremental build.
-// Declaring the outputs here makes Gradle fingerprint the broken input and fail, so compare the
-// translation bundles against the generated sources by hand instead.
-tasks.withType<dev.kordex.gradle.plugins.i18n.tasks.GenerationTask>().configureEach {
+val generatedTranslations = layout.buildDirectory.dir("generated/kordex/main/kotlin")
+
+/** The i18n task declares no outputs so Gradle re-runs it every build (~8s): skip it by hand unless a translation source changed. */
+tasks.withType<GenerationTask>().configureEach {
 	val sources = listOf(
 		layout.projectDirectory.dir("src/main/resources/translations").asFile,
 		layout.projectDirectory.file(".editorconfig").asFile,
 		buildFile
 	)
-	val generated = layout.buildDirectory.dir("generated/kordex/main/kotlin").get().asFile
+	val generated = generatedTranslations.get().asFile
 
-	// Without declared outputs nothing orders this task after `clean`, which would wipe what it wrote.
 	mustRunAfter(tasks.named("clean"))
-
 	onlyIf {
-		val newestGenerated = generated.walkTopDown().filter { it.isFile }.maxOfOrNull { it.lastModified() }
-		newestGenerated == null || sources.asSequence()
-			.flatMap { it.walkTopDown() }
-			.any { it.isFile && it.lastModified() > newestGenerated }
+		val newest = generated.walkTopDown().filter { it.isFile }.maxOfOrNull { it.lastModified() }
+		newest == null || sources.asSequence().flatMap { it.walkTopDown() }.any { it.isFile && it.lastModified() > newest }
 	}
 }
-
-// Both compilers read the generated translations, but the plugin never wires the dependency up. It
-// happened to work only because the task above used to run unconditionally on every build.
-val generateTranslations = tasks.withType<dev.kordex.gradle.plugins.i18n.tasks.GenerationTask>()
 
 tasks.matching { it.name == "kspKotlin" || it.name == "compileKotlin" }.configureEach {
-	dependsOn(generateTranslations)
+	dependsOn(tasks.withType<GenerationTask>())
 }
 
-// The KordEx plugin creates its generated source directory while configuring the project. When the
-// configuration cache is reused that step never runs, so a `clean` in the same invocation leaves the
-// directory missing and every task reading the source set fails.
+/** The KordEx plugin creates this directory at configuration time, which a reused configuration cache skips. */
 tasks.named<Delete>("clean") {
-	val generatedSources = layout.buildDirectory.dir("generated/kordex/main/kotlin")
-	doLast {
-		generatedSources.get().asFile.mkdirs()
-	}
+	doLast { generatedTranslations.get().asFile.mkdirs() }
 }
 
-// Downloads every artifact the build needs so Docker can cache them in a layer of their own,
-// before the sources are copied in. `dependencies` only resolves metadata, not the jars.
+/** Downloads every jar the build needs so Docker caches them in their own layer, `dependencies` only resolves metadata. */
 tasks.register("warmupDependencies") {
 	description = "Resolves all build and runtime artifacts to prime the dependency cache."
 
@@ -107,20 +92,13 @@ tasks.register("warmupDependencies") {
 		"kspKotlinProcessorClasspath",
 		"kspPluginClasspath",
 		"kordExI18nConfiguration"
-	).mapNotNull { name ->
-		configurations.findByName(name)?.incoming?.artifactView { isLenient = true }?.files
-	}
+	).mapNotNull { configurations.findByName(it)?.incoming?.artifactView { isLenient = true }?.files }
 
 	inputs.files(artifacts)
-	doLast {
-		logger.lifecycle("Primed ${artifacts.sumOf { it.count() }} dependency artifacts.")
-	}
+	doLast { logger.lifecycle("Primed ${artifacts.sumOf { it.count() }} dependency artifacts.") }
 }
 
 kotlin {
 	jvmToolchain(25)
-
-	compilerOptions {
-		freeCompilerArgs = listOf("-opt-in=kotlin.time.ExperimentalTime")
-	}
+	compilerOptions.freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime")
 }

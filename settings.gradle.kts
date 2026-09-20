@@ -9,11 +9,3 @@ pluginManagement {
 		maven("https://releases-repo.kordex.dev")
 	}
 }
-
-dependencyResolutionManagement {
-	versionCatalogs {
-		create("libs") {
-			from(files("libs.versions.toml"))
-		}
-	}
-}
