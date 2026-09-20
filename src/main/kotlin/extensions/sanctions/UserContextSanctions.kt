@@ -43,7 +43,7 @@ class UserContextSanctions : Extension() {
 					"warn" -> Translations.Commands.UserContext.Warn.name
 					else -> throw IllegalArgumentException("Unknown command name: $commandName")
 				}
-				guildId = ROCKET_PUB_GUILD
+				scope.limitToGuild(ROCKET_PUB_GUILD)
 
 				check {
 					inGuild(ROCKET_PUB_GUILD)

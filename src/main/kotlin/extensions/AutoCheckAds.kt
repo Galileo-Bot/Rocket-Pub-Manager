@@ -75,7 +75,7 @@ class CheckAds : Extension() {
 			name = Translations.Commands.AutoCheckAds.AddChannel.name
 			description = Translations.Commands.AutoCheckAds.AddChannel.description
 
-			guild(ROCKET_PUB_GUILD)
+			scope.limitToGuild(ROCKET_PUB_GUILD)
 
 			action {
 				val type = arguments.type

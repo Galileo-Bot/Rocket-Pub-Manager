@@ -67,7 +67,7 @@ class Verifications : Extension() {
 
 		ephemeralMessageCommand {
 			name = Translations.Commands.Verifications.ForbiddenAd.name
-			guild(ROCKET_PUB_GUILD)
+			scope.limitToGuild(ROCKET_PUB_GUILD)
 
 			action {
 				val type = user.getNextSanctionType()

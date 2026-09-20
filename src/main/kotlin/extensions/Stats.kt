@@ -58,7 +58,7 @@ class Stats : Extension() {
 			name = Translations.Commands.Stats.name
 			description = Translations.Commands.Stats.description
 
-			guild(ROCKET_PUB_GUILD)
+			scope.limitToGuild(ROCKET_PUB_GUILD)
 
 			publicSubCommand(::PeriodArguments) {
 				name = Translations.Commands.Stats.Verifications.name

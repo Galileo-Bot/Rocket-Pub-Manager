@@ -1,13 +1,13 @@
 [versions]
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 kordex = "1.9.2"
 kordex-i18n = "1.1.1"
-kord-extensions = "2.5.0-SNAPSHOT"
+kord-extensions = "2.7.0-SNAPSHOT"
 
 dotenv = "6.5.1"
-kandy = "0.8.3"
-logback = "1.6.0"
-sqlite = "3.53.2.1"
+kandy = "0.8.5"
+logback = "1.6.3"
+sqlite = "3.53.4.0"
 
 [libraries]
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
