@@ -4,7 +4,6 @@ import dev.kordex.gradle.plugins.kordex.DataCollection
 plugins {
 	alias(libs.plugins.kotlin)
 	alias(libs.plugins.serialization)
-	alias(libs.plugins.ksp)
 	alias(libs.plugins.kordex)
 	alias(libs.plugins.kordex.i18n)
 	application
@@ -71,7 +70,7 @@ tasks.withType<GenerationTask>().configureEach {
 	}
 }
 
-tasks.matching { it.name == "kspKotlin" || it.name == "compileKotlin" }.configureEach {
+tasks.named("compileKotlin") {
 	dependsOn(tasks.withType<GenerationTask>())
 }
 
@@ -89,8 +88,6 @@ tasks.register("warmupDependencies") {
 		"runtimeClasspath",
 		"kotlinCompilerClasspath",
 		"kotlinCompilerPluginClasspathMain",
-		"kspKotlinProcessorClasspath",
-		"kspPluginClasspath",
 		"kordExI18nConfiguration"
 	).mapNotNull { configurations.findByName(it)?.incoming?.artifactView { isLenient = true }?.files }
 

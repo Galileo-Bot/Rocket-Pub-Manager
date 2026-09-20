@@ -32,7 +32,7 @@ Le bot couvre l'ensemble de la modération du serveur :
 
 - **Kotlin** 2.4.10 sur **Java** 25
 - **[KordEx](https://github.com/Kord-Extensions/kord-extensions)** 2.5.0-SNAPSHOT (basé sur [Kord](https://github.com/kordlib/kord)) pour l'interaction avec l'API Discord
-- **Gradle** avec les plugins `dev.kordex.gradle.kordex`, `dev.kordex.gradle.i18n` et KSP
+- **Gradle** avec les plugins `dev.kordex.gradle.kordex`, `dev.kordex.gradle.i18n`
 - **SQLite** via `sqlite-jdbc`, embarqué dans le process du bot
 - **dotenv-kotlin** pour le chargement de la configuration via `.env`
 - **Logback** pour les logs

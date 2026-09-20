@@ -3,7 +3,6 @@ kotlin = "2.4.10"
 kordex = "1.9.2"
 kordex-i18n = "1.1.1"
 kord-extensions = "2.5.0-SNAPSHOT"
-ksp = "2.3.10"
 
 dotenv = "6.5.1"
 kandy = "0.8.3"
@@ -20,5 +19,4 @@ sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kordex = { id = "dev.kordex.gradle.kordex", version.ref = "kordex" }
 kordex-i18n = { id = "dev.kordex.gradle.i18n", version.ref = "kordex-i18n" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
