@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM gradle:9.6.1-jdk25-alpine AS build
+FROM gradle:9.7.1-jdk25-alpine AS build
 WORKDIR /app
 
 # gradle.properties is sized for a dev machine, these override it for a constrained builder.

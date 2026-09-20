@@ -110,7 +110,7 @@ Autres tâches utiles :
 docker compose up --build
 ```
 
-Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.6.1-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`.
+Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.7.1-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`.
 
 Les logs sont montés dans `./logs`, et la base vit dans le volume `bot_data`.
 
