@@ -95,6 +95,7 @@ class BannedGuilds : Extension() {
 		publicSlashCommand {
 			name = Translations.Commands.BannedGuilds.name
 			description = Translations.Commands.BannedGuilds.description
+			staffOnly()
 
 			publicSubCommand(::AddBannedGuildArguments) {
 				name = Translations.Commands.BannedGuilds.Add.name

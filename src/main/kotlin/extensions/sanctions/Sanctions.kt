@@ -14,6 +14,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.withContext
 import dev.kordex.core.time.TimestampType
 import dev.kordex.core.utils.*
+import extensions.staffOnly
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.*
 import utils.applySanction
@@ -63,6 +64,7 @@ class Sanctions : Extension() {
 		publicSlashCommand {
 			name = Translations.Commands.Sanctions.name
 			description = Translations.Commands.Sanctions.description
+			staffOnly()
 
 			publicSubCommand {
 				name = Translations.Commands.Sanctions.Count.name
@@ -261,6 +263,7 @@ class Sanctions : Extension() {
 		publicSlashCommand(::BanArguments) {
 			name = Translations.Commands.Sanctions.Ban.name
 			description = Translations.Commands.Sanctions.Ban.description
+			staffOnly()
 
 			action {
 				val duration = arguments.unit?.durationUnit?.let { arguments.duration?.toDuration(it) }
@@ -296,6 +299,7 @@ class Sanctions : Extension() {
 		publicSlashCommand(::KickArguments) {
 			name = Translations.Commands.Sanctions.Kick.name
 			description = Translations.Commands.Sanctions.Kick.description
+			staffOnly()
 
 			action {
 				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotKickMember)
@@ -310,6 +314,7 @@ class Sanctions : Extension() {
 		publicSlashCommand(::MuteArguments) {
 			name = Translations.Commands.Sanctions.Mute.name
 			description = Translations.Commands.Sanctions.Mute.description
+			staffOnly()
 
 			action {
 				val duration = arguments.duration.toDuration(arguments.unit.durationUnit)
@@ -339,6 +344,7 @@ class Sanctions : Extension() {
 		publicSlashCommand(::UnBanArguments) {
 			name = Translations.Commands.Sanctions.Unban.name
 			description = Translations.Commands.Sanctions.Unban.description
+			staffOnly()
 
 			action {
 				guild?.getBanOrNull(arguments.user.id)
@@ -359,6 +365,7 @@ class Sanctions : Extension() {
 		publicSlashCommand(::UnMuteArguments) {
 			name = Translations.Commands.Sanctions.Unmute.name
 			description = Translations.Commands.Sanctions.Unmute.description
+			staffOnly()
 
 			action {
 				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotUnmuteMember)
@@ -380,6 +387,7 @@ class Sanctions : Extension() {
 		publicSlashCommand(::WarnArguments) {
 			name = Translations.Commands.Sanctions.Warn.name
 			description = Translations.Commands.Sanctions.Warn.description
+			staffOnly()
 
 			action {
 				applySanction(Sanction(SanctionType.WARN, arguments.reason, arguments.member.id, appliedBy = user.id))

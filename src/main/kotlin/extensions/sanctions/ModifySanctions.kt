@@ -13,6 +13,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kord.core.behavior.channel.createMessage
 import dev.kordex.core.commands.application.slash.PublicSlashCommandContext
 import extensions.isStaff
+import extensions.staffOnly
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
@@ -76,6 +77,7 @@ class ModifySanctions : Extension() {
 		publicSlashCommand {
 			name = Translations.Commands.ModifySanctions.name
 			description = Translations.Commands.ModifySanctions.description
+			staffOnly()
 
 			publicSubCommand(ModifySanctions::ModifyAppliedByArguments) {
 				name = Translations.Commands.ModifySanctions.Moderator.name

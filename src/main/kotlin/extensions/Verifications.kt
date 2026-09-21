@@ -37,6 +37,7 @@ class Verifications : Extension() {
 		publicSlashCommand {
 			name = Translations.Commands.Verifications.name
 			description = Translations.Commands.Verifications.description
+			staffOnly()
 
 			publicSubCommand {
 				name = Translations.Commands.Verifications.List.name
@@ -67,7 +68,7 @@ class Verifications : Extension() {
 
 		ephemeralMessageCommand {
 			name = Translations.Commands.Verifications.ForbiddenAd.name
-			scope.limitToGuild(ROCKET_PUB_GUILD)
+			staffOnly()
 
 			action {
 				val type = user.getNextSanctionType()

@@ -9,10 +9,13 @@ import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
+import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.checks.channelType
+import dev.kordex.core.checks.hasRole
 import dev.kordex.core.checks.inGuild
 import dev.kordex.core.checks.isNotBot
+import dev.kordex.core.commands.application.ApplicationCommand
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.types.EphemeralInteractionContext
 import dev.kordex.core.types.PublicInteractionContext
@@ -21,6 +24,17 @@ import dev.kordex.core.utils.hasPermission
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
 import utils.*
+
+/**
+ * Restricts a command to the staff of the Rocket Pub guild: registered only there, hidden from the other members in
+ * Discord's UI, and checked again at runtime since server owners can override the default permissions.
+ * Subcommands inherit both the scope and the checks of their parent.
+ */
+fun <E : InteractionCreateEvent> ApplicationCommand<E>.staffOnly() {
+	scope.limitToGuild(ROCKET_PUB_GUILD)
+	requirePermission(Permission.ModerateMembers)
+	check { hasRole(STAFF_ROLE) }
+}
 
 suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	if (!passed) return

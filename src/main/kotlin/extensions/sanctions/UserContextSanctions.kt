@@ -1,16 +1,15 @@
 package extensions.sanctions
 
 import dev.kord.core.behavior.ban
-import dev.kordex.core.checks.inGuild
 import dev.kordex.core.components.forms.ModalForm
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralUserCommand
 import extensions.lightSanction
 import extensions.respond
+import extensions.staffOnly
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
 import storage.SanctionType
-import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
 import utils.replyWithSanctionEmbed
 import utils.sendLog
@@ -43,11 +42,7 @@ class UserContextSanctions : Extension() {
 					"warn" -> Translations.Commands.UserContext.Warn.name
 					else -> throw IllegalArgumentException("Unknown command name: $commandName")
 				}
-				scope.limitToGuild(ROCKET_PUB_GUILD)
-
-				check {
-					inGuild(ROCKET_PUB_GUILD)
-				}
+				staffOnly()
 
 				action { modal ->
 					if (modal == null || modal.reason.value.isNullOrBlank()) {

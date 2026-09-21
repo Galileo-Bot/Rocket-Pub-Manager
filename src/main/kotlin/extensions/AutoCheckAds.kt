@@ -74,8 +74,7 @@ class CheckAds : Extension() {
 		publicSlashCommand(::AddChannelArguments) {
 			name = Translations.Commands.AutoCheckAds.AddChannel.name
 			description = Translations.Commands.AutoCheckAds.AddChannel.description
-
-			scope.limitToGuild(ROCKET_PUB_GUILD)
+			staffOnly()
 
 			action {
 				val type = arguments.type

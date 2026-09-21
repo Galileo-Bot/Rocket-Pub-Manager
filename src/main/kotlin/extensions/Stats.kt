@@ -19,7 +19,6 @@ import storage.DailyCount
 import storage.getAdCountsByDay
 import storage.getVerificationCountsByDay
 import utils.CHART_ACCENT_HEX
-import utils.ROCKET_PUB_GUILD
 import utils.completeEmbed
 import utils.fillMissingDays
 import utils.renderDailyCountChart
@@ -57,8 +56,7 @@ class Stats : Extension() {
 		publicSlashCommand {
 			name = Translations.Commands.Stats.name
 			description = Translations.Commands.Stats.description
-
-			scope.limitToGuild(ROCKET_PUB_GUILD)
+			staffOnly()
 
 			publicSubCommand(::PeriodArguments) {
 				name = Translations.Commands.Stats.Verifications.name
