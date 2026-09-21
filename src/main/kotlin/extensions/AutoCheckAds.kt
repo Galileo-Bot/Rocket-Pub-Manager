@@ -23,13 +23,16 @@ import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.i18n.Key
+import dev.kordex.core.utils.deleteIgnoringNotFound
 import dev.kordex.core.utils.getJumpUrl
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import storage.Sanction
 import storage.SanctionType
 import utils.*
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -44,7 +47,8 @@ enum class ChannelAdType(private val translation: Key, val sentence: Key, val em
 	override val readableName get() = translation
 }
 
-val sanctionMessages = mutableListOf<SanctionMessage>()
+/** Iterated by the events and the bin buttons concurrently, the writes are rare. */
+val sanctionMessages = CopyOnWriteArrayList<SanctionMessage>()
 
 class CheckAds : Extension() {
 	override val name = "Auto-Check-Ads"
@@ -164,8 +168,8 @@ suspend fun TextChannelBehavior.lightSanction(
 
 	Sanction(SanctionType.LIGHT_WARN, reason, member.id, appliedBy = kord.selfId).save()
 
-	delay(5.seconds)
-	message?.delete()
+	// Off the event handler, which holds the ads lock: the member gets a few seconds to read the warning first.
+	message?.let { kord.launch { delay(5.seconds); it.deleteIgnoringNotFound() } }
 }
 
 suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?) {

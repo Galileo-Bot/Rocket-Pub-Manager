@@ -12,17 +12,30 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralMessageCommand
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.env
+import dev.kordex.core.utils.scheduling.Scheduler
 import entities.Verification
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.sync.withLock
 import logger
 import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCounts
 import utils.*
 
+/** Pending verifications and auto-sanction embeds untouched for that long are dropped from memory. */
+private val STALE_AFTER = 24.hours
+private val PRUNE_INTERVAL = 30.minutes
+
+/** Prefix of the chat commands the staff answers the auto-sanction embeds with. */
+private val chatPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
+
 class Verifications : Extension() {
 	override val name = "Verifications"
+	private val scheduler = Scheduler()
 
 	override suspend fun setup() {
 		// Components only live in the in-memory registry, so the buttons of the verification messages sent
@@ -32,6 +45,14 @@ class Verifications : Extension() {
 		// Only a convenience for the messages predating the fixed IDs, never worth failing the setup for.
 		runCatching { Verification.registerPendingMessagesButtons(kord) }
 			.onFailure { logger.error(it) { "Failed to register the buttons of the pending verifications." } }
+
+		// The staff never acts on some verifications and some auto-sanctions never get their chat command: without
+		// this they pile up for the whole life of the process. A pruned verification is rebuilt from its embed on click.
+		scheduler.schedule(PRUNE_INTERVAL, name = "Ads state prune", pollingSeconds = 60, repeat = true) {
+			val cutoff = Clock.System.now() - STALE_AFTER
+			Verification.verifications.removeIf { it.lastActivityAt < cutoff }
+			sanctionMessages.removeIf { it.sanctionMessage.timestamp < cutoff }
+		}
 
 		publicSlashCommand {
 			name = Translations.Commands.Verifications.name
@@ -95,39 +116,43 @@ class Verifications : Extension() {
 				if (debug) hasRole(STAFF_ROLE)
 			}
 
+			// The whole handler runs under the lock: an author posting in several channels at once must be grouped
+			// into one verification (or one auto-sanction embed), which a concurrent find-or-create would duplicate.
 			action {
-				sanctionMessages.find {
-					it.sanction.toString(System.getenv("AYFRI_ROCKETMANAGER_PREFIX")).asSafeUsersMentions == event.message.content.asSafeUsersMentions
-				}?.let {
+				val content = event.message.content.asSafeUsersMentions
+				sanctionMessages.find { it.sanction.toString(chatPrefix).asSafeUsersMentions == content }?.let {
 					sanctionMessages.remove(it)
 					val message = it.sanctionMessage.fetchMessageOrNull() ?: return@let
 					setSanctionedBy(message, it.sanction)
 				}
 
 				val check = checkAd(event.message)
-				check.reason?.let { reason ->
-					val sanction = event.member!!.getNextSanctionType()
-					if (sanction == SanctionType.LIGHT_WARN) {
-						kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
 
+				Verification.lock.withLock {
+					check.reason?.let { reason ->
+						val sanction = event.member!!.getNextSanctionType()
+						if (sanction == SanctionType.LIGHT_WARN) {
+							kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
+
+							return@action
+						}
+
+						autoSanctionMessage(event.message, sanction, reason)
 						return@action
 					}
 
-					autoSanctionMessage(event.message, sanction, reason)
-					return@action
-				}
+					Verification.verifications.find {
+						it.author == event.message.author!!.id &&
+							!it.isValidated &&
+							it.adMessages.none { m -> m.channelId == event.message.channelId } &&
+							(it.adContent == event.message.content || Clock.System.now() - it.lastActivityAt < AD_GROUPING_WINDOW)
+					}?.let {
+						it.addAdMessage(event.message)
+						return@action
+					}
 
-				Verification.verifications.find {
-					it.author == event.message.author!!.id &&
-						!it.isValidated &&
-						it.adMessages.none { m -> m.channelId == event.message.channelId } &&
-						(it.adContent == event.message.content || Clock.System.now() - it.lastActivityAt < AD_GROUPING_WINDOW)
-				}?.let {
-					it.addAdMessage(event.message)
-					return@action
+					Verification.create(event.message, check.invite)
 				}
-
-				Verification.create(event.message, check.invite)
 			}
 		}
 

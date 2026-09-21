@@ -23,6 +23,8 @@ import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
 import kord
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -30,11 +32,11 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import storage.Sanction
 import storage.SanctionType
 import storage.getAdEventCount
 import storage.getSanctionCount
-import storage.getSanctions
 import storage.saveAdEvent
 import storage.saveVerification
 import storage.searchBannedGuild
@@ -84,12 +86,12 @@ data class VerificationMessage(
 data class Verification(
 	val author: Snowflake,
 	val adContent: String,
-	val adMessages: MutableSet<VerificationMessage> = mutableSetOf(),
+	val adMessages: MutableSet<VerificationMessage> = CopyOnWriteArraySet(),
 	var validatedBy: Snowflake? = null,
 ) {
 	lateinit var verificationMessage: Message
 	var lastActivityAt: Instant = Clock.System.now()
-	private val deleting = AtomicBoolean(false)
+	private val closed = AtomicBoolean(false)
 	val hasVerificationMessage get() = ::verificationMessage.isInitialized
 	val isValidated get() = validatedBy != null
 	val messagesFormatted get() = adMessages.joinToString("\n") { it.toString() }
@@ -106,13 +108,17 @@ data class Verification(
 	}
 
 	/**
+	 * Marks the verification as handled, true the first time only: the buttons stay clickable until the edit or the
+	 * deletion of the message lands, a double click must not log, record or sanction twice.
+	 */
+	private fun close() = closed.compareAndSet(false, true)
+
+	/**
 	 * Deletes the pending ads in parallel (each channel has its own rate-limit bucket), then edits the embed once.
 	 * The ads are flagged before the requests go out so the [dev.kord.core.event.message.MessageDeleteEvent] they
-	 * trigger doesn't edit the embed a second time, and a double click is a no-op.
+	 * trigger doesn't edit the embed a second time.
 	 */
-	suspend fun deleteAllAds() {
-		if (!deleting.compareAndSet(false, true)) return
-
+	private suspend fun deletePendingAds() {
 		val pending = adMessages.filterNot { it.deleted }
 		pending.forEach { it.deleted = true }
 		coroutineScope { pending.forEach { launch { it.delete() } } }
@@ -121,7 +127,14 @@ data class Verification(
 		verifications.remove(this)
 	}
 
+	suspend fun deleteAllAds() {
+		if (!close()) return
+		deletePendingAds()
+	}
+
 	suspend fun ignore(staffId: Snowflake, reason: String?) {
+		if (!close()) return
+
 		verificationMessage.kord.getVerifLogsChannel().createMessage {
 			embed {
 				fromEmbed(verificationMessage.embeds[0])
@@ -148,7 +161,8 @@ data class Verification(
 
 	/** Deletes every pending ad and sanctions the author, using the same escalation as the manual "forbidden ad" command. */
 	suspend fun sanctionAuthor(staffId: Snowflake) {
-		deleteAllAds()
+		if (!close()) return
+		deletePendingAds()
 
 		val kord = verificationMessage.kord
 		val member = kord.getRocketPubGuild().getMemberOrNull(author) ?: return
@@ -174,6 +188,7 @@ data class Verification(
 	}
 
 	suspend fun validateBy(user: Snowflake) {
+		if (!close()) return
 		validatedBy = user
 
 		verificationMessage.kord.getVerifLogsChannel().createMessage {
@@ -280,7 +295,11 @@ data class Verification(
 	}
 
 	companion object {
-		val verifications = ArrayDeque<Verification>(100)
+		/** Iterated by the events and the buttons concurrently, the writes are rare. */
+		val verifications = CopyOnWriteArrayList<Verification>()
+
+		/** Serialises the find-or-create of a verification: one author posting in several channels at once must end up in a single one. */
+		val lock = Mutex()
 
 		private var buttonsContainer: ComponentContainer? = null
 
@@ -423,7 +442,7 @@ data class Verification(
 				?.mapNotNull(::parseAdMessage)
 				.orEmpty()
 
-			return Verification(author, embed.description ?: "", adMessages.toMutableSet()).apply {
+			return Verification(author, embed.description ?: "", adMessages.toCollection(CopyOnWriteArraySet())).apply {
 				verificationMessage = message
 			}
 		}
