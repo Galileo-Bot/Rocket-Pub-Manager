@@ -47,18 +47,22 @@ val VERIF_LOGS_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_LOGS_I
 fun ChannelBehavior.isAdChannel() = this is TextChannel && topic?.contains(AD_CHANNEL_EMOTE) == true
 fun ChannelBehavior.isCategoryChannel() = this is TextChannel && topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true
 
+/**
+ * Guild channels are cached by the `Guilds` intent and kept fresh by `CHANNEL_UPDATE`, so this never has to hit
+ * REST: these checks run on every message of the guild.
+ */
 suspend fun <T : Event> CheckContext<T>.isAdChannel() {
 	if (!passed) return
 	val channel = channelFor(event)
 
 	if (channel == null) fail(Translations.Errors.channelIsNull)
-	failIfNot(Translations.Errors.channelNotAdChannel) { channel!!.fetchChannel().isAdChannel() }
+	failIfNot(Translations.Errors.channelNotAdChannel) { channel!!.asChannelOrNull()?.isAdChannel() == true }
 }
 
 suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
 	if (!passed) return
 	val channel = channelFor(event) ?: return
-	failIfNot(Translations.Errors.channelNotAdCategoryChannel) { channel.fetchChannel().isCategoryChannel() }
+	failIfNot(Translations.Errors.channelNotAdCategoryChannel) { channel.asChannelOrNull()?.isCategoryChannel() == true }
 }
 
 suspend fun Kord.getVerifChannel() =
