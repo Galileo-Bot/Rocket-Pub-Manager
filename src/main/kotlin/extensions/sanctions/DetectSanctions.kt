@@ -32,19 +32,23 @@ import kotlin.time.Duration.Companion.seconds
 /** Audit log entries older than this were not caused by the event being handled. */
 private val AUDIT_LOG_WINDOW = 10.seconds
 
+/** Without a limit the flow pages backwards through the whole audit log whenever no entry matches, a normal leave for instance. */
+private const val AUDIT_LOG_LIMIT = 10
+
 /**
- * The newest audit log entry of [action] that could have caused the event being handled.
+ * The newest audit log entry of [action] aimed at [targetId] that could have caused the event being handled.
  *
- * The audit log is the only place Discord tells who performed a moderation action done outside of the bot.
+ * The audit log is the only place Discord tells who performed a moderation action done outside of the bot. Its
+ * `user_id` query filter is the actor, not the target, so the target is matched on the entries themselves.
  */
 private suspend fun GuildBehavior.recentAuditLogEntry(
 	action: AuditLogEvent,
-	targetId: Snowflake? = null,
+	targetId: Snowflake,
 	matches: (AuditLogEntry) -> Boolean = { true },
 ) = getAuditLogEntries {
 	this.action = action
-	targetId?.let { userId = it }
-}.firstOrNull { it.id.timeMark.elapsedNow() < AUDIT_LOG_WINDOW && matches(it) }
+	limit = AUDIT_LOG_LIMIT
+}.firstOrNull { it.id.timeMark.elapsedNow() < AUDIT_LOG_WINDOW && it.targetId == targetId && matches(it) }
 
 class DetectSanctions : Extension() {
 	override val name = "Detect-Sanctions"
@@ -55,14 +59,17 @@ class DetectSanctions : Extension() {
 			check { inGuild(ROCKET_PUB_GUILD) }
 
 			action {
-				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberBanAdd)
-				val sanctionedBy = entry?.userId?.let { event.guild.getMemberOrNull(it) }
 				val user = event.user
+				val sanctions = getSanctions(user.id)
+				if (sanctions.any { it.type == SanctionType.BAN && it.isActive }) return@action
 
-				if (getSanctions(user.id, SanctionType.BAN).any { it.isActive }) return@action
+				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberBanAdd, user.id)
+				// The bot's own bans are recorded by the command that issued them.
+				if (entry?.userId == kord.selfId) return@action
 
-				Sanction(SanctionType.BAN, event.getBan().reason, user.id, sanctionedBy?.id).apply {
-					if (getSanctions(user.id).any { it.equalExceptOwner(this) }) return@action
+				// The audit entry carries the reason, fetching the ban again would only repeat it.
+				Sanction(SanctionType.BAN, entry?.reason, user.id, entry?.userId).apply {
+					if (sanctions.any { it.equalExceptOwner(this) }) return@action
 
 					save()
 					sendLog(kord)
@@ -74,7 +81,7 @@ class DetectSanctions : Extension() {
 			check { inGuild(ROCKET_PUB_GUILD) }
 
 			action {
-				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberBanRemove)
+				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberBanRemove, event.user.id)
 				val unBannedBy = entry?.userId?.let { event.guild.getMemberOrNull(it) }
 
 				liftActiveBans(event.user.id)
@@ -91,7 +98,10 @@ class DetectSanctions : Extension() {
 			action {
 				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberKick, event.user.id) ?: return@action
 
-				Sanction(SanctionType.KICK, entry.reason, event.user.id).apply {
+				// The bot's own kicks are recorded by the command that issued them.
+				if (entry.userId == kord.selfId) return@action
+
+				Sanction(SanctionType.KICK, entry.reason, event.user.id, entry.userId).apply {
 					if (getSanctions(event.user.id).any { it.equalExceptOwner(this) }) return@action
 
 					save()
@@ -104,14 +114,19 @@ class DetectSanctions : Extension() {
 			check { inGuild(ROCKET_PUB_GUILD) }
 
 			action {
-				event.old ?: return@action
+				val old = event.old ?: return@action
 				val member = event.member
 
-				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberUpdate) { candidate ->
+				// Nickname, role and avatar changes fire this event too, only a timeout is worth an audit log request.
+				if (member.timeoutUntil == old.timeoutUntil) return@action
+
+				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberUpdate, member.id) { candidate ->
 					candidate.changes.any { it.key == AuditLogChangeKey.CommunicationDisabledUntil }
 				} ?: return@action
 
 				val moderatorId = entry.userId ?: return@action
+				// The bot's own mutes are recorded by the command that issued them.
+				if (moderatorId == kord.selfId) return@action
 				val duration = (member.timeoutUntil ?: return@action) - Clock.System.now()
 
 				Sanction(SanctionType.MUTE, entry.reason, member.id, moderatorId, duration.inWholeMilliseconds).apply {
