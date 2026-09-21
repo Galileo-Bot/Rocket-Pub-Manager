@@ -7,7 +7,7 @@ ENV GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx1600m -XX:MaxMetaspaceSize=512m -XX:+U
 
 # Copy build files
 COPY gradle/ gradle/
-COPY *.gradle.kts gradle.properties .editorconfig ./
+COPY *.gradle.kts gradle.properties .editorconfig LICENSE ./
 
 # Copy minimal resources for KordEx
 COPY src/main/resources/translations/ src/main/resources/translations/
@@ -21,17 +21,20 @@ RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
 
 # Copy source and build
 COPY src/ src/
-COPY LICENSE ./
 
-# in-process compilation skips the cost of forking a Kotlin daemon for a one-shot build
+# build/ lives in a cache mount so Kotlin compiles incrementally and the i18n task's timestamp check sees the previous
+# generated sources, but a mount is not part of the layer, hence the copy to /dist for the runtime stage.
+# in-process compilation skips the cost of forking a Kotlin daemon for a one-shot build.
 RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
     --mount=type=cache,target=/app/.gradle,sharing=locked \
-    gradle installDist --no-daemon -Pkotlin.compiler.execution.strategy=in-process
+    --mount=type=cache,target=/app/build,sharing=locked \
+    gradle installDist --no-daemon -Pkotlin.compiler.execution.strategy=in-process && \
+    cp -r build/install/Rocket-Manager /dist
 
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
-COPY --from=build /app/build/install/Rocket-Manager/ ./
+COPY --from=build /dist/ ./
 
 # Creating /app/data here makes Docker carry its ownership over to the mounted volume.
 RUN adduser -D appuser && \
