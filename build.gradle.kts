@@ -21,17 +21,21 @@ dependencies {
 
 application {
 	mainClass = "MainKt"
+	/**
+	 * A chart render allocates ~50 MB of garbage in a burst and SerialGC never gives the expanded heap back, so the
+	 * bot idled at 250 MB. G1's periodic collection uncommits down to the free ratios a few minutes after the burst,
+	 * and C1 alone is plenty for a bot that spends its life waiting on the gateway.
+	 */
 	applicationDefaultJvmArgs = listOf(
-		"-XX:+UseContainerSupport",
-		"-Xms64m",
 		"-Xmx192m",
-		"-XX:+UseSerialGC",
+		"-XX:+UseG1GC",
+		"-XX:G1PeriodicGCInterval=120000",
+		"-XX:MinHeapFreeRatio=10",
+		"-XX:MaxHeapFreeRatio=30",
 		"-XX:+UseCompactObjectHeaders",
-		"-XX:MaxMetaspaceSize=128m",
-		"-XX:ReservedCodeCacheSize=64m",
-		"-XX:MaxDirectMemorySize=32m",
-		"-Djava.awt.headless=true",
-		"-XX:+ExitOnOutOfMemoryError"
+		"-XX:TieredStopAtLevel=1",
+		"-XX:+ExitOnOutOfMemoryError",
+		"-Djava.awt.headless=true"
 	)
 }
 
