@@ -12,7 +12,6 @@ group = "fr.ayfri"
 version = "1.0"
 
 dependencies {
-	implementation(libs.dotenv)
 	implementation(libs.kandy.letsPlot)
 	implementation(libs.logback)
 	implementation(libs.sqlite)

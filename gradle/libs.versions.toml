@@ -4,13 +4,11 @@ kordex = "1.9.2"
 kordex-i18n = "1.1.1"
 kord-extensions = "2.7.0-SNAPSHOT"
 
-dotenv = "6.5.1"
 kandy = "0.8.5"
 logback = "1.6.3"
 sqlite = "3.53.4.0"
 
 [libraries]
-dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 kandy-letsPlot = { module = "org.jetbrains.kotlinx:kandy-lets-plot", version.ref = "kandy" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
