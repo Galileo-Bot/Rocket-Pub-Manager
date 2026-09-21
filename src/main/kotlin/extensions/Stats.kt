@@ -41,6 +41,9 @@ private fun StatsPeriod?.since(): Instant {
 	return Instant.now().minus(days, ChronoUnit.DAYS)
 }
 
+private fun LocalDate.toDiscordFormat(style: DiscordTimestampStyle) =
+	atStartOfDay(ZoneId.systemDefault()).toInstant().toKotlinInstant().toMessageFormat(style)
+
 class Stats : Extension() {
 	override val name = "Stats"
 
@@ -120,10 +123,8 @@ private suspend fun PublicInteractionContext.respondWithChart(
 			image = "attachment://$fileName"
 
 			description = Translations.Embeds.Stats.description.translateNamed(
-				"from" to from.atStartOfDay(ZoneId.systemDefault()).toInstant().toKotlinInstant()
-					.toMessageFormat(DiscordTimestampStyle.LongDate),
-				"to" to to.atStartOfDay(ZoneId.systemDefault()).toInstant().toKotlinInstant()
-					.toMessageFormat(DiscordTimestampStyle.LongDate),
+				"from" to from.toDiscordFormat(DiscordTimestampStyle.LongDate),
+				"to" to to.toDiscordFormat(DiscordTimestampStyle.LongDate),
 				"days" to series.size,
 			)
 
@@ -143,8 +144,7 @@ private suspend fun PublicInteractionContext.respondWithChart(
 				name = Translations.Fields.peakDay.translate()
 				value = Translations.Embeds.Stats.peakValue.translateNamed(
 					"count" to peak.count,
-					"date" to peak.day.atStartOfDay(ZoneId.systemDefault()).toInstant().toKotlinInstant()
-						.toMessageFormat(DiscordTimestampStyle.ShortDate),
+					"date" to peak.day.toDiscordFormat(DiscordTimestampStyle.ShortDate),
 				)
 				inline = true
 			}

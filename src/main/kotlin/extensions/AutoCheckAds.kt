@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 import storage.Sanction
 import storage.SanctionType
 import utils.*
-import java.util.*
+import java.time.LocalTime
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -144,9 +144,8 @@ suspend fun TextChannelBehavior.lightSanction(
 	message: Message? = null,
 ) {
 	createMessage {
-		val actualHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 		val welcome =
-			if (actualHour in 6..18) Translations.Messages.goodMorning.translate() else Translations.Messages.goodEvening.translate()
+			if (LocalTime.now().hour in 6..18) Translations.Messages.goodMorning.translate() else Translations.Messages.goodEvening.translate()
 
 		val shownReason = message?.let {
 			Translations.Messages.lightWarnReasonWithChannel.translateNamed(
@@ -172,8 +171,8 @@ suspend fun TextChannelBehavior.lightSanction(
 	message?.let { kord.launch { delay(5.seconds); it.deleteIgnoringNotFound() } }
 }
 
-suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String?) {
-	val sanction = Sanction(type, reason ?: return, message.author!!.id)
+suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: String) {
+	val sanction = Sanction(type, reason, message.author!!.id)
 	val channelToSend = message.kord.getVerifChannel()
 
 	val old = sanctionMessages.find {
@@ -216,7 +215,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			addBinButtonDeleteSimilarAdsWithSanction()
 		}
 	}.also {
-		sanctionMessages.add(SanctionMessage(message.getAuthorAsMember(), it, sanction))
+		sanctionMessages.add(SanctionMessage(it, sanction))
 	}
 }
 

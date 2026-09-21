@@ -14,6 +14,7 @@ import dev.kordex.core.commands.converters.impl.optionalUser
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.utils.FilterStrategy
 import dev.kordex.core.utils.suggestStringMap
+import dev.kordex.i18n.Key
 import extensions.StatsPeriod
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.SanctionType
@@ -35,17 +36,10 @@ val sanctionReasons by lazy {
 	).mapValues { (_, value) -> value.translate() }
 }
 
-enum class DurationUnits(val durationUnit: DurationUnit) : ChoiceEnum {
-	DAYS(DurationUnit.DAYS),
-	HOURS(DurationUnit.HOURS),
-	MINUTES(DurationUnit.MINUTES);
-
-	override val readableName
-		get() = when (this) {
-			DAYS -> Translations.Units.days
-			HOURS -> Translations.Units.hours
-			MINUTES -> Translations.Units.minutes
-		}
+enum class DurationUnits(val durationUnit: DurationUnit, override val readableName: Key) : ChoiceEnum {
+	DAYS(DurationUnit.DAYS, Translations.Units.days),
+	HOURS(DurationUnit.HOURS, Translations.Units.hours),
+	MINUTES(DurationUnit.MINUTES, Translations.Units.minutes),
 }
 
 fun Arguments.sanctionMember() = member {

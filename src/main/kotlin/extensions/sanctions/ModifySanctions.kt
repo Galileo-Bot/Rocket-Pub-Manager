@@ -116,8 +116,7 @@ class ModifySanctions : Extension() {
 				description = Translations.Commands.ModifySanctions.Type.description
 
 				action {
-					// Types are stored lowercase, and `removeSanctions` filters on that form.
-					applyModification(arguments.id, ModifySanctionValues.TYPE, arguments.type.name.lowercase())
+					applyModification(arguments.id, ModifySanctionValues.TYPE, arguments.type.storedName)
 				}
 			}
 		}

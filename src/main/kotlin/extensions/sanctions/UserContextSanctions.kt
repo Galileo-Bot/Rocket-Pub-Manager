@@ -32,26 +32,25 @@ class UserContextSanctions : Extension() {
 
 
 	override suspend fun setup() {
-		val userCommandsSanctionTypes = listOf("ban", "kick", "light_warn", "warn")
-		userCommandsSanctionTypes.forEach { commandName ->
+		val commands = mapOf(
+			SanctionType.BAN to Translations.Commands.UserContext.Ban.name,
+			SanctionType.KICK to Translations.Commands.UserContext.Kick.name,
+			SanctionType.LIGHT_WARN to Translations.Commands.UserContext.LightWarn.name,
+			SanctionType.WARN to Translations.Commands.UserContext.Warn.name,
+		)
+
+		commands.forEach { (sanctionType, commandName) ->
 			ephemeralUserCommand(::ModalArguments) {
-				name = when (commandName) {
-					"ban" -> Translations.Commands.UserContext.Ban.name
-					"kick" -> Translations.Commands.UserContext.Kick.name
-					"light_warn" -> Translations.Commands.UserContext.LightWarn.name
-					"warn" -> Translations.Commands.UserContext.Warn.name
-					else -> throw IllegalArgumentException("Unknown command name: $commandName")
-				}
+				name = commandName
 				staffOnly()
 
 				action { modal ->
-					if (modal == null || modal.reason.value.isNullOrBlank()) {
+					val reason = modal?.reason?.value
+					if (reason.isNullOrBlank()) {
 						respond(Translations.Errors.pleaseFillForm.translate())
 						return@action
 					}
 
-					val sanctionType = SanctionType.valueOf(commandName.uppercase())
-					val reason = modal.reason.value!!
 					val target = event.interaction.target.asMember(guild!!.id)
 					val author = event.interaction.user
 

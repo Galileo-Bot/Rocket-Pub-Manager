@@ -1,7 +1,6 @@
 package extensions
 
 import debug
-import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.MessageBehavior
@@ -11,7 +10,6 @@ import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.rest.builder.message.embed
-import dev.kordex.core.checks.channelType
 import dev.kordex.core.checks.hasRole
 import dev.kordex.core.checks.inGuild
 import dev.kordex.core.checks.isNotBot
@@ -19,7 +17,6 @@ import dev.kordex.core.commands.application.ApplicationCommand
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.types.EphemeralInteractionContext
 import dev.kordex.core.types.PublicInteractionContext
-import dev.kordex.core.utils.getJumpUrl
 import dev.kordex.core.utils.hasPermission
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
@@ -40,7 +37,6 @@ suspend fun <T : Event> CheckContext<T>.adsCheck() {
 	if (!passed) return
 
 	inGuild(ROCKET_PUB_GUILD)
-	channelType(ChannelType.GuildText)
 	isNotBot()
 	isAdChannel()
 }

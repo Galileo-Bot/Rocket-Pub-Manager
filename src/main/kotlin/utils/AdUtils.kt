@@ -4,7 +4,6 @@ import debug
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.entity.Invite
-import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
@@ -14,7 +13,7 @@ import logger
 import storage.Sanction
 import storage.searchBannedGuild
 
-data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
+data class SanctionMessage(var sanctionMessage: Message, val sanction: Sanction)
 
 /** The lines of the sanctioned messages field, as written by [autoSanctionEmbed]: a jump link, followed by the deleted suffix once the ad is gone. */
 fun Message.sanctionedAdLinks(): List<String> = embeds.firstOrNull()
@@ -48,7 +47,7 @@ suspend fun checkAd(message: Message): AdCheck {
 	}
 	if (textReason != null) return AdCheck(textReason, null).logged(message)
 
-	val invite = findInviteCode(content)?.let { getInvite(message.kord, it) }
+	val invite = findInviteCode(content)?.let { message.kord.getInviteOrNull(it) }
 	val guild = invite?.partialGuild
 	val isBannedGuild = guild != null && (searchBannedGuild(guild.id) ?: searchBannedGuild(guild.name)) != null
 

@@ -1,9 +1,5 @@
 package utils
 
-import dev.kord.core.Kord
-
-suspend fun getInvite(kord: Kord, text: String) = kord.getInviteOrNull(text)
-
 private val INVITE_LINK_REGEX = Regex(DISCORD_INVITE_LINK_REGEX)
 
 fun findInviteLink(text: String) = INVITE_LINK_REGEX.find(text)?.value

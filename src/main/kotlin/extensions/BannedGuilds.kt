@@ -21,16 +21,13 @@ import utils.modifiedGuildEmbed
 import kotlin.time.ExperimentalTime
 
 
-fun isValidGuildId(value: String) =
-	value.matches(Regex("\\d{17,19}|.{2,100}", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)))
+private val GUILD_ID_OR_NAME_REGEX = Regex("\\d{17,19}|.{2,100}", RegexOption.DOT_MATCHES_ALL)
+private val INVITATION_REGEX = Regex(
+	"\\b(?:https?://)?(?:www\\.)?(?:discord\\.(?:gg|io|me|li)|discordapp\\.com/invite)/[a-zA-Z0-9]+(?:\\?[a-zA-Z0-9]+=[a-zA-Z0-9]+(&[a-zA-Z0-9]+=[a-zA-Z0-9]+)*)?\\b"
+)
 
-fun isValidInvitation(value: String) =
-	value.matches(
-		Regex(
-			"\\b(?:https?://)?(?:www\\.)?(?:discord\\.(?:gg|io|me|li)|discordapp\\.com/invite)/[a-zA-Z0-9]+(?:\\?[a-zA-Z0-9]+=[a-zA-Z0-9]+(&[a-zA-Z0-9]+=[a-zA-Z0-9]+)*)?\\b",
-			setOf(RegexOption.DOT_MATCHES_ALL)
-		)
-	)
+fun isValidGuildId(value: String) = value.matches(GUILD_ID_OR_NAME_REGEX)
+fun isValidInvitation(value: String) = value.matches(INVITATION_REGEX)
 
 enum class ModifyGuildValues(val translation: Key, val column: String) : ChoiceEnum {
 	NAME(Translations.Fields.name, "name"),
@@ -128,12 +125,11 @@ class BannedGuilds : Extension() {
 				description = Translations.Commands.BannedGuilds.Get.description
 
 				action {
+					val guild = searchBannedGuild(arguments.guild)
+
 					respond {
-						searchBannedGuild(arguments.guild)?.let {
-							bannedGuildEmbed(this@publicSlashCommand.kord, it)
-						} ?: Translations.Errors.guildNotFound.translate().also {
-							content = it
-						}
+						if (guild != null) bannedGuildEmbed(this@publicSlashCommand.kord, guild)
+						else content = Translations.Errors.guildNotFound.translate()
 					}
 				}
 			}
@@ -180,21 +176,18 @@ class BannedGuilds : Extension() {
 				description = Translations.Commands.BannedGuilds.Modify.description
 
 				action {
-					respond {
-						val bannedGuildFound = searchBannedGuild(arguments.guild)?.let {
-							modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
-							modifiedGuildEmbed(
-								bot.getKoin().get(),
-								it,
-								arguments.value,
-								it[arguments.value],
-								arguments.newValue
-							)
-						}
+					val guild = searchBannedGuild(arguments.guild)
+					if (guild != null) modifyGuildValue(arguments.guild, arguments.value, arguments.newValue)
 
-						bannedGuildFound ?: Translations.Errors.guildNotFound.translate().also {
-							content = it
-						}
+					respond {
+						if (guild != null) modifiedGuildEmbed(
+							this@publicSlashCommand.kord,
+							guild,
+							arguments.value,
+							guild[arguments.value],
+							arguments.newValue
+						)
+						else content = Translations.Errors.guildNotFound.translate()
 					}
 				}
 			}
@@ -204,15 +197,13 @@ class BannedGuilds : Extension() {
 				description = Translations.Commands.BannedGuilds.Remove.description
 
 				action {
-					respond {
-						val validGuild = isValidGuildId(arguments.guild)
+					val validGuild = isValidGuildId(arguments.guild)
+					if (validGuild) removeBannedGuild(arguments.guild)
 
-						content =
-							if (validGuild) Translations.Messages.guildRemoved.translateNamed("guild" to arguments.guild)
-							else Translations.Errors.invalidGuildId.translate()
-
-						if (validGuild) removeBannedGuild(arguments.guild)
-					}
+					respond(
+						if (validGuild) Translations.Messages.guildRemoved.translateNamed("guild" to arguments.guild)
+						else Translations.Errors.invalidGuildId.translate()
+					)
 				}
 			}
 		}

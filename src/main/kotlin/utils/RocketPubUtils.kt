@@ -20,14 +20,8 @@ const val AD_CHANNEL_EMOTE = "<:validate:525405975289659402>"
 /** Window during which new ad messages from the same author are grouped into the same pending [entities.Verification], even if their content differs across channels. */
 val AD_GROUPING_WINDOW = 10.minutes
 
-/** Salon où les erreurs du bot sont envoyées */
-val ERROR_CHANNEL = Snowflake("864756196539105290")
-
 /** Serveur du bot */
 val ROCKET_PUB_GUILD = Snowflake("465918902254436362")
-
-/** Serveur staff */
-val ROCKET_PUB_GUILD_STAFF = Snowflake("770763755265064980")
 
 /** Salon des logs pour les sanctions */
 val SANCTION_LOGS_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_SANCTION_ID"))
@@ -59,12 +53,6 @@ suspend fun <T : Event> CheckContext<T>.isAdChannel() {
 
 	if (channel == null) fail(Translations.Errors.channelIsNull)
 	failIfNot(Translations.Errors.channelNotAdChannel) { channel!!.asChannelOrNull()?.isAdChannel() == true }
-}
-
-suspend fun <T : Event> CheckContext<T>.isInAdCategoryChannel() {
-	if (!passed) return
-	val channel = channelFor(event) ?: return
-	failIfNot(Translations.Errors.channelNotAdCategoryChannel) { channel.asChannelOrNull()?.isCategoryChannel() == true }
 }
 
 suspend fun Kord.getVerifChannel() =

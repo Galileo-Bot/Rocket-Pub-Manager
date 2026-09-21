@@ -19,4 +19,3 @@ sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kordex = { id = "dev.kordex.gradle.kordex", version.ref = "kordex" }
 kordex-i18n = { id = "dev.kordex.gradle.i18n", version.ref = "kordex-i18n" }
-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

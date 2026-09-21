@@ -113,32 +113,17 @@ suspend fun main() {
 		}
 
 		errorResponse { message, failureReason ->
-			val userMsg = when (failureReason) {
-				is FailureReason.ProvidedCheckFailure ->
-					// Handle check failures (permission checks, etc.)
-					Translations.Errors.insufficientPermissions.translate()
+			val details = if (debug) "\n${failureReason.error.localizedMessage}" else ""
 
-				is FailureReason.ArgumentParsingFailure ->
-					Translations.Errors.argumentParsingError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
-
-				is FailureReason.OwnPermissionsCheckFailure ->
-					Translations.Errors.insufficientPermissions.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
-
-				is FailureReason.ExecutionError ->
-					Translations.Errors.executionError.translate() + (if (debug) "\n${failureReason.error.localizedMessage}" else "")
-
+			content = when (failureReason) {
+				is FailureReason.ProvidedCheckFailure -> Translations.Errors.insufficientPermissions.translate()
+				is FailureReason.ArgumentParsingFailure -> Translations.Errors.argumentParsingError.translate() + details
+				is FailureReason.OwnPermissionsCheckFailure -> Translations.Errors.insufficientPermissions.translate() + details
+				is FailureReason.ExecutionError -> Translations.Errors.executionError.translate() + details
 				else -> message.translate()
 			}
 
-			if (failureReason !is FailureReason.RelayedFailure) {
-				logger.error {
-					"""
-					${failureReason.error.stackTraceToString()}
-					""".trimIndent()
-				}
-			}
-
-			this.content = userMsg
+			if (failureReason !is FailureReason.RelayedFailure) logger.error(failureReason.error) { "Command failed" }
 		}
 
 		hooks {

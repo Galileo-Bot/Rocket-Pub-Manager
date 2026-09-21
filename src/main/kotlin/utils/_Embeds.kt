@@ -14,7 +14,6 @@ import dev.kord.rest.Image
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
-import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import dev.kordex.core.utils.getJumpUrl
 import extensions.ModifyGuildValues
 import fr.ayfri.rocketmanager.i18n.Translations
@@ -70,8 +69,6 @@ suspend fun EmbedBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) {
 
 	title = Translations.Embeds.BannedGuild.title.translate()
 	description = Translations.Embeds.BannedGuild.description.translate()
-
-	timestamp = Clock.System.now()
 
 	field {
 		name = Translations.Fields.reason.translate()
@@ -319,32 +316,4 @@ suspend fun MessageCreateBuilder.modifiedSanctionEmbed(
 	modifiedBy: Snowflake,
 ) = embed {
 	modifiedSanctionEmbed(kord, sanction, column, valueBefore, valueAfter, modifiedBy)
-}
-
-suspend fun MessageModifyBuilder.completeEmbed(
-	client: Kord,
-	title: String,
-	description: String,
-	block: EmbedBuilder.() -> Unit = {}
-) =
-	embed {
-		completeEmbed(client, title, description, block)
-	}
-
-suspend fun MessageModifyBuilder.bannedGuildEmbed(client: Kord, guild: BannedGuild) = embed {
-	bannedGuildEmbed(client, guild)
-}
-
-suspend fun MessageModifyBuilder.modifiedGuildEmbed(
-	client: Kord,
-	guild: BannedGuild,
-	value: ModifyGuildValues,
-	valueBefore: String,
-	valueAfter: String,
-) = embed {
-	modifiedGuildEmbed(client, guild, value, valueBefore, valueAfter)
-}
-
-suspend fun MessageModifyBuilder.sanctionEmbed(kord: Kord, sanction: Sanction) = embed {
-	sanctionEmbed(kord, sanction)
 }

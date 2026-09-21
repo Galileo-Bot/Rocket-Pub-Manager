@@ -24,9 +24,7 @@ private fun ResultSet.toBannedGuild() = BannedGuild(
 	bannedSince = getTimestamp("bannedSince")
 )
 
-fun addBannedGuild(id: Snowflake, reason: String) = addBannedGuild(id.toString(), reason)
 fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
-	//language=MySQL
 	sqlUpdate(
 		"INSERT INTO banned_guilds (name, id, reason, bannedSince) VALUES (?, ?, ?, ?)",
 		name,
@@ -47,7 +45,4 @@ fun searchBannedGuild(name: String) = sqlQuery("SELECT * FROM banned_guilds $WHE
 	result.takeIf { it.next() }?.toBannedGuild()
 }
 
-fun removeBannedGuild(id: Snowflake) = removeBannedGuild(id.toString())
-fun removeBannedGuild(name: String) {
-	sqlUpdate("DELETE FROM banned_guilds $WHERE_NAME_OR_ID", name, name)
-}
+fun removeBannedGuild(name: String) = sqlUpdate("DELETE FROM banned_guilds $WHERE_NAME_OR_ID", name, name)

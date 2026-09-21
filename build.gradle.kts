@@ -3,7 +3,6 @@ import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
 	alias(libs.plugins.kotlin)
-	alias(libs.plugins.serialization)
 	alias(libs.plugins.kordex)
 	alias(libs.plugins.kordex.i18n)
 	application
