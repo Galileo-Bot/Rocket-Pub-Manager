@@ -1,6 +1,7 @@
 package storage
 
 import connection
+import org.intellij.lang.annotations.Language
 import java.sql.ResultSet
 
 /** The single in-process connection is not thread-safe, and events land on any dispatcher. */
@@ -11,7 +12,7 @@ private val databaseLock = Any()
  *
  * Using bound parameters instead of string interpolation keeps user-provided values out of the SQL text.
  */
-fun sqlUpdate(query: String, vararg params: Any?) = synchronized(databaseLock) {
+fun sqlUpdate(@Language("sql") query: String, vararg params: Any?) = synchronized(databaseLock) {
 	connection.prepareStatement(query).use { statement ->
 		statement.bind(params)
 		statement.executeUpdate()
@@ -19,7 +20,7 @@ fun sqlUpdate(query: String, vararg params: Any?) = synchronized(databaseLock) {
 }
 
 /** Runs [query] as a prepared statement and hands the result set to [block], closing both afterwards. */
-fun <T> sqlQuery(query: String, vararg params: Any?, block: (ResultSet) -> T): T = synchronized(databaseLock) {
+fun <T> sqlQuery(@Language("sql") query: String, vararg params: Any?, block: (ResultSet) -> T): T = synchronized(databaseLock) {
 	connection.prepareStatement(query).use { statement ->
 		statement.bind(params)
 		statement.executeQuery().use(block)
