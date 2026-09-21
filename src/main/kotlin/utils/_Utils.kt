@@ -9,6 +9,8 @@ import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 
+private val USER_MENTION_REGEX = Regex("(<@)!?(\\d{17,19}>)")
+
 fun <T : Channel> Flow<T>.getTextChannels() = filterIsInstance<TextChannel>()
 
 fun Member.hasRole(role: Snowflake) = roleIds.contains(role)
@@ -18,9 +20,8 @@ suspend fun ReactionEmoji.toGuildEmoji(kord: Kord) = kord.getRocketPubGuild().ge
 fun String.cutFormatting(index: Int) = if (length > index - 3) take(index - 3) + "..." else this
 
 fun String.remove(regex: Regex) = replace(regex, "")
-fun String.remove(pattern: String) = replace(Regex(pattern), "")
 
-val ReactionEmoji.id get() = urlFormat.remove("$name:")
+val ReactionEmoji.id get() = urlFormat.replace("$name:", "")
 
-val String.asSafeUsersMentions get() = replace(Regex("(<@)!?(\\d{17,19}>)"), "$1$2")
-
+/** Compared on every ad against the auto-sanction embeds, compiled once. */
+val String.asSafeUsersMentions get() = replace(USER_MENTION_REGEX, "$1$2")

@@ -28,9 +28,13 @@ import kotlin.io.path.createDirectories
 
 val logger = KotlinLogging.logger("main")
 
-val debug get() = env("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
-val adsAutomatic get() = env("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
-val endMessageAutomatic get() = env("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE").toBooleanStrict()
+// Read once: these are checked on every message, and the environment doesn't change while the bot runs.
+val debug = env("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
+val adsAutomatic = env("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
+val endMessageAutomatic = env("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE").toBooleanStrict()
+
+/** Prefix of the chat commands the staff answers the auto-sanction embeds with, another bot handles them. */
+val chatPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
 
 lateinit var bot: ExtensibleBot
 
@@ -83,11 +87,6 @@ suspend fun main() {
 				users(lruCache(500))
 				voiceState(none())
 			}
-		}
-
-		chatCommands {
-			enabled = true
-			defaultPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
 		}
 
 		// Kord's default limiter runs every REST request through one global mutex, so a single rate-limited edit

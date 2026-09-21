@@ -1,5 +1,6 @@
 package utils
 
+import chatPrefix
 import dev.kord.common.DiscordTimestampStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.toMessageFormat
@@ -32,7 +33,7 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 	completeEmbed(
 		message.kord,
 		sanction.reason,
-		sanction.toString(System.getenv("AYFRI_ROCKETMANAGER_PREFIX"))
+		sanction.toString(chatPrefix)
 	)
 
 	url = message.getJumpUrl()

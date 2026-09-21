@@ -1,5 +1,6 @@
 package extensions
 
+import chatPrefix
 import debug
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
@@ -12,7 +13,6 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralMessageCommand
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.utils.env
 import dev.kordex.core.utils.scheduling.Scheduler
 import entities.Verification
 import fr.ayfri.rocketmanager.i18n.Translations
@@ -29,9 +29,6 @@ import utils.*
 /** Pending verifications and auto-sanction embeds untouched for that long are dropped from memory. */
 private val STALE_AFTER = 24.hours
 private val PRUNE_INTERVAL = 30.minutes
-
-/** Prefix of the chat commands the staff answers the auto-sanction embeds with. */
-private val chatPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
 
 class Verifications : Extension() {
 	override val name = "Verifications"

@@ -9,6 +9,11 @@ import dev.kord.core.entity.GuildEmoji
 import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.ReactionEmoji
 
+private val CHANNEL_MENTION_CHARS = Regex("[<>#]")
+private val USER_MENTION_CHARS = Regex("[<>@!]")
+private val ROLE_MENTION_CHARS = Regex("[<>@&]")
+private val EMOJI_MENTION_REGEX = Regex("<a?:.+?:(\\d+)>")
+
 fun <T> Snowflake(value: T) = when (value) {
 	is ChannelBehavior -> Snowflake.fromChannelMention(value.mention)
 	is UserBehavior -> Snowflake.fromUserMention(value.mention)
@@ -26,10 +31,10 @@ inline fun <reified T : KordEntity> Snowflake.asMention() = when (T::class) {
 	else -> toString()
 }
 
-fun Snowflake.Companion.fromChannelMention(channel: String) = Snowflake(channel.remove("[<>#]"))
-fun Snowflake.Companion.fromUserMention(user: String) = Snowflake(user.remove("[<>@!]"))
-fun Snowflake.Companion.fromRoleMention(role: String) = Snowflake(role.remove("[<>@&]"))
-fun Snowflake.Companion.fromEmojiMention(emoji: String) = Snowflake(emoji.replace(Regex("<a?:.+?:(\\d+)>"), "$1"))
+fun Snowflake.Companion.fromChannelMention(channel: String) = Snowflake(channel.remove(CHANNEL_MENTION_CHARS))
+fun Snowflake.Companion.fromUserMention(user: String) = Snowflake(user.remove(USER_MENTION_CHARS))
+fun Snowflake.Companion.fromRoleMention(role: String) = Snowflake(role.remove(ROLE_MENTION_CHARS))
+fun Snowflake.Companion.fromEmojiMention(emoji: String) = Snowflake(emoji.replace(EMOJI_MENTION_REGEX, "$1"))
 
 fun Snowflake.Companion.fromMessageLink(link: String): Pair<Snowflake, Snowflake> {
 	val parts = link.split("/")
