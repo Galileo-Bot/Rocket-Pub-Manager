@@ -12,7 +12,6 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.withContext
-import dev.kordex.core.time.TimestampType
 import dev.kordex.core.utils.*
 import extensions.staffOnly
 import fr.ayfri.rocketmanager.i18n.Translations
@@ -272,15 +271,13 @@ class Sanctions : Extension() {
 					getSanctions(arguments.member.id, SanctionType.BAN).find { it.isActive }?.let {
 						throw DiscordRelayedException(
 							Translations.Errors.alreadyBannedUntil.withNamedPlaceholders(
-								"until" to it.toDiscordTimestamp(TimestampType.RelativeTime)
+								"until" to it.activeUntil.toMessageFormat(DiscordTimestampStyle.RelativeTime)
 							)
 						)
 					}
 
 					throw DiscordRelayedException(Translations.Errors.alreadyBanned)
 				}
-
-				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotBanMember)
 
 				applySanction(
 					Sanction(
@@ -291,7 +288,8 @@ class Sanctions : Extension() {
 						appliedBy = user.id
 					),
 					arguments.member,
-					arguments.deleteDays
+					arguments.deleteDays,
+					Translations.Errors.cannotBanMember
 				)
 			}
 		}
@@ -302,11 +300,10 @@ class Sanctions : Extension() {
 			staffOnly()
 
 			action {
-				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotKickMember)
-
 				applySanction(
 					Sanction(SanctionType.KICK, arguments.reason, arguments.member.id, appliedBy = user.id),
-					arguments.member
+					arguments.member,
+					cannotInteractError = Translations.Errors.cannotKickMember
 				)
 			}
 		}
@@ -326,8 +323,6 @@ class Sanctions : Extension() {
 				if (duration < 2.minutes) throw DiscordRelayedException(Translations.Errors.muteDurationTooShort)
 				if (duration > 28.days) throw DiscordRelayedException(Translations.Errors.muteDurationTooLong)
 
-				guild.ensureCanInteract(arguments.member, Translations.Errors.cannotMuteMember)
-
 				applySanction(
 					Sanction(
 						SanctionType.MUTE,
@@ -336,7 +331,8 @@ class Sanctions : Extension() {
 						durationMS = duration.inWholeMilliseconds,
 						appliedBy = user.id
 					),
-					arguments.member
+					arguments.member,
+					cannotInteractError = Translations.Errors.cannotMuteMember
 				)
 			}
 		}

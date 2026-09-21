@@ -1,14 +1,11 @@
 package storage
 
 import dev.kord.common.entity.Snowflake
-import dev.kord.common.serialization.InstantInEpochMillisecondsSerializer
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.i18n.Key
-import dev.kordex.core.time.TimestampType
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import kotlin.time.toKotlinInstant
-import kotlinx.serialization.Serializable
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -51,7 +48,6 @@ enum class ModifySanctionValues(val column: String, val translation: Key) {
 }
 
 
-@Serializable
 data class Sanction(
 	var type: SanctionType,
 	var reason: String = DEFAULT_REASON,
@@ -59,9 +55,7 @@ data class Sanction(
 	val id: Int = 0,
 	val appliedBy: Snowflake? = null,
 	var durationMS: Long = 0,
-	@Serializable(with = InstantInEpochMillisecondsSerializer::class)
 	val sanctionedAt: kotlin.time.Instant = Clock.System.now(),
-	@Serializable(with = InstantInEpochMillisecondsSerializer::class)
 	val liftedAt: kotlin.time.Instant? = null,
 ) {
 	constructor(
@@ -77,8 +71,6 @@ data class Sanction(
 	val duration
 		get() = durationMS.toDuration(DurationUnit.MILLISECONDS)
 
-	fun toDiscordTimestamp(type: TimestampType) = type.format(durationMS)
-
 	val isActive get() = durationMS > 0 && liftedAt == null && activeUntil > Clock.System.now()
 
 	val activeUntil get() = sanctionedAt + duration
@@ -93,7 +85,7 @@ data class Sanction(
 
 
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
-	fun toString(prefix: String) = "$prefix${type.name.lowercase()} <@$member> $reason$formattedDuration"
+	fun toString(prefix: String) = "$prefix${type.storedName} <@$member> $reason$formattedDuration"
 
 	companion object {
 		const val DEFAULT_REASON = "Pas de raison définie."
@@ -187,14 +179,14 @@ fun getPendingTemporaryBans() = sqlQuery(
 
 fun markSanctionLifted(id: Int) = sqlUpdate(
 	"UPDATE sanctions SET liftedAt = ? WHERE id = ? AND liftedAt IS NULL",
-	Timestamp.from(java.time.Instant.now()),
+	Timestamp.from(Instant.now()),
 	id
 )
 
 /** Stops every ban of [user] from counting as active, after the ban was lifted outside of the expiry sweep. */
 fun liftActiveBans(user: Snowflake) = sqlUpdate(
 	"UPDATE sanctions SET liftedAt = ? WHERE memberID = ? AND type = ? AND liftedAt IS NULL",
-	Timestamp.from(java.time.Instant.now()),
+	Timestamp.from(Instant.now()),
 	user.toString(),
 	SanctionType.BAN.storedName
 )
@@ -220,5 +212,5 @@ fun saveSanction(
 	appliedBy?.toString(),
 	durationMS ?: 0L,
 	type.storedName,
-	Timestamp.from(java.time.Instant.now())
+	Timestamp.from(Instant.now())
 )

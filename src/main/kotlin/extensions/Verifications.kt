@@ -21,7 +21,6 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.sync.withLock
 import logger
-import storage.Sanction
 import storage.SanctionType
 import storage.getVerificationCounts
 import utils.*
@@ -86,24 +85,12 @@ class Verifications : Extension() {
 			staffOnly()
 
 			action {
-				val type = user.getNextSanctionType()
-				val message = targetMessages.elementAt(0)
-
+				val message = targetMessages.first()
 				val author = message.getAuthorAsMember()
-				message.delete(Translations.Messages.forbiddenAd.translate())
-				Sanction(
-					type,
-					Translations.Messages.forbiddenAd.translate(),
-					author.id,
-					user.fetchUserOrNull()?.id,
-					if (type == SanctionType.MUTE) author.getNextMuteDuration() else 0
-				).apply {
-					respond(Translations.Messages.userSanctionedForbiddenAd.translateNamed("user" to author.mention))
 
-					applyToMember(author)
-					sendLog(message.kord)
-					save()
-				}
+				message.delete(Translations.Messages.forbiddenAd.translate())
+				respond(Translations.Messages.userSanctionedForbiddenAd.translateNamed("user" to author.mention))
+				author.sanctionForbiddenAd(user.id)
 			}
 		}
 
@@ -140,7 +127,7 @@ class Verifications : Extension() {
 
 					Verification.verifications.find {
 						it.author == event.message.author!!.id &&
-							!it.isValidated &&
+							!it.isClosed &&
 							it.adMessages.none { m -> m.channelId == event.message.channelId } &&
 							(it.adContent == event.message.content || Clock.System.now() - it.lastActivityAt < AD_GROUPING_WINDOW)
 					}?.let {
@@ -165,7 +152,7 @@ class Verifications : Extension() {
 				}
 
 				Verification.verifications
-					.find { !it.isValidated && it.adMessages.any { m -> m.id == event.messageId } }
+					.find { !it.isClosed && it.adMessages.any { m -> m.id == event.messageId } }
 					?.setDeletedMessage(event.channelId)
 			}
 		}

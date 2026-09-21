@@ -12,7 +12,6 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.TextChannel
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.embed
@@ -33,8 +32,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import storage.Sanction
-import storage.SanctionType
 import storage.getAdEventCount
 import storage.getSanctionCount
 import storage.saveAdEvent
@@ -87,13 +84,13 @@ data class Verification(
 	val author: Snowflake,
 	val adContent: String,
 	val adMessages: MutableSet<VerificationMessage> = CopyOnWriteArraySet(),
-	var validatedBy: Snowflake? = null,
 ) {
 	lateinit var verificationMessage: Message
 	var lastActivityAt: Instant = Clock.System.now()
 	private val closed = AtomicBoolean(false)
-	val hasVerificationMessage get() = ::verificationMessage.isInitialized
-	val isValidated get() = validatedBy != null
+
+	/** True once the staff acted on it, the verification is then on its way out of [verifications] and must not receive new ads. */
+	val isClosed get() = closed.get()
 	val messagesFormatted get() = adMessages.joinToString("\n") { it.toString() }
 
 	/** Only messages carrying their own content (i.e. not restored from a pre-restart embed) are compared. */
@@ -164,21 +161,7 @@ data class Verification(
 		if (!close()) return
 		deletePendingAds()
 
-		val kord = verificationMessage.kord
-		val member = kord.getRocketPubGuild().getMemberOrNull(author) ?: return
-
-		val type = member.getNextSanctionType()
-		Sanction(
-			type,
-			Translations.Messages.forbiddenAd.translate(),
-			author,
-			staffId,
-			if (type == SanctionType.MUTE) member.getNextMuteDuration() else 0
-		).apply {
-			applyToMember(member)
-			sendLog(kord)
-			save()
-		}
+		verificationMessage.kord.getRocketPubGuild().getMemberOrNull(author)?.sanctionForbiddenAd(staffId)
 	}
 
 	suspend fun setDeletedMessage(channelId: Snowflake) {
@@ -189,7 +172,6 @@ data class Verification(
 
 	suspend fun validateBy(user: Snowflake) {
 		if (!close()) return
-		validatedBy = user
 
 		verificationMessage.kord.getVerifLogsChannel().createMessage {
 			embed {
@@ -218,7 +200,7 @@ data class Verification(
 				fromEmbed(verificationMessage.embeds[0])
 
 				title = Translations.Embeds.Verifications.NewAd.title.translateNamed("count" to adMessages.size.toString())
-				fields.find { it.name.endsWith("Messages :") }?.value = messagesFormatted
+				fields.find { it.name.endsWith(MESSAGES_FIELD_SUFFIX) }?.value = messagesFormatted
 
 				if (contentDiffers && fields.none { it.name == Translations.Fields.warning.translate() }) {
 					field {
@@ -252,7 +234,7 @@ data class Verification(
 			}
 
 			field {
-				name = "<:user:933508955722899477> Auteur :"
+				name = "<:user:933508955722899477> $AUTHOR_FIELD_SUFFIX"
 				value = "${authorUser.mention} (${authorUser.id})"
 			}
 
@@ -406,11 +388,10 @@ data class Verification(
 		).apply {
 			saveAdEvent(adMessage.author!!.id, adMessage.id, adMessage.channel.id)
 
-			val verificationChannel = bot.kord.getChannelOf<TextChannel>(VERIF_CHANNEL)!!
 			adMessages += VerificationMessage(adMessage.id, adMessage.channel.id, content = adMessage.content)
 
 			val buttons = buttons()
-			val verificationMessage = verificationChannel.createMessage {
+			val verificationMessage = bot.kord.getVerifChannel().createMessage {
 				generateEmbed(adMessage, invite)
 
 				with(buttons) { applyToMessage() }
@@ -425,7 +406,7 @@ data class Verification(
 		 * sent and lost the in-memory one.
 		 */
 		suspend fun findOrRestore(message: Message) =
-			verifications.find { it.hasVerificationMessage && it.verificationMessage.id == message.id }
+			verifications.find { it.verificationMessage.id == message.id }
 				?: fromMessage(message)?.also { verifications += it }
 
 		/** Reads back the state [generateEmbed] wrote, so a verification survives a restart. */

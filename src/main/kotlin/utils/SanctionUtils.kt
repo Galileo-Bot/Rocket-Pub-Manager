@@ -2,6 +2,7 @@ package utils
 
 import debug
 import dev.kord.common.DiscordTimestampStyle
+import dev.kord.common.entity.Snowflake
 import dev.kord.common.toMessageFormat
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
@@ -10,6 +11,7 @@ import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
+import dev.kord.core.entity.Member
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.DiscordRelayedException
@@ -30,12 +32,20 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
-/** Carries out the Discord side of the sanction, the types with no Discord counterpart being no-ops. */
-suspend fun Sanction.applyToMember(member: MemberBehavior, banDeleteDays: Int? = null) {
+/**
+ * Carries out the Discord side of the sanction, the types with no Discord counterpart being no-ops.
+ *
+ * [cannotInteractError] is relayed when the bot cannot moderate [member], it names the sanction that was refused.
+ */
+suspend fun Sanction.applyToMember(
+	member: MemberBehavior,
+	banDeleteDays: Int? = null,
+	cannotInteractError: Key = Translations.Errors.insufficientPermissions,
+) {
 	val target = member.fetchMemberOrNull()
 		?: throw DiscordRelayedException(Translations.Errors.memberNotFound)
 	if (target.guild.selfMember().fetchMemberOrNull()?.canInteract(target) != true) {
-		throw DiscordRelayedException(Translations.Errors.insufficientPermissions)
+		throw DiscordRelayedException(cannotInteractError)
 	}
 
 	when (type) {
@@ -61,7 +71,7 @@ suspend fun Sanction.sendLog(kord: Kord) {
 		}
 
 		allowedMentions {
-			users += listOf(member)
+			users += member
 		}
 
 		content = "||${member.asMention<UserBehavior>()}||"
@@ -108,10 +118,11 @@ suspend fun PublicInteractionContext.applySanction(
 	sanction: Sanction,
 	member: MemberBehavior? = null,
 	banDeleteDays: Int? = null,
+	cannotInteractError: Key = Translations.Errors.insufficientPermissions,
 ) {
 	val kord = interactionResponse.kord
 
-	member?.let { sanction.applyToMember(it, banDeleteDays) }
+	member?.let { sanction.applyToMember(it, banDeleteDays, cannotInteractError) }
 	sanction.save()
 	sanction.sendLog(kord)
 
@@ -120,8 +131,21 @@ suspend fun PublicInteractionContext.applySanction(
 	}
 }
 
-suspend fun PublicInteractionContext.replyWithSanctionEmbed(sanction: Sanction) = respond {
-	sanctionEmbed(interactionResponse.kord, sanction)
+/** Sanctions the author of a forbidden ad with the next step of the escalation, on Discord, in the database and in the logs. */
+suspend fun Member.sanctionForbiddenAd(staffId: Snowflake?) {
+	val type = getNextSanctionType()
+
+	Sanction(
+		type,
+		Translations.Messages.forbiddenAd.translate(),
+		id,
+		staffId,
+		if (type == SanctionType.MUTE) getNextMuteDuration() else 0
+	).apply {
+		applyToMember(this@sanctionForbiddenAd)
+		sendLog(kord)
+		save()
+	}
 }
 
 suspend fun EphemeralInteractionContext.replyWithSanctionEmbed(sanction: Sanction) = respond {
