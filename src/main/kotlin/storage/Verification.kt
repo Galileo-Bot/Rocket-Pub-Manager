@@ -19,9 +19,10 @@ fun searchVerificationMessage(messageID: Snowflake) = sqlQuery(
 	messageID.toString()
 ) { result -> result.takeIf { it.next() }?.getString("messageID") }
 
-fun getVerificationCount() = sqlQuery("SELECT staffID FROM verifications") { result ->
-	result.mapRows { it.getString("staffID") }
-}.mapNotNull { it?.let(::Snowflake) }
+/** How many ads each staff member validated, the busiest first. */
+fun getVerificationCounts() = sqlQuery(
+	"SELECT staffID, COUNT(*) c FROM verifications GROUP BY staffID ORDER BY c DESC"
+) { result -> result.mapRows { Snowflake(it.getString("staffID")) to it.getInt("c") } }
 
 fun getVerificationCountsByDay(since: Instant) = sqlQuery(
 	"SELECT DATE(verifiedAt) d, COUNT(*) c FROM verifications WHERE verifiedAt >= ? GROUP BY d ORDER BY d",

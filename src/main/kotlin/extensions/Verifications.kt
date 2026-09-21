@@ -18,7 +18,7 @@ import kotlin.time.Clock
 import logger
 import storage.Sanction
 import storage.SanctionType
-import storage.getVerificationCount
+import storage.getVerificationCounts
 import utils.*
 
 class Verifications : Extension() {
@@ -43,11 +43,9 @@ class Verifications : Extension() {
 				description = Translations.Commands.Verifications.List.description
 
 				action {
-					val verificationCount = getVerificationCount()
-					val verifications =
-						verificationCount.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }.map {
-							(guild!!.getMemberOrNull(it.first) ?: return@map null) to it.second
-						}.filterNotNull()
+					val verifications = getVerificationCounts().mapNotNull { (staffId, count) ->
+						(guild!!.getMemberOrNull(staffId) ?: return@mapNotNull null) to count
+					}
 
 					respond {
 						completeEmbed(
@@ -106,7 +104,8 @@ class Verifications : Extension() {
 					setSanctionedBy(message, it.sanction)
 				}
 
-				getReasonForMessage(event.message)?.let { reason ->
+				val check = checkAd(event.message)
+				check.reason?.let { reason ->
 					val sanction = event.member!!.getNextSanctionType()
 					if (sanction == SanctionType.LIGHT_WARN) {
 						kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
@@ -128,7 +127,7 @@ class Verifications : Extension() {
 					return@action
 				}
 
-				Verification.create(event.message)
+				Verification.create(event.message, check.invite)
 			}
 		}
 

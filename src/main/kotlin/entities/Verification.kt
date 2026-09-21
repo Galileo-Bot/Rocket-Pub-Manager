@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import storage.Sanction
 import storage.SanctionType
 import storage.getAdEventCount
+import storage.getSanctionCount
 import storage.getSanctions
 import storage.saveAdEvent
 import storage.saveVerification
@@ -121,10 +122,9 @@ data class Verification(
 	}
 
 	suspend fun ignore(staffId: Snowflake, reason: String?) {
-		val verificationMessageId = verificationMessage.id
 		verificationMessage.kord.getVerifLogsChannel().createMessage {
 			embed {
-				fromEmbed(verificationMessage.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
+				fromEmbed(verificationMessage.embeds[0])
 
 				title = Translations.Embeds.Verifications.ignoredTitle.translate()
 
@@ -176,29 +176,27 @@ data class Verification(
 	suspend fun validateBy(user: Snowflake) {
 		validatedBy = user
 
-		val verificationMessageId = verificationMessage.id
-		verificationMessage.kord.getVerifLogsChannel().let {
-			it.createMessage {
-				embed {
-					fromEmbed(verificationMessage.channel.getMessageOrNull(verificationMessageId)?.embeds!![0])
+		verificationMessage.kord.getVerifLogsChannel().createMessage {
+			embed {
+				fromEmbed(verificationMessage.embeds[0])
 
-					title = "✅ Publicité validée"
+				title = "✅ Publicité validée"
 
-					field {
-						name = "<:moderator:933507900092072046> Validée par :"
-						value = "${user.asMention<UserBehavior>()} (${user})"
-					}
+				field {
+					name = "<:moderator:933507900092072046> Validée par :"
+					value = "${user.asMention<UserBehavior>()} (${user})"
 				}
 			}
-
-			saveVerification(user, verificationMessageId)
 		}
+
+		saveVerification(user, verificationMessage.id)
 		verificationMessage.delete()
 		verifications.remove(this)
 	}
 
+	/** The edited message is kept, so [verificationMessage] always carries the current embed and never has to be fetched again. */
 	suspend fun updateMessagesFieldInEmbed(clearButtons: Boolean = false) {
-		verificationMessage.edit {
+		verificationMessage = verificationMessage.edit {
 			if (clearButtons) components = mutableListOf()
 
 			embed {
@@ -217,19 +215,13 @@ data class Verification(
 		}
 	}
 
-	suspend fun MessageCreateBuilder.generateEmbed(adMessage: Message) {
+	/** [invite] was resolved by the ad check that let the message through, it is never fetched twice. */
+	suspend fun MessageCreateBuilder.generateEmbed(adMessage: Message, invite: Invite?) {
 		val authorUser = adMessage.getAuthorAsMember()
 
-		var invite: Invite? = null
-		val link = findInviteCode(adContent)
-		link?.let {
-			runCatching {
-				invite = getInvite(bot.kord, it.substringAfterLast("/"))
-			}
-		}
-
+		val link = findInviteLink(adContent)
 		val bannedGuild = invite?.partialGuild?.id?.let(::searchBannedGuild)
-		val sanctionsCount = getSanctions(author).size
+		val sanctionsCount = getSanctionCount(author)
 		val adsCount = getAdEventCount(author)
 
 		completeEmbed(
@@ -275,7 +267,7 @@ data class Verification(
 						""".trimIndent()
 					} else {
 						name = "Invitation :"
-						value = findInviteLink(adContent)!!
+						value = link
 					}
 				}
 			}
@@ -389,7 +381,7 @@ data class Verification(
 				}
 		}
 
-		suspend fun create(adMessage: Message) = Verification(
+		suspend fun create(adMessage: Message, invite: Invite?) = Verification(
 			author = adMessage.author!!.id,
 			adContent = adMessage.content,
 		).apply {
@@ -400,7 +392,7 @@ data class Verification(
 
 			val buttons = buttons()
 			val verificationMessage = verificationChannel.createMessage {
-				generateEmbed(adMessage)
+				generateEmbed(adMessage, invite)
 
 				with(buttons) { applyToMessage() }
 			}

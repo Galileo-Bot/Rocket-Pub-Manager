@@ -115,6 +115,11 @@ fun getSanction(id: Int) = sqlQuery("SELECT * FROM sanctions WHERE id = ?", id) 
 	result.takeIf { it.next() }?.toSanction()
 }
 
+fun getSanctionCount(user: Snowflake) = sqlQuery(
+	"SELECT COUNT(*) c FROM sanctions WHERE memberID = ?",
+	user.toString()
+) { result -> result.takeIf { it.next() }?.getInt("c") ?: 0 }
+
 fun getSanctions(user: Snowflake, type: SanctionType? = null) = when (type) {
 	null -> sqlQuery(
 		"SELECT * FROM sanctions WHERE memberID = ? ORDER BY id",

@@ -3,6 +3,7 @@ package utils
 import debug
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MessageBehavior
+import dev.kord.core.entity.Invite
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kordex.core.utils.deleteIgnoringNotFound
@@ -29,22 +30,31 @@ suspend fun Message.deleteSanctionedAds() = coroutineScope {
 	}
 }
 
-suspend fun getReasonForMessage(message: Message): String? {
-	val mention = Regex("@(everyone|here)").find(message.content)
-	val inviteLink = findInviteCode(message.content)
-	val invite = inviteLink?.let { getInvite(message.kord, it) }
+private val EVERYONE_MENTION_REGEX = Regex("@(everyone|here)")
+private val WHITESPACE_REGEX = Regex("\\s")
 
-	val guild = invite?.partialGuild
-	val isBannedGuild = guild != null &&
-		(searchBannedGuild(guild.id) ?: searchBannedGuild(guild.name)) != null
+/** What an ad check found: [reason] to sanction it, and the [invite] it links to, resolved once for the verification embed. */
+class AdCheck(val reason: String?, val invite: Invite?)
 
-	return when {
-		!Regex("\\s").containsMatchIn(message.content) -> "Publicité sans description."
-		mention != null -> "Tentative de mention `${mention.value.remove("@")}`."
-		message.content == "test" -> if (debug) "Test." else null
-		isBannedGuild -> "Publicité pour un serveur interdit."
+/** The cheap text checks run first, the invite is only resolved (one REST request) when they all pass. */
+suspend fun checkAd(message: Message): AdCheck {
+	val content = message.content
+	val mention = EVERYONE_MENTION_REGEX.find(content)
+
+	val textReason = when {
+		!WHITESPACE_REGEX.containsMatchIn(content) -> "Publicité sans description."
+		mention != null -> "Tentative de mention `${mention.value.removePrefix("@")}`."
 		else -> null
-	}?.also {
-		if (debug) logger.debug { "Found reason in channel ${message.channelId} for message ${message.id} by ${message.author?.id} : $it" }
 	}
+	if (textReason != null) return AdCheck(textReason, null).logged(message)
+
+	val invite = findInviteCode(content)?.let { getInvite(message.kord, it) }
+	val guild = invite?.partialGuild
+	val isBannedGuild = guild != null && (searchBannedGuild(guild.id) ?: searchBannedGuild(guild.name)) != null
+
+	return AdCheck(if (isBannedGuild) "Publicité pour un serveur interdit." else null, invite).logged(message)
+}
+
+private fun AdCheck.logged(message: Message) = also {
+	if (debug && reason != null) logger.debug { "Found reason in channel ${message.channelId} for message ${message.id} by ${message.author?.id} : $reason" }
 }
