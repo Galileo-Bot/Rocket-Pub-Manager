@@ -53,3 +53,4 @@ CREATE TABLE IF NOT EXISTS ad_events
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS ad_events_postedAt_index ON ad_events (postedAt);
+CREATE INDEX IF NOT EXISTS ad_events_authorID_index ON ad_events (authorID);

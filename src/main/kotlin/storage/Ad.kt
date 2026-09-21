@@ -20,6 +20,14 @@ fun getAdCountsByDay(since: Instant) = sqlQuery(
 	Timestamp.from(since)
 ) { result -> result.mapRows { DailyCount(LocalDate.parse(it.getString("d")), it.getInt("c")) } }
 
+data class AdMessage(val channelID: Snowflake, val messageID: Snowflake)
+
+/** Every ad [author] posted, the oldest first, so they can be deleted without scanning the channels. */
+fun getAdMessages(author: Snowflake) = sqlQuery(
+	"SELECT channelID, messageID FROM ad_events WHERE authorID = ? ORDER BY id",
+	author.toString()
+) { result -> result.mapRows { AdMessage(Snowflake(it.getString("channelID")), Snowflake(it.getString("messageID"))) } }
+
 fun getAdEventCount(author: Snowflake) = sqlQuery(
 	"SELECT COUNT(*) c FROM ad_events WHERE authorID = ?",
 	author.toString()
