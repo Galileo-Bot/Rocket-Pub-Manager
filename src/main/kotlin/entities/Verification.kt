@@ -5,6 +5,7 @@ import dev.kord.common.Color
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
@@ -22,10 +23,13 @@ import dev.kordex.core.components.types.emoji
 import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
 import kord
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import storage.Sanction
 import storage.SanctionType
 import storage.getAdEventCount
@@ -67,11 +71,7 @@ data class VerificationMessage(
 ) {
 	val jumpUrl get() = "https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id}"
 
-	suspend fun delete() {
-		val kord = bot.kord
-		val channel = kord.getChannelOf<TextChannel>(channelId) ?: return
-		channel.getMessageOrNull(id)?.deleteIgnoringNotFound()
-	}
+	suspend fun delete() = MessageBehavior(channelId, id, bot.kord).deleteIgnoringNotFound()
 
 	override fun toString(): String {
 		val jumpToMessage = if (!deleted) jumpUrl else ""
@@ -88,6 +88,7 @@ data class Verification(
 ) {
 	lateinit var verificationMessage: Message
 	var lastActivityAt: Instant = Clock.System.now()
+	private val deleting = AtomicBoolean(false)
 	val hasVerificationMessage get() = ::verificationMessage.isInitialized
 	val isValidated get() = validatedBy != null
 	val messagesFormatted get() = adMessages.joinToString("\n") { it.toString() }
@@ -103,18 +104,20 @@ data class Verification(
 		updateMessagesFieldInEmbed()
 	}
 
-	/** Deletes the ad messages one channel at a time, updating the embed as it goes so staff can see progress. */
+	/**
+	 * Deletes the pending ads in parallel (each channel has its own rate-limit bucket), then edits the embed once.
+	 * The ads are flagged before the requests go out so the [dev.kord.core.event.message.MessageDeleteEvent] they
+	 * trigger doesn't edit the embed a second time, and a double click is a no-op.
+	 */
 	suspend fun deleteAllAds() {
-		adMessages.filterNot { it.deleted }.forEach {
-			it.delete()
-			it.deleted = true
-			updateMessagesFieldInEmbed()
-		}
+		if (!deleting.compareAndSet(false, true)) return
 
-		if (adMessages.all { it.deleted }) {
-			verificationMessage.edit { components = mutableListOf() }
-			verifications.remove(this)
-		}
+		val pending = adMessages.filterNot { it.deleted }
+		pending.forEach { it.deleted = true }
+		coroutineScope { pending.forEach { launch { it.delete() } } }
+
+		updateMessagesFieldInEmbed(clearButtons = true)
+		verifications.remove(this)
 	}
 
 	suspend fun ignore(staffId: Snowflake, reason: String?) {
@@ -165,7 +168,8 @@ data class Verification(
 	}
 
 	suspend fun setDeletedMessage(channelId: Snowflake) {
-		adMessages.find { it.channelId == channelId }?.deleted = true
+		val adMessage = adMessages.find { it.channelId == channelId && !it.deleted } ?: return
+		adMessage.deleted = true
 		updateMessagesFieldInEmbed()
 	}
 
@@ -193,8 +197,10 @@ data class Verification(
 		verifications.remove(this)
 	}
 
-	suspend fun updateMessagesFieldInEmbed() {
+	suspend fun updateMessagesFieldInEmbed(clearButtons: Boolean = false) {
 		verificationMessage.edit {
+			if (clearButtons) components = mutableListOf()
+
 			embed {
 				fromEmbed(verificationMessage.embeds[0])
 
