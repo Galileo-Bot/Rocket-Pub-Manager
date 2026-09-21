@@ -103,16 +103,17 @@ class BannedGuilds : Extension() {
 
 				action {
 					respond {
+						// An invite matches the loose name pattern too, so it has to be checked first to keep the guild's ID.
 						content = when {
-							isValidGuildId(arguments.guild) -> {
-								addBannedGuild(arguments.guild, arguments.reason)
+							isValidInvitation(arguments.guild) -> {
+								val invitation = this@publicSubCommand.kord.getInviteOrNull(arguments.guild.substringAfterLast('/').substringBefore('?'))
+
+								addBannedGuild(arguments.guild, arguments.reason, invitation?.partialGuild?.id)
 								Translations.Messages.guildAdded.translateNamed("guild" to arguments.guild)
 							}
 
-							isValidInvitation(arguments.guild) -> {
-								val invitation = this@publicSubCommand.kord.getInviteOrNull(arguments.guild)
-
-								addBannedGuild(arguments.guild, arguments.reason, invitation?.partialGuild?.id)
+							isValidGuildId(arguments.guild) -> {
+								addBannedGuild(arguments.guild, arguments.reason)
 								Translations.Messages.guildAdded.translateNamed("guild" to arguments.guild)
 							}
 
