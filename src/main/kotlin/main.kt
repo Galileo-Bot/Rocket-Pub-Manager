@@ -1,9 +1,12 @@
 
+import dev.kord.common.annotation.KordUnsafe
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.Kord
 import dev.kord.core.cache.lruCache
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.rest.ratelimit.ParallelRequestRateLimiter
+import dev.kord.rest.request.KtorRequestHandler
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.annotations.warnings.ReplacingDefaultErrorResponseBuilder
 import dev.kordex.core.checks.channelFor
@@ -54,7 +57,7 @@ val connection: Connection by lazy {
 
 val ExtensibleBot.kord get() = getKoin().get<Kord>()
 
-@OptIn(ReplacingDefaultErrorResponseBuilder::class)
+@OptIn(ReplacingDefaultErrorResponseBuilder::class, KordUnsafe::class)
 @PrivilegedIntent
 suspend fun main() {
 	TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
@@ -85,6 +88,12 @@ suspend fun main() {
 		chatCommands {
 			enabled = true
 			defaultPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
+		}
+
+		// Kord's default limiter runs every REST request through one global mutex, so a single rate-limited edit
+		// stalls the button acks past Discord's 3s window ("Unknown interaction"). Only requests sharing a bucket wait.
+		kord {
+			requestHandler { KtorRequestHandler(it.httpClient, ParallelRequestRateLimiter(), token = it.token) }
 		}
 
 		extensions {
