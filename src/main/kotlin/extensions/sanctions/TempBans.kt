@@ -1,8 +1,10 @@
 package extensions.sanctions
 
+import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.utils.scheduling.Scheduler
 import fr.ayfri.rocketmanager.i18n.Translations
+import io.ktor.http.HttpStatusCode
 import logger
 import storage.getPendingTemporaryBans
 import storage.markSanctionLifted
@@ -37,13 +39,13 @@ class TempBans : Extension() {
 		val reason = Translations.Messages.temporaryBanExpired.translate()
 
 		expired.forEach { sanction ->
+			// The ban may already be gone, lifted by hand while the bot was down: an unban then answers 404.
+			// A failed unban is not marked lifted so the next sweep retries it.
+			runCatching { guild.unban(sanction.member, reason) }
+				.onFailure { if ((it as? RestRequestException)?.status?.code != HttpStatusCode.NotFound.value) throw it }
+				.onSuccess { logger.info { "Lifted the expired ban ${sanction.id} of ${sanction.member}" } }
+
 			markSanctionLifted(sanction.id)
-
-			// The ban may already be gone, lifted by hand while the bot was down.
-			guild.getBanOrNull(sanction.member) ?: return@forEach
-			guild.unban(sanction.member, reason)
-
-			logger.info { "Lifted the expired ban ${sanction.id} of ${sanction.member}" }
 		}
 	}
 }
