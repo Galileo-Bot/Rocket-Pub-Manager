@@ -23,10 +23,11 @@ import storage.BannedGuild
 import storage.ModifySanctionValues
 import storage.Sanction
 
+/** [links] are the jump links of the sanctioned ads, [Message.sanctionedAdLinks] reads them back. */
 suspend fun EmbedBuilder.autoSanctionEmbed(
 	message: Message,
 	sanction: Sanction,
-	messages: List<Message> = listOf(message),
+	links: List<String> = listOf(message.getJumpUrl()),
 ) {
 	completeEmbed(
 		message.kord,
@@ -47,7 +48,7 @@ suspend fun EmbedBuilder.autoSanctionEmbed(
 
 	field {
 		name = Translations.Embeds.autoSanctionMessages.translate()
-		value = messages.joinToString("\n", transform = Message::getJumpUrl)
+		value = links.joinToString("\n")
 	}
 }
 

@@ -2,25 +2,31 @@ package utils
 
 import debug
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.TextChannel
+import dev.kordex.core.utils.deleteIgnoringNotFound
 import fr.ayfri.rocketmanager.i18n.Translations
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import logger
 import storage.Sanction
 import storage.searchBannedGuild
 
 data class SanctionMessage(val member: Member, var sanctionMessage: Message, val sanction: Sanction)
 
-suspend fun getMessagesFromSanctionMessage(message: Message): MutableSet<Message> {
-	val embed = message.embeds.firstOrNull() ?: return mutableSetOf()
-	val field = embed.fields.find { it.name == Translations.Embeds.autoSanctionMessages.translate() }
+/** The lines of the sanctioned messages field, as written by [autoSanctionEmbed]: a jump link, followed by the deleted suffix once the ad is gone. */
+fun Message.sanctionedAdLinks(): List<String> = embeds.firstOrNull()
+	?.fields?.find { it.name == Translations.Embeds.autoSanctionMessages.translate() }
+	?.value?.lines()?.filter(String::isNotBlank)
+	.orEmpty()
 
-	return field?.value?.split("\n")?.mapNotNull {
-		Snowflake.fromMessageLink(it.substringBefore("_supprimé_")).let { (channelId, messageId) ->
-			message.kord.getChannelOf<TextChannel>(channelId)?.getMessage(messageId)
-		}
-	}.orEmpty().distinctBy { it.id }.toMutableSet()
+/** Deletes the ads a sanction embed still lists, by ID and in parallel, the sanctioned messages are never fetched. */
+suspend fun Message.deleteSanctionedAds() = coroutineScope {
+	sanctionedAdLinks().filterNot { Translations.Messages.deletedSuffix.translate() in it }.forEach { link ->
+		val (channelId, messageId) = Snowflake.fromMessageLink(link.substringBefore(' '))
+		launch { MessageBehavior(channelId, messageId, kord).deleteIgnoringNotFound() }
+	}
 }
 
 suspend fun getReasonForMessage(message: Message): String? {

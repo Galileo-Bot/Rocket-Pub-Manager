@@ -23,7 +23,7 @@ import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.i18n.Key
-import dev.kordex.core.utils.deleteIgnoringNotFound
+import dev.kordex.core.utils.getJumpUrl
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlinx.coroutines.delay
 import storage.Sanction
@@ -177,27 +177,27 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 	}
 
 	if (old != null) {
-		val messages = getMessagesFromSanctionMessage(old.sanctionMessage)
-		messages += message
+		// The embed already lists the previous ads, appending a link costs no fetch.
+		val links = (old.sanctionMessage.sanctionedAdLinks() + message.getJumpUrl()).distinct()
 
-		when (messages.size) {
+		when (links.size) {
 			1 -> return
 
 			in 5..9 -> {
 				sanction.type = SanctionType.MUTE
-				sanction.durationMS = messages.size.div(2).days.inWholeMilliseconds
+				sanction.durationMS = links.size.div(2).days.inWholeMilliseconds
 			}
 
 			in 10..Int.MAX_VALUE -> {
 				sanction.type = SanctionType.MUTE
-				sanction.durationMS = messages.size.days.inWholeMilliseconds
+				sanction.durationMS = links.size.days.inWholeMilliseconds
 				sanction.reason = Translations.Messages.adInAllCategories.translate()
 			}
 		}
 
-		sanctionMessages.getFromValue(old).sanctionMessage = old.sanctionMessage.edit {
+		old.sanctionMessage = old.sanctionMessage.edit {
 			embed {
-				autoSanctionEmbed(message, sanction, messages.toList())
+				autoSanctionEmbed(message, sanction, links)
 			}
 		}
 		return
@@ -216,5 +216,3 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 	}
 }
 
-suspend fun deleteAllSimilarAdsWithSanction(message: Message) =
-	getMessagesFromSanctionMessage(message).forEach { it.deleteIgnoringNotFound() }

@@ -44,6 +44,8 @@ val VERIF_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_ID"))
 /** Salon des logs pour les vérifications */
 val VERIF_LOGS_CHANNEL = Snowflake(env("AYFRI_ROCKETMANAGER_CHANNEL_VERIF_LOGS_ID"))
 
+fun messageJumpUrl(channelId: Snowflake, messageId: Snowflake) = "https://discord.com/channels/$ROCKET_PUB_GUILD/$channelId/$messageId"
+
 fun ChannelBehavior.isAdChannel() = this is TextChannel && topic?.contains(AD_CHANNEL_EMOTE) == true
 fun ChannelBehavior.isCategoryChannel() = this is TextChannel && topic?.contains(AD_CATEGORY_CHANNEL_EMOTE) == true
 

@@ -13,7 +13,6 @@ import dev.kordex.core.extensions.ephemeralMessageCommand
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import entities.Verification
-import entities.findNotValidated
 import fr.ayfri.rocketmanager.i18n.Translations
 import kotlin.time.Clock
 import logger
@@ -136,19 +135,17 @@ class Verifications : Extension() {
 		event<MessageDeleteEvent> {
 			check { adsCheck() }
 
+			// Messages aren't cached, so `event.message` is always null: everything is matched on the IDs.
 			action {
-				val eventMessage = event.message ?: return@action
+				val link = messageJumpUrl(event.channelId, event.messageId)
 
-				getReasonForMessage(eventMessage)?.let { reason ->
-					sanctionMessages.find {
-						it.sanction.member == eventMessage.author!!.id && it.sanction.reason == reason
-					}?.let {
-						sanctionMessages.getFromValue(it).sanctionMessage =
-							updateMessagesInEmbed(it.sanctionMessage, eventMessage)
-					}
+				sanctionMessages.find { link in it.sanctionMessage.sanctionedAdLinks() }?.let {
+					markSanctionedAdDeleted(it.sanctionMessage, link)?.let { edited -> it.sanctionMessage = edited }
 				}
 
-				Verification.verifications.findNotValidated(eventMessage)?.setDeletedMessage(event.channel.id)
+				Verification.verifications
+					.find { !it.isValidated && it.adMessages.any { m -> m.id == event.messageId } }
+					?.setDeletedMessage(event.channelId)
 			}
 		}
 	}
@@ -161,7 +158,7 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
 
 		action {
 			message.removeComponents()
-			deleteAllSimilarAdsWithSanction(message)
+			message.deleteSanctionedAds()
 		}
 	}
 }

@@ -69,7 +69,7 @@ data class VerificationMessage(
 	var deleted: Boolean = false,
 	val content: String = "",
 ) {
-	val jumpUrl get() = "https://discord.com/channels/${ROCKET_PUB_GUILD.value}/${channelId}/${id}"
+	val jumpUrl get() = messageJumpUrl(channelId, id)
 
 	suspend fun delete() = MessageBehavior(channelId, id, bot.kord).deleteIgnoringNotFound()
 
@@ -450,8 +450,4 @@ data class Verification(
 			return VerificationMessage(Snowflake.min, Snowflake.fromChannelMention(channel), deleted = true)
 		}
 	}
-}
-
-fun List<Verification>.findNotValidated(adMessage: Message) = find {
-	it.author == adMessage.author!!.id && !it.isValidated && it.adMessages.any { m -> m.id == adMessage.id }
 }

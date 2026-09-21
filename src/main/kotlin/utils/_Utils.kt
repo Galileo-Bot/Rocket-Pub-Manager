@@ -11,8 +11,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 
 fun <T : Channel> Flow<T>.getTextChannels() = filterIsInstance<TextChannel>()
 
-fun <E> MutableList<E>.getFromValue(old: E) = this[indexOf(old)]
-
 fun Member.hasRole(role: Snowflake) = roleIds.contains(role)
 
 suspend fun ReactionEmoji.toGuildEmoji(kord: Kord) = kord.getRocketPubGuild().getEmoji(Snowflake(this))

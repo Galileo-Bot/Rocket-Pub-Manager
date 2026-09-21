@@ -55,29 +55,22 @@ suspend fun MessageBehavior.removeComponents() = edit { components = mutableList
 /** Name of the embed field listing the sanctioned messages, as written by [utils.autoSanctionEmbed]. */
 private val messagesFieldName get() = Translations.Embeds.autoSanctionMessages.translate()
 
-fun updateDeletedMessagesInEmbed(sanctionMessage: Message, vararg messages: Message): List<String> {
-	val oldEmbed = sanctionMessage.embeds.firstOrNull() ?: return emptyList()
-	val oldMessages = oldEmbed.fields.find { it.name == messagesFieldName }
-		?.value
-		?.split("\n")
-		?.toMutableList()
-		?: return emptyList()
-	val founds = oldMessages.intersect(messages.map { it.getJumpUrl() }.toSet())
+/** Flags [deletedLink] in the sanctioned messages field, the edited message is returned or null when the link isn't listed. */
+suspend fun markSanctionedAdDeleted(sanctionMessage: Message, deletedLink: String): Message? {
+	val links = sanctionMessage.sanctionedAdLinks()
+	if (deletedLink !in links) return null
 
-	oldMessages.removeAll(founds)
-	oldMessages.addAll(founds.map { "$it ${Translations.Messages.deletedSuffix.translate()}" })
+	return sanctionMessage.edit {
+		embed {
+			sanctionMessage.embeds.firstOrNull()?.let { fromEmbed(it) }
+			fields.removeIf { it.name == messagesFieldName }
 
-	return oldMessages
-}
-
-suspend fun updateMessagesInEmbed(sanctionMessage: Message, vararg messages: Message) = sanctionMessage.edit {
-	embed {
-		sanctionMessage.embeds.firstOrNull()?.let { fromEmbed(it) }
-		fields.removeIf { it.name == messagesFieldName }
-
-		field {
-			name = messagesFieldName
-			value = updateDeletedMessagesInEmbed(sanctionMessage, *messages).joinToString("\n")
+			field {
+				name = messagesFieldName
+				value = links.joinToString("\n") {
+					if (it == deletedLink) "$it ${Translations.Messages.deletedSuffix.translate()}" else it
+				}
+			}
 		}
 	}
 }
