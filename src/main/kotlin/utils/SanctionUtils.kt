@@ -28,8 +28,11 @@ import storage.ModifySanctionValues
 import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
+import extensions.lightSanction
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -150,6 +153,41 @@ suspend fun Member.sanctionForbiddenAd(staffId: Snowflake?) {
 
 suspend fun EphemeralInteractionContext.replyWithSanctionEmbed(sanction: Sanction) = respond {
 	sanctionEmbed(interactionResponse.kord, sanction)
+}
+
+/** Discord's own bounds for a timeout. */
+fun checkMuteDuration(duration: Duration) {
+	if (duration < 2.minutes) throw DiscordRelayedException(Translations.Errors.muteDurationTooShort)
+	if (duration > 28.days) throw DiscordRelayedException(Translations.Errors.muteDurationTooLong)
+}
+
+/**
+ * Applies a sanction a staff member chose for [member] on Discord, then records and logs it.
+ *
+ * A light warn has no Discord counterpart and records itself, its message in the logs channel standing in for the log.
+ */
+suspend fun Sanction.issue(member: Member, banDeleteDays: Int? = null) {
+	val kord = member.kord
+
+	val cannotInteractError = when (type) {
+		SanctionType.LIGHT_WARN -> return kord.getLogSanctionsChannel().lightSanction(member, reason, appliedBy = appliedBy ?: kord.selfId)
+		SanctionType.WARN -> null
+		SanctionType.KICK -> Translations.Errors.cannotKickMember
+		SanctionType.BAN -> Translations.Errors.cannotBanMember
+		SanctionType.MUTE -> {
+			member.timeoutUntil?.let {
+				throw DiscordRelayedException(
+					Translations.Errors.alreadyMuted.withNamedPlaceholders("until" to it.toMessageFormat(DiscordTimestampStyle.RelativeTime))
+				)
+			}
+			checkMuteDuration(duration)
+			Translations.Errors.cannotMuteMember
+		}
+	}
+
+	cannotInteractError?.let { applyToMember(member, banDeleteDays, it) }
+	save()
+	sendLog(kord)
 }
 
 fun UserBehavior.getNextMuteDuration() = when (getSanctions(id).size) {

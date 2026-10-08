@@ -17,6 +17,7 @@ import extensions.staffOnly
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.*
 import utils.applySanction
+import utils.checkMuteDuration
 import utils.completeEmbed
 import utils.ensureCanInteract
 import utils.getNextMuteDuration
@@ -26,8 +27,6 @@ import utils.unBanEmbed
 import utils.unMuteEmbed
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toDuration
 
 /** Sanctions are listed ten per page, the embed description cannot hold much more. */
@@ -320,8 +319,7 @@ class Sanctions : Extension() {
 						"until" to arguments.member.timeoutUntil!!.toMessageFormat(DiscordTimestampStyle.RelativeTime)
 					)
 				)
-				if (duration < 2.minutes) throw DiscordRelayedException(Translations.Errors.muteDurationTooShort)
-				if (duration > 28.days) throw DiscordRelayedException(Translations.Errors.muteDurationTooLong)
+				checkMuteDuration(duration)
 
 				applySanction(
 					Sanction(
