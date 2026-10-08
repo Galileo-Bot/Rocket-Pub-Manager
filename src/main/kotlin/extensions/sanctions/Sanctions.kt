@@ -34,6 +34,7 @@ import kotlin.time.toDuration
 private const val SANCTIONS_PER_PAGE = 10
 
 /** The paginated listing shared by the listing and search subcommands. */
+@OptIn(AlwaysPublicResponse::class)
 private suspend fun PublicSlashCommandContext<*, *>.respondWithSanctions(title: String, sanctions: List<Sanction>) {
 	val kord = interactionResponse.kord
 
@@ -58,7 +59,6 @@ private suspend fun PublicSlashCommandContext<*, *>.respondWithSanctions(title: 
 class Sanctions : Extension() {
 	override val name = "Sanctions"
 
-	@OptIn(AlwaysPublicResponse::class)
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = Translations.Commands.Sanctions.name

@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS verifications
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS verifications_verifiedAt_index ON verifications (verifiedAt);
-CREATE INDEX IF NOT EXISTS verifications_messageID_index ON verifications (messageID);
+-- Nothing looks a verification up by its message.
+DROP INDEX IF EXISTS verifications_messageID_index;
 
 -- Ads posted in the ad channels, recorded for the stats commands.
 CREATE TABLE IF NOT EXISTS ad_events

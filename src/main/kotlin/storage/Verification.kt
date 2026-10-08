@@ -14,11 +14,6 @@ fun saveVerification(verifiedBy: Snowflake, messageID: Snowflake? = null) {
 	)
 }
 
-fun searchVerificationMessage(messageID: Snowflake) = sqlQuery(
-	"SELECT messageID FROM verifications WHERE messageID = ?",
-	messageID.toString()
-) { result -> result.takeIf { it.next() }?.getString("messageID") }
-
 /** How many ads each staff member validated, the busiest first. */
 fun getVerificationCounts() = sqlQuery(
 	"SELECT staffID, COUNT(*) c FROM verifications GROUP BY staffID ORDER BY c DESC"
