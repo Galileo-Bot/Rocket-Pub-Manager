@@ -4,6 +4,7 @@ import dev.kord.common.entity.AuditLogChangeKey
 import dev.kord.common.entity.AuditLogEvent
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.getAuditLogEntries
 import dev.kord.core.entity.AuditLogEntry
@@ -14,14 +15,13 @@ import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kordex.core.checks.inGuild
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
-import dev.kordex.core.utils.scheduling.Scheduler
 import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.flow.firstOrNull
 import kotlin.time.Clock
 import storage.Sanction
 import storage.SanctionType
 import storage.getSanctions
-import storage.liftActiveBans
+import storage.liftActiveSanctions
 import utils.ROCKET_PUB_GUILD
 import utils.getLogSanctionsChannel
 import utils.sendLog
@@ -52,7 +52,6 @@ private suspend fun GuildBehavior.recentAuditLogEntry(
 
 class DetectSanctions : Extension() {
 	override val name = "Detect-Sanctions"
-	private val scheduler = Scheduler()
 
 	override suspend fun setup() {
 		event<BanAddEvent> {
@@ -84,7 +83,7 @@ class DetectSanctions : Extension() {
 				val entry = event.guild.recentAuditLogEntry(AuditLogEvent.MemberBanRemove, event.user.id)
 				val unBannedBy = entry?.userId?.let { event.guild.getMemberOrNull(it) }
 
-				liftActiveBans(event.user.id)
+				liftActiveSanctions(event.user.id, SanctionType.BAN)
 
 				kord.getLogSanctionsChannel().createEmbed {
 					unBanEmbed(event.kord, event.user, unBannedBy, entry?.reason)
@@ -125,21 +124,22 @@ class DetectSanctions : Extension() {
 				} ?: return@action
 
 				val moderatorId = entry.userId ?: return@action
-				// The bot's own mutes are recorded by the command that issued them.
+				// The bot's own mutes and unmutes are recorded by the command that issued them.
 				if (moderatorId == kord.selfId) return@action
-				val duration = (member.timeoutUntil ?: return@action) - Clock.System.now()
 
-				Sanction(SanctionType.MUTE, entry.reason, member.id, moderatorId, duration.inWholeMilliseconds).apply {
-					if (getSanctions(member.id).any { it.equalExceptOwner(this) }) return@action
-
-					save()
-					sendLog(kord)
+				val mute = member.timeoutUntil?.takeIf { it > Clock.System.now() }?.let {
+					Sanction(SanctionType.MUTE, entry.reason, member.id, moderatorId, (it - Clock.System.now()).inWholeMilliseconds)
 				}
+				if (mute != null && getSanctions(member.id).any { it.equalExceptOwner(mute) }) return@action
 
-				scheduler.schedule(duration, name = "Un-mute Scheduler") {
-					kord.getLogSanctionsChannel().createEmbed {
-						unMuteEmbed(kord, member, kord.getUser(moderatorId))
-					}
+				// A new timeout replaces the previous one and a removed one ends it, the expiry sweep must not log either.
+				liftActiveSanctions(member.id, SanctionType.MUTE)
+
+				if (mute == null) {
+					kord.getLogSanctionsChannel().createEmbed { unMuteEmbed(kord, member, UserBehavior(moderatorId, kord)) }
+				} else {
+					mute.save()
+					mute.sendLog(kord)
 				}
 			}
 		}

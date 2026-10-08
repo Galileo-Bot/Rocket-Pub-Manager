@@ -371,6 +371,7 @@ class Sanctions : Extension() {
 				arguments.member.edit {
 					timeoutUntil = null
 				}
+				liftActiveSanctions(arguments.member.id, SanctionType.MUTE)
 
 				respond {
 					embed {

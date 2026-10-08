@@ -2,8 +2,8 @@
 --
 -- Snowflakes are TEXT, durations are INTEGER milliseconds, and timestamps are TEXT in
 -- 'YYYY-MM-DD HH:MM:SS' local time, the only format SQLite's DATE() can group on.
--- Bump user_version whenever a change here needs a data migration.
-PRAGMA user_version = 2;
+-- Bump user_version whenever a change here needs a data migration, run by storage.applySchema.
+PRAGMA user_version = 3;
 
 -- A guild is identified by its name, its snowflake, or both.
 CREATE TABLE IF NOT EXISTS banned_guilds

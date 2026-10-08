@@ -103,11 +103,11 @@ suspend fun main() {
 			add(::DetectSanctions)
 			add(::EndMessage)
 			add(::Errors)
+			add(::ExpiringSanctions)
 			add(::ModifySanctions)
 			add(::RemoveAds)
 			add(::Sanctions)
 			add(::Stats)
-			add(::TempBans)
 			add(::UserContextSanctions)
 			add(::Verifications)
 		}

@@ -11,6 +11,7 @@ import java.sql.Timestamp
 import java.time.Instant
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -77,11 +78,13 @@ data class Sanction(
 
 	val formattedDuration get() = formatDurationMS(durationMS)
 
+	/** Whether [other] records the same action, from a replayed event or a command, and not a later repeat of it. */
 	fun equalExceptOwner(other: Sanction) =
 		type == other.type &&
 			reason == other.reason &&
 			member == other.member &&
-			abs(durationMS - other.durationMS) < 10_000
+			abs(durationMS - other.durationMS) < 10_000 &&
+			(sanctionedAt - other.sanctionedAt).absoluteValue < 1.minutes
 
 
 	fun save() = saveSanction(type, reason, member, appliedBy, durationMS)
@@ -171,10 +174,11 @@ fun searchSanctions(
 	) { it.mapRows(ResultSet::toSanction) }
 }
 
-/** Temporary bans that have not been lifted yet, the ones a restart has to pick up again. */
-fun getPendingTemporaryBans() = sqlQuery(
-	"SELECT * FROM sanctions WHERE type = ? AND durationMS > 0 AND liftedAt IS NULL",
-	SanctionType.BAN.storedName
+/** Temporary bans and mutes that have not been lifted yet, the ones a restart has to pick up again. */
+fun getPendingTemporarySanctions() = sqlQuery(
+	"SELECT * FROM sanctions WHERE type IN (?, ?) AND durationMS > 0 AND liftedAt IS NULL",
+	SanctionType.BAN.storedName,
+	SanctionType.MUTE.storedName
 ) { it.mapRows(ResultSet::toSanction) }
 
 fun markSanctionLifted(id: Int) = sqlUpdate(
@@ -183,12 +187,12 @@ fun markSanctionLifted(id: Int) = sqlUpdate(
 	id
 )
 
-/** Stops every ban of [user] from counting as active, after the ban was lifted outside of the expiry sweep. */
-fun liftActiveBans(user: Snowflake) = sqlUpdate(
+/** Stops every [type] sanction of [user] from counting as active, after it was lifted outside of the expiry sweep. */
+fun liftActiveSanctions(user: Snowflake, type: SanctionType) = sqlUpdate(
 	"UPDATE sanctions SET liftedAt = ? WHERE memberID = ? AND type = ? AND liftedAt IS NULL",
 	Timestamp.from(Instant.now()),
 	user.toString(),
-	SanctionType.BAN.storedName
+	type.storedName
 )
 
 fun removeSanctions(user: Snowflake, type: SanctionType? = null) = when (type) {
