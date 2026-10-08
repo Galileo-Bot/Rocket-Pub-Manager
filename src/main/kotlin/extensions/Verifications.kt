@@ -20,7 +20,6 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.sync.withLock
-import logger
 import storage.SanctionType
 import storage.getVerificationCounts
 import utils.*
@@ -37,10 +36,7 @@ class Verifications : Extension() {
 		// Components only live in the in-memory registry, so the buttons of the verification messages sent
 		// before the last restart are only answered once this registers their IDs again.
 		Verification.buttons()
-
-		// Only a convenience for the messages predating the fixed IDs, never worth failing the setup for.
-		runCatching { Verification.registerPendingMessagesButtons(kord) }
-			.onFailure { logger.error(it) { "Failed to register the buttons of the pending verifications." } }
+		sanctionMessageButtons()
 
 		// The staff never acts on some verifications and some auto-sanctions never get their chat command: without
 		// this they pile up for the whole life of the process. A pruned verification is rebuilt from its embed on click.
@@ -159,8 +155,12 @@ class Verifications : Extension() {
 	}
 }
 
-suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
+private var sanctionButtonsContainer: ComponentContainer? = null
+
+/** The bin button of the auto-sanction embeds, with a fixed ID and one shared container so it survives a restart. */
+suspend fun sanctionMessageButtons(): ComponentContainer = sanctionButtonsContainer ?: ComponentContainer {
 	publicButton {
+		id = "delete-sanctioned-ads"
 		emoji("\uD83D\uDDD1")
 		label = Translations.Buttons.delete
 
@@ -169,4 +169,4 @@ suspend fun ComponentContainer.addBinButtonDeleteSimilarAdsWithSanction() {
 			message.deleteSanctionedAds()
 		}
 	}
-}
+}.also { sanctionButtonsContainer = it }

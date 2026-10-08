@@ -4,7 +4,6 @@ import bot
 import dev.kord.common.Color
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.Kord
 import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
@@ -28,8 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import storage.getAdEventCount
@@ -39,17 +36,12 @@ import storage.saveVerification
 import storage.searchBannedGuild
 import utils.*
 
-const val DELETE_ALL_ADS_VERIF_BUTTON_ID = "delete-all-ads-verif"
-const val IGNORE_VERIF_BUTTON_ID = "ignore-verif"
-const val SANCTION_VERIF_BUTTON_ID = "sanction-verif"
-const val VALIDATE_VERIF_BUTTON_ID = "validate-verif"
 private const val CHANNELS_EMOJI = "<:textuel:658085848092508220>"
 private const val AUTHOR_FIELD_SUFFIX = "Auteur :"
 private const val MESSAGES_FIELD_SUFFIX = "Messages :"
 private const val MESSAGE_LINK_PREFIX = "https://discord.com/channels/"
 private val ID_IN_PARENTHESES_REGEX = Regex("\\((\\d{17,20})\\)")
 private val CHANNEL_MENTION_REGEX = Regex("<#\\d{17,20}>")
-private const val PENDING_MESSAGES_TO_RESTORE = 100
 private val BANNED_GUILD_COLOR = Color(0xED4245)
 
 class IgnoreReasonModal : ModalForm() {
@@ -177,10 +169,10 @@ data class Verification(
 			embed {
 				fromEmbed(verificationMessage.embeds[0])
 
-				title = "✅ Publicité validée"
+				title = Translations.Embeds.Verifications.validatedTitle.translate()
 
 				field {
-					name = "<:moderator:933507900092072046> Validée par :"
+					name = Translations.Fields.validatedBy.translate()
 					value = "${user.asMention<UserBehavior>()} (${user})"
 				}
 			}
@@ -292,95 +284,51 @@ data class Verification(
 		 * shared by every message, so a single registration makes the bot answer the buttons of the messages
 		 * it sent before its last restart too.
 		 */
-		suspend fun buttons(): ComponentContainer =
-			buttonsContainer ?: buttonsWith(
-				VALIDATE_VERIF_BUTTON_ID,
-				DELETE_ALL_ADS_VERIF_BUTTON_ID,
-				IGNORE_VERIF_BUTTON_ID,
-				SANCTION_VERIF_BUTTON_ID
-			).also { buttonsContainer = it }
+		suspend fun buttons(): ComponentContainer = buttonsContainer ?: ComponentContainer {
+			publicButton {
+				id = "validate-verif"
+				emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
+				style = ButtonStyle.Success
+				label = Translations.Buttons.validateVerification
 
-		private suspend fun buttonsWith(validateId: String, deleteId: String, ignoreId: String, sanctionId: String) =
-			ComponentContainer {
-				publicButton {
-					id = validateId
-					emoji(kord.getRocketPubGuild().getEmoji(VALID_EMOJI))
-					style = ButtonStyle.Success
-					label = Translations.Buttons.validateVerification
-
-					action {
-						findOrRestore(event.interaction.message)?.validateBy(event.interaction.user.id)
-					}
-				}
-
-				publicButton {
-					id = deleteId
-					emoji("🗑")
-					style = ButtonStyle.Danger
-					label = Translations.Buttons.delete
-
-					action {
-						findOrRestore(message)?.deleteAllAds()
-					}
-				}
-
-				publicButton {
-					id = sanctionId
-					emoji("⚠️")
-					style = ButtonStyle.Primary
-					label = Translations.Buttons.sanction
-
-					action {
-						findOrRestore(message)?.sanctionAuthor(event.interaction.user.id)
-					}
-				}
-
-				publicButton(::IgnoreReasonModal) {
-					id = ignoreId
-					emoji("🚫")
-					style = ButtonStyle.Secondary
-					label = Translations.Buttons.ignore
-
-					action { modal ->
-						findOrRestore(message)?.ignore(event.interaction.user.id, modal?.reason?.value)
-					}
+				action {
+					findOrRestore(message)?.validateBy(user.id)
 				}
 			}
 
-		/**
-		 * Registers the random IDs the buttons were given before they were made fixed, so the verification
-		 * messages still pending from an older run of the bot keep working instead of failing silently.
-		 *
-		 * TODO: Remove after September 2026, no pending verification message will predate the fixed IDs by
-		 *  then, making this startup REST scan pointless.
-		 */
-		suspend fun registerPendingMessagesButtons(kord: Kord) {
-			kord.getVerifChannel().messages
-				.take(PENDING_MESSAGES_TO_RESTORE)
-				.filter { it.author?.id == kord.selfId }
-				.collect { message ->
-					val validateId = message.buttons.find { it.style == ButtonStyle.Success }?.customId
-					val deleteId = message.buttons.find { it.style == ButtonStyle.Danger }?.customId
-					val ignoreId = message.buttons.find { it.style == ButtonStyle.Secondary }?.customId
-					val sanctionId = message.buttons.find { it.style == ButtonStyle.Primary }?.customId
+			publicButton {
+				id = "delete-all-ads-verif"
+				emoji("🗑")
+				style = ButtonStyle.Danger
+				label = Translations.Buttons.delete
 
-					if (
-						validateId == VALIDATE_VERIF_BUTTON_ID &&
-						deleteId == DELETE_ALL_ADS_VERIF_BUTTON_ID &&
-						ignoreId == IGNORE_VERIF_BUTTON_ID &&
-						(sanctionId == SANCTION_VERIF_BUTTON_ID || sanctionId == null)
-					) return@collect
-					if (validateId == null && deleteId == null && ignoreId == null) return@collect
-
-					// The container is only built for its registration side effect, the message already exists.
-					buttonsWith(
-						validateId ?: VALIDATE_VERIF_BUTTON_ID,
-						deleteId ?: DELETE_ALL_ADS_VERIF_BUTTON_ID,
-						ignoreId ?: IGNORE_VERIF_BUTTON_ID,
-						sanctionId ?: SANCTION_VERIF_BUTTON_ID
-					)
+				action {
+					findOrRestore(message)?.deleteAllAds()
 				}
-		}
+			}
+
+			publicButton {
+				id = "sanction-verif"
+				emoji("⚠️")
+				style = ButtonStyle.Primary
+				label = Translations.Buttons.sanction
+
+				action {
+					findOrRestore(message)?.sanctionAuthor(user.id)
+				}
+			}
+
+			publicButton(::IgnoreReasonModal) {
+				id = "ignore-verif"
+				emoji("🚫")
+				style = ButtonStyle.Secondary
+				label = Translations.Buttons.ignore
+
+				action { modal ->
+					findOrRestore(message)?.ignore(user.id, modal?.reason?.value)
+				}
+			}
+		}.also { buttonsContainer = it }
 
 		suspend fun create(adMessage: Message, invite: Invite?) = Verification(
 			author = adMessage.author!!.id,

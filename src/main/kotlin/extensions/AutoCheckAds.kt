@@ -20,7 +20,6 @@ import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
 import dev.kordex.core.commands.converters.impl.channel
-import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.i18n.Key
@@ -213,9 +212,7 @@ suspend fun autoSanctionMessage(message: Message, type: SanctionType, reason: St
 			autoSanctionEmbed(message, sanction)
 		}
 
-		components {
-			addBinButtonDeleteSimilarAdsWithSanction()
-		}
+		with(sanctionMessageButtons()) { applyToMessage() }
 	}.also {
 		sanctionMessages.add(SanctionMessage(it, sanction))
 	}
