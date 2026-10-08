@@ -1,5 +1,6 @@
 package extensions
 
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.TextChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
@@ -142,6 +143,7 @@ suspend fun TextChannelBehavior.lightSanction(
 	member: Member,
 	reason: String,
 	message: Message? = null,
+	appliedBy: Snowflake = kord.selfId,
 ) {
 	createMessage {
 		val welcome =
@@ -165,7 +167,7 @@ suspend fun TextChannelBehavior.lightSanction(
 		}
 	}
 
-	Sanction(SanctionType.LIGHT_WARN, reason, member.id, appliedBy = kord.selfId).save()
+	Sanction(SanctionType.LIGHT_WARN, reason, member.id, appliedBy = appliedBy).save()
 
 	// Off the event handler, which holds the ads lock: the member gets a few seconds to read the warning first.
 	message?.let { kord.launch { delay(5.seconds); it.deleteIgnoringNotFound() } }

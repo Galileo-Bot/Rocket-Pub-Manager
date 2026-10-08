@@ -1,6 +1,5 @@
 package extensions.sanctions
 
-import dev.kord.core.behavior.ban
 import dev.kordex.core.components.forms.ModalForm
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralUserCommand
@@ -10,10 +9,13 @@ import extensions.staffOnly
 import fr.ayfri.rocketmanager.i18n.Translations
 import storage.Sanction
 import storage.SanctionType
+import utils.applyToMember
 import utils.getLogSanctionsChannel
 import utils.replyWithSanctionEmbed
 import utils.sendLog
-import kotlin.time.Duration.Companion.days
+
+/** A ban from the context menu wipes the member's last week of messages, the most Discord allows. */
+private const val BAN_DELETE_DAYS = 7
 
 class UserContextSanctions : Extension() {
 	override val name = "UserContextSanctions"
@@ -52,31 +54,18 @@ class UserContextSanctions : Extension() {
 					}
 
 					val target = event.interaction.target.asMember(guild!!.id)
-					val author = event.interaction.user
+					val sanction = Sanction(sanctionType, reason, target.id, appliedBy = user.id)
 
-					Sanction(sanctionType, reason, target.id, appliedBy = author.id).apply {
-						val kord = this@ephemeralUserCommand.kord
-
-						replyWithSanctionEmbed(this)
-						save()
-						sendLog(kord)
-
-						when (sanctionType) {
-							SanctionType.LIGHT_WARN -> {
-								kord.getLogSanctionsChannel().lightSanction(target, reason)
-								return@apply
-							}
-
-							SanctionType.BAN -> target.ban {
-								this.reason = reason
-								deleteMessageDuration = 7.days
-							}
-
-							SanctionType.KICK -> target.kick(reason)
-
-							else -> {}
-						}
+					// The light warn records itself, and its message in the logs channel stands in for the sanction log.
+					if (sanctionType == SanctionType.LIGHT_WARN) {
+						event.kord.getLogSanctionsChannel().lightSanction(target, reason, appliedBy = user.id)
+					} else {
+						if (sanctionType != SanctionType.WARN) sanction.applyToMember(target, banDeleteDays = BAN_DELETE_DAYS)
+						sanction.save()
+						sanction.sendLog(event.kord)
 					}
+
+					replyWithSanctionEmbed(sanction)
 				}
 			}
 		}
