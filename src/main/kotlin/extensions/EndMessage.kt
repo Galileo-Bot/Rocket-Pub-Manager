@@ -11,8 +11,8 @@ import dev.kordex.core.checks.isNotBot
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.deleteIgnoringNotFound
-import endMessageAutomatic
 import kotlinx.coroutines.flow.firstOrNull
+import storage.Settings
 import utils.ROCKET_PUB_GUILD
 import utils.endAdChannelEmbed
 import utils.isAdChannel
@@ -40,7 +40,7 @@ class EndMessage : Extension() {
 
 				if (!passed) return@check
 
-				failIf { !endMessageAutomatic }
+				failIf { !Settings.automaticEndMessage }
 			}
 
 			action {

@@ -28,10 +28,8 @@ import kotlin.io.path.createDirectories
 
 val logger = KotlinLogging.logger("main")
 
-// Read once: these are checked on every message, and the environment doesn't change while the bot runs.
+// Read once: it is checked on every message, and the environment doesn't change while the bot runs.
 val debug = env("AYFRI_ROCKETMANAGER_ENVIRONMENT") == "development"
-val adsAutomatic = env("AYFRI_ROCKETMANAGER_AUTOMATIC_SANCTIONS").toBooleanStrict()
-val endMessageAutomatic = env("AYFRI_ROCKETMANAGER_AUTOMATIC_END_MESSAGE").toBooleanStrict()
 
 /** Prefix of the chat commands the staff answers the auto-sanction embeds with, another bot handles them. */
 val chatPrefix = env("AYFRI_ROCKETMANAGER_PREFIX")
@@ -99,7 +97,7 @@ suspend fun main() {
 			sentry { enable = false }
 
 			add(::BannedGuilds)
-			add(::CheckAds)
+			add(::Config)
 			add(::DetectSanctions)
 			add(::EndMessage)
 			add(::Errors)

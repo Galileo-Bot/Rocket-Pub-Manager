@@ -5,6 +5,19 @@
 -- Bump user_version whenever a change here needs a data migration, run by storage.applySchema.
 PRAGMA user_version = 3;
 
+-- Values edited from /config, a missing row falls back to its AYFRI_ROCKETMANAGER_<NAME> environment variable.
+CREATE TABLE IF NOT EXISTS settings
+(
+	name  TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+) WITHOUT ROWID, STRICT;
+
+-- Channels whose messages are handled as ads.
+CREATE TABLE IF NOT EXISTS ad_channels
+(
+	channelID TEXT PRIMARY KEY
+) WITHOUT ROWID, STRICT;
+
 -- A guild is identified by its name, its snowflake, or both.
 CREATE TABLE IF NOT EXISTS banned_guilds
 (

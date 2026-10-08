@@ -21,6 +21,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.sync.withLock
 import storage.SanctionType
+import storage.Settings
 import storage.getVerificationCounts
 import utils.*
 
@@ -109,7 +110,8 @@ class Verifications : Extension() {
 				val check = checkAd(event.message)
 
 				Verification.lock.withLock {
-					check.reason?.let { reason ->
+					// Without the automatic sanctions the invalid ads go through the verification like the others.
+					check.reason?.takeIf { Settings.automaticSanctions }?.let { reason ->
 						val sanction = event.member!!.getNextSanctionType()
 						if (sanction == SanctionType.LIGHT_WARN) {
 							kord.getLogSanctionsChannel().lightSanction(event.member!!, reason, event.message)
