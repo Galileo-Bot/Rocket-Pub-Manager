@@ -43,15 +43,13 @@ src/main/kotlin/
 ├── main.kt                 # Point d'entrée, connexion DB, enregistrement des extensions
 ├── entities/                # Entités du domaine (ex: Verification)
 ├── extensions/               # Extensions KordEx (commandes et événements)
+│   ├── sanctions/            # Commandes de sanction, détection, modification, bans temporaires
 │   ├── AutoCheckAds.kt
 │   ├── BannedGuilds.kt
-│   ├── DetectSanctions.kt
 │   ├── EndMessage.kt
 │   ├── Errors.kt
-│   ├── ModifySanctions.kt
 │   ├── RemoveAds.kt
-│   ├── Sanctions.kt
-│   ├── UserContextSanctions.kt
+│   ├── Stats.kt
 │   └── Verifications.kt
 ├── storage/                 # Accès à la base de données
 └── utils/                    # Utilitaires (embeds, snowflakes, invitations, sanctions...)
@@ -109,7 +107,7 @@ Autres tâches utiles :
 docker compose up --build
 ```
 
-Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.7.1-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`.
+Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.8.0-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`.
 
 Les logs sont montés dans `./logs`, et la base vit dans le volume `bot_data`.
 

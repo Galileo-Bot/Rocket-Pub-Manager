@@ -10,6 +10,7 @@ updates:
     assignees:
       - Ayfri
 
+    # KordEx and Kord are pinned to snapshots, which Dependabot can't track. The KordEx Gradle plugins stay tracked.
     ignore:
-        - dependency-name: 'com.kotlindiscord.kord.extensions*',
-        - dependency-name: 'dev.kord*'
+      - dependency-name: 'dev.kordex:*'
+      - dependency-name: 'dev.kord:*'
