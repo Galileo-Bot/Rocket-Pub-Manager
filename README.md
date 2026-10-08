@@ -20,18 +20,31 @@ Serveur géré par Ayfri et Antow.
 
 Le bot couvre l'ensemble de la modération du serveur :
 
-- **Sanctions** : commandes slash pour avertir, mute, ban ou unban un membre, avec gestion des durées et des raisons. Un menu contextuel utilisateur permet aussi de sanctionner directement via un formulaire.
-- **Sanctions automatiques** : détection et suppression des publicités invalides dans les salons dédiés (validation des liens d'invitation), avec sanction automatique optionnelle.
-- **Détection des sanctions manuelles** : les bans, unbans et timeouts effectués directement depuis Discord sont journalisés automatiquement comme sanctions à partir des logs d'audit.
+- **Panneau de configuration** : `/config` (permission « Gérer le serveur ») ouvre un panneau pour choisir les salons de
+  publicité (un par un ou par catégorie), les salons du bot et activer ou désactiver les automatisations, sans
+  redémarrage.
+- **Sanctions** : commandes slash pour avertir, mute, ban ou unban un membre, avec gestion des durées et des raisons.
+  L'entrée « Sanctionner » du clic droit sur un membre ouvre un formulaire : type (ou escalade automatique selon
+  l'historique), raison prédéfinie ou libre, durée optionnelle.
+- **Sanctions automatiques** : détection et suppression des publicités invalides dans les salons dédiés (validation des
+  liens d'invitation), désactivable depuis `/config`.
+- **Détection des sanctions manuelles** : les bans, unbans, timeouts et retraits de timeout effectués directement depuis
+  Discord sont journalisés automatiquement à partir des logs d'audit.
+- **Fin des sanctions temporaires** : les bans temporaires sont levés et la fin des mutes est journalisée à leur
+  expiration, y compris pour celles arrivées à échéance pendant un arrêt du bot.
 - **Modification des sanctions** : édition d'une sanction existante (raison, durée, type, modérateur).
-- **Vérification des publicités** : chaque publicité postée est envoyée dans un salon de modération dédié, avec des boutons pour la valider ou la refuser. Les boutons restent fonctionnels même après un redémarrage du bot.
-- **Blacklist de serveurs** : gestion (ajout, suppression, listing) des serveurs Discord dont les invitations sont interdites, pour éviter de modérer en boucle des serveurs hors ToS.
-- **Nettoyage automatique** : suppression des messages publicitaires d'un membre lorsqu'il quitte le serveur, et gestion d'un message de fin de publicité dans les salons dédiés.
+- **Vérification des publicités** : chaque publicité postée est envoyée dans un salon de modération dédié, avec des
+  boutons pour la valider ou la refuser. Les boutons restent fonctionnels même après un redémarrage du bot.
+- **Blacklist de serveurs** : gestion (ajout, suppression, listing) des serveurs Discord dont les invitations sont
+  interdites, pour éviter de modérer en boucle des serveurs hors ToS.
+- **Nettoyage automatique** : suppression des messages publicitaires d'un membre lorsqu'il quitte le serveur, et gestion
+  d'un message de fin de publicité dans les salons dédiés.
 
 ## Stack technique
 
 - **Kotlin** 2.4.20 sur **Java** 25
-- **[KordEx](https://github.com/Kord-Extensions/kord-extensions)** 2.7.0-SNAPSHOT (basé sur [Kord](https://github.com/kordlib/kord)) pour l'interaction avec l'API Discord
+- **[KordEx](https://github.com/Kord-Extensions/kord-extensions)** 2.7.0-SNAPSHOT (basé
+  sur [Kord](https://github.com/kordlib/kord)) pour l'interaction avec l'API Discord
 - **Gradle** avec les plugins `dev.kordex.gradle.kordex`, `dev.kordex.gradle.i18n`
 - **SQLite** via `sqlite-jdbc`, embarqué dans le process du bot
 - **Logback** pour les logs
@@ -43,9 +56,10 @@ src/main/kotlin/
 ├── main.kt                 # Point d'entrée, connexion DB, enregistrement des extensions
 ├── entities/                # Entités du domaine (ex: Verification)
 ├── extensions/               # Extensions KordEx (commandes et événements)
-│   ├── sanctions/            # Commandes de sanction, détection, modification, bans temporaires
-│   ├── AutoCheckAds.kt
+│   ├── sanctions/            # Commandes de sanction, détection, modification, expiration
+│   ├── AdSanctions.kt
 │   ├── BannedGuilds.kt
+│   ├── Config.kt
 │   ├── EndMessage.kt
 │   ├── Errors.kt
 │   ├── RemoveAds.kt
@@ -55,34 +69,45 @@ src/main/kotlin/
 └── utils/                    # Utilitaires (embeds, snowflakes, invitations, sanctions...)
 ```
 
-Les traductions se trouvent dans `src/main/resources/translations/rocketmanager/strings.properties` (locale par défaut : français), compilées en code Kotlin via le plugin i18n de KordEx.
+Les traductions se trouvent dans `src/main/resources/translations/rocketmanager/strings.properties` (locale par défaut :
+français), compilées en code Kotlin via le plugin i18n de KordEx.
 
 ## Base de données
 
-Le bot utilise **SQLite**, embarqué dans son propre process : il n'y a pas de serveur de base de données à faire tourner. Le schéma est défini dans `src/main/resources/schema.sql` et appliqué au démarrage, ce qui crée le fichier s'il n'existe pas. Quatre tables :
+Le bot utilise **SQLite**, embarqué dans son propre process : il n'y a pas de serveur de base de données à faire
+tourner. Le schéma est défini dans `src/main/resources/schema.sql` et appliqué au démarrage, ce qui crée le fichier s'il
+n'existe pas. Six tables :
 
 - `banned_guilds` : serveurs blacklistés (nom, identifiant, raison, date de bannissement)
-- `sanctions` : sanctions appliquées (raison, membre, modérateur, durée, type, date)
+- `sanctions` : sanctions appliquées (raison, membre, modérateur, durée, type, date, date de fin anticipée)
 - `verifications` : suivi des vérifications de publicités (modérateur, date, message)
 - `ad_events` : publicités postées, pour les commandes de statistiques
+- `settings` : valeurs modifiées depuis `/config`
+- `ad_channels` : salons de publicité choisis depuis `/config`
 
-Les tables sont `STRICT` : SQLite refuse une valeur qui ne correspond pas au type déclaré au lieu de la convertir en silence. Les dates sont du texte au format `YYYY-MM-DD HH:MM:SS` en heure locale, seul format que `DATE()` sait grouper.
+Les tables sont `STRICT` : SQLite refuse une valeur qui ne correspond pas au type déclaré au lieu de la convertir en
+silence. Les dates sont du texte au format `YYYY-MM-DD HH:MM:SS` en heure locale, seul format que `DATE()` sait grouper.
 
 ## Configuration
 
-Le bot se configure via un fichier `.env` à la racine du projet, avec toutes les variables préfixées par `AYFRI_ROCKETMANAGER_` :
+Le bot se configure via un fichier `.env` à la racine du projet, avec toutes les variables préfixées par
+`AYFRI_ROCKETMANAGER_` :
 
-| Variable | Description |
-| --- | --- |
-| `TOKEN` | Token du bot Discord |
-| `PREFIX` | Préfixe des commandes textuelles |
-| `ENVIRONMENT` | `development` ou autre (active le mode debug) |
-| `AUTOMATIC_SANCTIONS` | Active les sanctions automatiques sur publicités invalides |
-| `AUTOMATIC_END_MESSAGE` | Active le message de fin de publicité automatique |
-| `CHANNEL_SANCTION_ID` | Salon de log des sanctions |
-| `CHANNEL_VERIF_ID` | Salon de vérification des publicités |
-| `CHANNEL_VERIF_LOGS_ID` | Salon de log des vérifications |
-| `DB_PATH` | Chemin du fichier SQLite |
+| Variable                | Description                                         |
+|-------------------------|-----------------------------------------------------|
+| `TOKEN`                 | Token du bot Discord                                |
+| `PREFIX`                | Préfixe des commandes textuelles                    |
+| `ENVIRONMENT`           | `development` ou autre (active le mode debug)       |
+| `DB_PATH`               | Chemin du fichier SQLite                            |
+| `AUTOMATIC_END_MESSAGE` | Optionnel : message de fin de publicité automatique |
+| `CHANNEL_SANCTION_ID`   | Optionnel : salon de log des sanctions              |
+| `CHANNEL_VERIF_ID`      | Optionnel : salon de vérification des publicités    |
+| `CHANNEL_VERIF_LOGS_ID` | Optionnel : salon de log des vérifications          |
+
+Les variables optionnelles servent de valeur par défaut tant que le réglage correspondant n'a pas été enregistré depuis
+`/config`, qui gère aussi les salons de publicité et les sanctions automatiques (activées par défaut). Au premier
+démarrage, les salons dont le sujet contient l'émoji `<:validate:525405975289659402>` sont importés comme salons de
+publicité.
 
 `.env.template` sert de point de départ. Avec Docker, `DB_PATH` est surchargé vers `/app/data/rocketmanager.db`.
 
@@ -107,7 +132,8 @@ Autres tâches utiles :
 docker compose up --build
 ```
 
-Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.8.0-jdk25-alpine` puis exécuté sur `eclipse-temurin:25-jre-alpine`.
+Cela démarre un seul service, `bot`, buildé en multi-stage à partir de `gradle:9.8.0-jdk25-alpine` puis exécuté sur
+`eclipse-temurin:25-jre-alpine`.
 
 Les logs sont montés dans `./logs`, et la base vit dans le volume `bot_data`.
 
