@@ -169,4 +169,8 @@ suspend fun sanctionMessageButtons(): ComponentContainer = sanctionButtonsContai
 			message.deleteSanctionedAds()
 		}
 	}
-}.also { sanctionButtonsContainer = it }
+}.also {
+	// Sorting is what registers the components, the container must answer before any new message applies it.
+	it.sort()
+	sanctionButtonsContainer = it
+}

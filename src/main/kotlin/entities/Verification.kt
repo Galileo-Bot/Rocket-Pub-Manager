@@ -328,7 +328,11 @@ data class Verification(
 					findOrRestore(message)?.ignore(user.id, modal?.reason?.value)
 				}
 			}
-		}.also { buttonsContainer = it }
+		}.also {
+			// Sorting is what registers the components, the container must answer before any new message applies it.
+			it.sort()
+			buttonsContainer = it
+		}
 
 		suspend fun create(adMessage: Message, invite: Invite?) = Verification(
 			author = adMessage.author!!.id,
