@@ -24,7 +24,7 @@ private fun ResultSet.toBannedGuild() = BannedGuild(
 	bannedSince = getTimestamp("bannedSince")
 )
 
-fun addBannedGuild(name: String, reason: String, id: Snowflake? = null) {
+fun addBannedGuild(name: String?, reason: String, id: Snowflake? = null) {
 	sqlUpdate(
 		"INSERT INTO banned_guilds (name, id, reason, bannedSince) VALUES (?, ?, ?, ?)",
 		name,

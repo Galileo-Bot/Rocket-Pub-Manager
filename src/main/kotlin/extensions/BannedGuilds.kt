@@ -1,5 +1,6 @@
 package extensions
 
+import dev.kord.common.entity.Snowflake
 import dev.kordex.core.DiscordRelayedException
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
@@ -18,16 +19,14 @@ import storage.*
 import utils.bannedGuildEmbed
 import utils.completeEmbed
 import utils.cutFormatting
+import utils.findInviteCode
 import utils.modifiedGuildEmbed
 
 
-private val GUILD_ID_OR_NAME_REGEX = Regex("\\d{17,19}|.{2,100}", RegexOption.DOT_MATCHES_ALL)
-private val INVITATION_REGEX = Regex(
-	"\\b(?:https?://)?(?:www\\.)?(?:discord\\.(?:gg|io|me|li)|discordapp\\.com/invite)/[a-zA-Z0-9]+(?:\\?[a-zA-Z0-9]+=[a-zA-Z0-9]+(&[a-zA-Z0-9]+=[a-zA-Z0-9]+)*)?\\b"
-)
+private val SNOWFLAKE_REGEX = Regex("\\d{17,20}")
 
-fun isValidGuildId(value: String) = value.matches(GUILD_ID_OR_NAME_REGEX)
-fun isValidInvitation(value: String) = value.matches(INVITATION_REGEX)
+/** Discord's own bounds for a guild name. */
+private val GUILD_NAME_LENGTH = 2..100
 
 enum class ModifyGuildValues(val translation: Key, val column: String) : ChoiceEnum {
 	NAME(Translations.Fields.name, "name"),
@@ -100,26 +99,26 @@ class BannedGuilds : Extension() {
 
 				action {
 					// An invite matches the loose name pattern too, so it has to be checked first to keep the guild's ID.
+					val inviteCode = findInviteCode(arguments.guild)
 					val (name, id) = when {
-						isValidInvitation(arguments.guild) -> {
-							val guild = this@publicSubCommand.kord
-								.getInviteOrNull(arguments.guild.substringAfterLast('/').substringBefore('?'))
-								?.partialGuild
+						inviteCode != null -> {
+							val guild = this@publicSubCommand.kord.getInviteOrNull(inviteCode)?.partialGuild
 								?: throw DiscordRelayedException(Translations.Errors.invalidInvitation)
 
 							guild.name to guild.id
 						}
 
-						isValidGuildId(arguments.guild) -> arguments.guild to null
+						arguments.guild.matches(SNOWFLAKE_REGEX) -> null to Snowflake(arguments.guild)
+						arguments.guild.length in GUILD_NAME_LENGTH -> arguments.guild to null
 						else -> throw DiscordRelayedException(Translations.Errors.invalidGuildId)
 					}
 
-					if ((id?.let(::searchBannedGuild) ?: searchBannedGuild(name)) != null) {
+					if ((id?.let(::searchBannedGuild) ?: name?.let(::searchBannedGuild)) != null) {
 						throw DiscordRelayedException(Translations.Errors.guildAlreadyBanned)
 					}
 
 					addBannedGuild(name, arguments.reason, id)
-					respond(Translations.Messages.guildAdded.translateNamed("guild" to name))
+					respond(Translations.Messages.guildAdded.translateNamed("guild" to (name ?: id.toString())))
 				}
 			}
 
