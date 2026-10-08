@@ -40,7 +40,7 @@ application {
 kordEx {
 	kordExVersion = libs.versions.kord.extensions.get()
 	jvmTarget = 25
-	/** KordEx 2.5.0-SNAPSHOT targets Kotlin 2.3.10, the project compiles fine on 2.4.10. */
+	/** KordEx 2.7.0-SNAPSHOT targets Kotlin 2.3.10, the project compiles fine on 2.4.20. */
 	ignoreIncompatibleKotlinVersion = true
 
 	bot {
