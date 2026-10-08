@@ -36,9 +36,9 @@ import storage.saveVerification
 import storage.searchBannedGuild
 import utils.*
 
-private const val CHANNELS_EMOJI = "<:textuel:658085848092508220>"
-private const val AUTHOR_FIELD_SUFFIX = "Auteur :"
-private const val MESSAGES_FIELD_SUFFIX = "Messages :"
+/** The verification is read back from these fields after a restart, their names must keep matching the sent embeds. */
+private val authorFieldName get() = Translations.Fields.adAuthor.translate()
+private val messagesFieldName get() = Translations.Fields.adMessages.translate()
 private const val MESSAGE_LINK_PREFIX = "https://discord.com/channels/"
 private val ID_IN_PARENTHESES_REGEX = Regex("\\((\\d{17,20})\\)")
 private val CHANNEL_MENTION_REGEX = Regex("<#\\d{17,20}>")
@@ -67,7 +67,7 @@ data class VerificationMessage(
 
 	override fun toString(): String {
 		val jumpToMessage = if (!deleted) jumpUrl else ""
-		val deleted = if (deleted) "${channelId.asMention<ChannelBehavior>()} (supprimé)" else ""
+		val deleted = if (deleted) "${channelId.asMention<ChannelBehavior>()} ${Translations.Messages.deletedSuffix.translate()}" else ""
 		return "$jumpToMessage $deleted"
 	}
 }
@@ -192,7 +192,7 @@ data class Verification(
 				fromEmbed(verificationMessage.embeds[0])
 
 				title = Translations.Embeds.Verifications.NewAd.title.translateNamed("count" to adMessages.size.toString())
-				fields.find { it.name.endsWith(MESSAGES_FIELD_SUFFIX) }?.value = messagesFormatted
+				fields.find { it.name == messagesFieldName }?.value = messagesFormatted
 
 				if (contentDiffers && fields.none { it.name == Translations.Fields.warning.translate() }) {
 					field {
@@ -226,7 +226,7 @@ data class Verification(
 			}
 
 			field {
-				name = "<:user:933508955722899477> $AUTHOR_FIELD_SUFFIX"
+				name = authorFieldName
 				value = "${authorUser.mention} (${authorUser.id})"
 			}
 
@@ -248,21 +248,22 @@ data class Verification(
 			if (link != null) {
 				field {
 					if (invite != null) {
-						name = "📩 Invitation :"
-						value = """
-							Serveur : ${invite.partialGuild?.name ?: "Non trouvé."}
-							ID du serveur : ${invite.partialGuild?.id?.toString() ?: "Non trouvé."}
-							Nombre de membres : ${invite.approximateMemberCount ?: "Non trouvé."}
-						""".trimIndent()
+						val notFound = Translations.Messages.notFound.translate()
+						name = Translations.Fields.invite.translate()
+						value = Translations.Embeds.Verifications.invite.translateNamed(
+							"name" to (invite.partialGuild?.name ?: notFound),
+							"id" to (invite.partialGuild?.id?.toString() ?: notFound),
+							"members" to (invite.approximateMemberCount?.toString() ?: notFound)
+						)
 					} else {
-						name = "Invitation :"
+						name = Translations.Fields.inviteLink.translate()
 						value = link
 					}
 				}
 			}
 
 			field {
-				name = "$CHANNELS_EMOJI Messages :"
+				name = messagesFieldName
 				value = messagesFormatted
 			}
 		}
@@ -365,11 +366,11 @@ data class Verification(
 		private fun fromMessage(message: Message): Verification? {
 			val embed = message.embeds.firstOrNull() ?: return null
 
-			val author = embed.fields.find { it.name.endsWith(AUTHOR_FIELD_SUFFIX) }
+			val author = embed.fields.find { it.name == authorFieldName }
 				?.let { ID_IN_PARENTHESES_REGEX.find(it.value)?.groupValues?.get(1) }
 				?.let { Snowflake(it) } ?: return null
 
-			val adMessages = embed.fields.find { it.name.endsWith(MESSAGES_FIELD_SUFFIX) }
+			val adMessages = embed.fields.find { it.name == messagesFieldName }
 				?.value
 				?.lines()
 				?.mapNotNull(::parseAdMessage)

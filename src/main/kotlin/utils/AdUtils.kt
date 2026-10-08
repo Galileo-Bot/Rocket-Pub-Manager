@@ -41,8 +41,8 @@ suspend fun checkAd(message: Message): AdCheck {
 	val mention = EVERYONE_MENTION_REGEX.find(content)
 
 	val textReason = when {
-		!WHITESPACE_REGEX.containsMatchIn(content) -> "Publicité sans description."
-		mention != null -> "Tentative de mention `${mention.value.removePrefix("@")}`."
+		!WHITESPACE_REGEX.containsMatchIn(content) -> Translations.Sanctions.noDescription.translate()
+		mention != null -> Translations.Messages.mentionAttempt.translateNamed("mention" to mention.value.removePrefix("@"))
 		else -> null
 	}
 	if (textReason != null) return AdCheck(textReason, null).logged(message)
@@ -51,7 +51,7 @@ suspend fun checkAd(message: Message): AdCheck {
 	val guild = invite?.partialGuild
 	val isBannedGuild = guild != null && (searchBannedGuild(guild.id) ?: searchBannedGuild(guild.name)) != null
 
-	return AdCheck(if (isBannedGuild) "Publicité pour un serveur interdit." else null, invite).logged(message)
+	return AdCheck(if (isBannedGuild) Translations.Messages.bannedGuildAd.translate() else null, invite).logged(message)
 }
 
 private fun AdCheck.logged(message: Message) = also {
