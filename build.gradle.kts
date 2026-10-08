@@ -78,7 +78,8 @@ tasks.named("compileKotlin") {
 
 /** The KordEx plugin creates this directory at configuration time, which a reused configuration cache skips. */
 tasks.named<Delete>("clean") {
-	doLast { generatedTranslations.get().asFile.mkdirs() }
+	val generated = generatedTranslations
+	doLast { generated.get().asFile.mkdirs() }
 }
 
 /** Downloads every jar the build needs so Docker caches them in their own layer, `dependencies` only resolves metadata. */
@@ -99,5 +100,4 @@ tasks.register("warmupDependencies") {
 
 kotlin {
 	jvmToolchain(25)
-	compilerOptions.freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime")
 }
