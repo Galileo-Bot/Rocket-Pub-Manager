@@ -1,5 +1,6 @@
 package extensions
 
+import dev.kordex.core.DiscordRelayedException
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
@@ -18,7 +19,6 @@ import utils.bannedGuildEmbed
 import utils.completeEmbed
 import utils.cutFormatting
 import utils.modifiedGuildEmbed
-import kotlin.time.ExperimentalTime
 
 
 private val GUILD_ID_OR_NAME_REGEX = Regex("\\d{17,19}|.{2,100}", RegexOption.DOT_MATCHES_ALL)
@@ -87,7 +87,7 @@ class BannedGuilds : Extension() {
 		}
 	}
 
-	@OptIn(AlwaysPublicResponse::class, ExperimentalTime::class)
+	@OptIn(AlwaysPublicResponse::class)
 	override suspend fun setup() {
 		publicSlashCommand {
 			name = Translations.Commands.BannedGuilds.name
@@ -99,24 +99,27 @@ class BannedGuilds : Extension() {
 				description = Translations.Commands.BannedGuilds.Add.description
 
 				action {
-					respond {
-						// An invite matches the loose name pattern too, so it has to be checked first to keep the guild's ID.
-						content = when {
-							isValidInvitation(arguments.guild) -> {
-								val invitation = this@publicSubCommand.kord.getInviteOrNull(arguments.guild.substringAfterLast('/').substringBefore('?'))
+					// An invite matches the loose name pattern too, so it has to be checked first to keep the guild's ID.
+					val (name, id) = when {
+						isValidInvitation(arguments.guild) -> {
+							val guild = this@publicSubCommand.kord
+								.getInviteOrNull(arguments.guild.substringAfterLast('/').substringBefore('?'))
+								?.partialGuild
+								?: throw DiscordRelayedException(Translations.Errors.invalidInvitation)
 
-								addBannedGuild(arguments.guild, arguments.reason, invitation?.partialGuild?.id)
-								Translations.Messages.guildAdded.translateNamed("guild" to arguments.guild)
-							}
-
-							isValidGuildId(arguments.guild) -> {
-								addBannedGuild(arguments.guild, arguments.reason)
-								Translations.Messages.guildAdded.translateNamed("guild" to arguments.guild)
-							}
-
-							else -> Translations.Errors.invalidGuildId.translate()
+							guild.name to guild.id
 						}
+
+						isValidGuildId(arguments.guild) -> arguments.guild to null
+						else -> throw DiscordRelayedException(Translations.Errors.invalidGuildId)
 					}
+
+					if ((id?.let(::searchBannedGuild) ?: searchBannedGuild(name)) != null) {
+						throw DiscordRelayedException(Translations.Errors.guildAlreadyBanned)
+					}
+
+					addBannedGuild(name, arguments.reason, id)
+					respond(Translations.Messages.guildAdded.translateNamed("guild" to name))
 				}
 			}
 
@@ -197,13 +200,8 @@ class BannedGuilds : Extension() {
 				description = Translations.Commands.BannedGuilds.Remove.description
 
 				action {
-					val validGuild = isValidGuildId(arguments.guild)
-					if (validGuild) removeBannedGuild(arguments.guild)
-
-					respond(
-						if (validGuild) Translations.Messages.guildRemoved.translateNamed("guild" to arguments.guild)
-						else Translations.Errors.invalidGuildId.translate()
-					)
+					if (removeBannedGuild(arguments.guild) == 0) throw DiscordRelayedException(Translations.Errors.guildNotFound)
+					respond(Translations.Messages.guildRemoved.translateNamed("guild" to arguments.guild))
 				}
 			}
 		}
