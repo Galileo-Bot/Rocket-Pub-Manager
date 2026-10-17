@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 kordex = "1.9.2"
 kordex-i18n = "1.1.1"
 kord-extensions = "2.7.0-SNAPSHOT"
